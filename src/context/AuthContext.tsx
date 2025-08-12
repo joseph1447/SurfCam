@@ -24,7 +24,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(
     async (email: string, pass: string) => {
       const freePassword = process.env.NEXT_PUBLIC_CAM_PASSWORD || 'santateresa2025';
-      const premiumPassword = process.env.NEXT_PUBLIC_PREMIUM_PASSWORD || 'premiumaccess';
+      const premiumPassword = process.env.NEXT_PUBLIC_PREMIUM_PASSWORD || 'santa teresaPremium';
 
       if (pass === freePassword) {
         setUser({ email, accessType: 'free' });
@@ -40,6 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginWithGoogle = useCallback(() => {
     // In a real app, this would involve a Firebase popup or redirect.
     // For this demo, we'll simulate a successful premium login.
+    // This is currently disabled in the UI.
     setUser({ email: 'usuario@google.com', accessType: 'premium' });
   }, []);
 
