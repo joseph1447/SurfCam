@@ -1,0 +1,63 @@
+"use client";
+
+import { useEffect, useRef } from 'react';
+import Hls from 'hls.js';
+
+interface HlsPlayerProps {
+    src: string;
+}
+
+export default function HlsPlayer({ src }: HlsPlayerProps) {
+    const videoRef = useRef<HTMLVideoElement>(null);
+
+    useEffect(() => {
+        const video = videoRef.current;
+        if (!video) return;
+
+        let hls: Hls | null = null;
+
+        if (Hls.isSupported()) {
+            hls = new Hls();
+            hls.loadSource(src);
+            hls.attachMedia(video);
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                video.play().catch(error => {
+                    console.error("Error trying to play video:", error);
+                });
+            });
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            // For Safari, which has native HLS support
+            video.src = src;
+            video.addEventListener('loadedmetadata', () => {
+                video.play().catch(error => {
+                    console.error("Error trying to play video:", error);
+                });
+            });
+        }
+
+        return () => {
+            if (hls) {
+                hls.destroy();
+            }
+        };
+    }, [src]);
+
+    if (!src) {
+        return (
+            <div className="w-full h-full bg-black flex items-center justify-center text-white">
+                <p>URL del stream no configurada.</p>
+            </div>
+        );
+    }
+
+    return (
+        <video 
+            ref={videoRef} 
+            controls 
+            autoPlay 
+            muted 
+            playsInline
+            className="w-full h-full"
+        />
+    );
+}

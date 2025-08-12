@@ -5,6 +5,7 @@ import AppHeader from "@/components/AppHeader";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import HlsPlayer from "./HlsPlayer";
 
 const FREE_TIER_DURATION_SECONDS = 60;
 
@@ -43,14 +44,7 @@ export default function SurfCam() {
           <div className="flex flex-col lg:flex-row gap-8">
             <div className="flex-grow lg:w-3/4 relative">
               <div className="aspect-video w-full relative rounded-xl overflow-hidden shadow-2xl shadow-primary/20">
-                <iframe
-                  src={`https://player.twitch.tv/?channel=elsurfo&parent=${twitchParent}&muted=true&autoplay=true`}
-                  frameBorder="0"
-                  allowFullScreen={true}
-                  scrolling="no"
-                  className="w-full h-full"
-                  title="La Lora Surf Cam - Video"
-                ></iframe>
+                <HlsPlayer src={process.env.NEXT_PUBLIC_HLS_STREAM_URL || ''} />
                 {isBlocked && (
                   <div className="absolute inset-0 bg-background/70 backdrop-blur-lg flex flex-col items-center justify-center z-10 p-4 text-center animate-in fade-in">
                     <h2 className="text-2xl font-bold font-headline mb-2">Tiempo de prueba terminado</h2>
