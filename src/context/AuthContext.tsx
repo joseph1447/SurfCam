@@ -24,7 +24,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(
     async (email: string, pass: string) => {
       const freePassword = process.env.NEXT_PUBLIC_CAM_PASSWORD || 'santateresa2025';
-      const premiumPassword = process.env.NEXT_PUBLIC_PREMIUM_PASSWORD || 'santa teresaPremium';
+      const premiumPassword = process.env.NEXT_PUBLIC_PREMIUM_PASSWORD || 'teresa123';
 
       if (pass === freePassword) {
         setUser({ email, accessType: 'free' });
