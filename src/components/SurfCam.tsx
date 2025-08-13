@@ -34,43 +34,28 @@ export default function SurfCam() {
     }
   }, [user]);
 
-  const twitchParent = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-
   return (
     <div className="flex flex-col min-h-screen">
       <AppHeader />
       <main className="flex-1 p-4 md:p-8">
         <div className="container mx-auto">
-          <div className="flex flex-col lg:flex-row gap-8">
-            <div className="flex-grow lg:w-3/4 relative">
-              <div className="aspect-video w-full relative rounded-xl overflow-hidden shadow-2xl shadow-primary/20">
-                <HlsPlayer src={process.env.NEXT_PUBLIC_HLS_STREAM_URL || ''} />
-                {isBlocked && (
-                  <div className="absolute inset-0 bg-background/70 backdrop-blur-lg flex flex-col items-center justify-center z-10 p-4 text-center animate-in fade-in">
-                    <h2 className="text-2xl font-bold font-headline mb-2">Tiempo de prueba terminado</h2>
-                    <p className="mb-4 max-w-sm">
-                      Para continuar viendo las olas sin interrupciones, considera apoyar el proyecto.
-                    </p>
-                    <Button className="bg-accent hover:bg-accent/90 text-accent-foreground">Ver Planes Premium</Button>
-                  </div>
-                )}
-                 {user?.accessType === "free" && !isBlocked && (
-                  <div className="absolute top-2 right-2 bg-black/50 text-white text-sm px-3 py-1 rounded-full z-20">
-                    Tiempo restante: {timeLeft}s
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="lg:w-1/4">
-               <Card className="h-[calc(100vh-12rem)] min-h-[400px] shadow-lg">
-                <CardContent className="p-0 h-full">
-                    <iframe
-                        src={`https://www.twitch.tv/embed/elsurfo/chat?parent=${twitchParent}&darkpopout`}
-                        className="w-full h-full rounded-lg"
-                        title="La Lora Surf Cam - Chat"
-                    ></iframe>
-                </CardContent>
-               </Card>
+          <div className="flex-grow w-full relative">
+            <div className="aspect-video w-full relative rounded-xl overflow-hidden shadow-2xl shadow-primary/20">
+              <HlsPlayer src={process.env.NEXT_PUBLIC_HLS_STREAM_URL || ''} />
+              {isBlocked && (
+                <div className="absolute inset-0 bg-background/70 backdrop-blur-lg flex flex-col items-center justify-center z-10 p-4 text-center animate-in fade-in">
+                  <h2 className="text-2xl font-bold font-headline mb-2">Tiempo de prueba terminado</h2>
+                  <p className="mb-4 max-w-sm">
+                    Para continuar viendo las olas sin interrupciones, considera apoyar el proyecto.
+                  </p>
+                  <Button className="bg-accent hover:bg-accent/90 text-accent-foreground">Ver Planes Premium</Button>
+                </div>
+              )}
+               {user?.accessType === "free" && !isBlocked && (
+                <div className="absolute top-2 right-2 bg-black/50 text-white text-sm px-3 py-1 rounded-full z-20">
+                  Tiempo restante: {timeLeft}s
+                </div>
+              )}
             </div>
           </div>
 
