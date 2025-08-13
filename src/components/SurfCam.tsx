@@ -41,7 +41,7 @@ export default function SurfCam() {
         <div className="container mx-auto">
           <div className="flex-grow w-full relative">
             <div className="aspect-video w-full relative rounded-xl overflow-hidden shadow-2xl shadow-primary/20">
-              <HlsPlayer src={process.env.NEXT_PUBLIC_HLS_STREAM_URL || 'http://20.38.46.18/hls/surfcam.m3u8'} />
+              <HlsPlayer src={process.env.NEXT_PUBLIC_HLS_STREAM_URL || ''} />
               {isBlocked && (
                 <div className="absolute inset-0 bg-background/70 backdrop-blur-lg flex flex-col items-center justify-center z-10 p-4 text-center animate-in fade-in">
                   <h2 className="text-2xl font-bold font-headline mb-2">Tiempo de prueba terminado</h2>
