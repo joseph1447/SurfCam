@@ -10,7 +10,7 @@ export default function SimpleHeader() {
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center space-x-2">
           <Waves className="h-6 w-6 text-primary" />
-          <span className="font-bold text-lg">La Lora Surf Cam</span>
+          <span className="font-bold text-lg">Santa Teresa Surf Cam</span>
         </Link>
         
         <div className="flex items-center space-x-4">

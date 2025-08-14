@@ -45,7 +45,7 @@ export default function Login() {
           <div className="mx-auto mb-4">
             <Waves className="h-12 w-12 text-primary"/>
           </div>
-          <CardTitle className="font-headline text-2xl">La Lora Surf Cam</CardTitle>
+          <CardTitle className="font-headline text-2xl">Santa Teresa Surf Cam</CardTitle>
           <CardDescription>Inicia sesión para ver las olas en vivo.</CardDescription>
         </CardHeader>
         <CardContent>

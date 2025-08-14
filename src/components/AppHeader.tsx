@@ -35,7 +35,7 @@ export default function AppHeader() {
         <div className="flex items-center gap-3">
           <Waves className="h-7 w-7 text-primary" />
           <h1 className="text-xl font-bold font-headline text-primary">
-            La Lora Surf Cam
+            Santa Teresa Surf Cam
           </h1>
         </div>
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
