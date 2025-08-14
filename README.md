@@ -1,15 +1,19 @@
-# 🏄‍♂️ La Lora Surf Cam
+# 🏄‍♂️ Santa Teresa Surf Cam
 
-Una aplicación web moderna que proporciona acceso en tiempo real a las condiciones de surf a través de cámaras web. Diseñada para ayudar a surfistas y visitantes de playa a tomar decisiones informadas sobre cuándo y dónde ir a surfear.
+Una aplicación web moderna y Progressive Web App (PWA) que proporciona acceso en tiempo real a las condiciones de surf de Santa Teresa, Costa Rica. Diseñada para ayudar a surfistas y visitantes a tomar decisiones informadas sobre cuándo ir a surfear, con funcionalidades premium y análisis de usuarios.
 
-## ✨ Características
+## ✨ Características Principales
 
-- **📹 Transmisión en Tiempo Real:** Visualiza streams de video en vivo desde ubicaciones de surf
-- **🔐 Sistema de Autenticación:** Acceso seguro con diferentes niveles de usuario (Gratuito/Premium)
-- **⏱️ Sistema de Prueba Gratuita:** Los usuarios gratuitos tienen acceso limitado por tiempo
-- **📱 Diseño Responsivo:** Interfaz optimizada para dispositivos móviles y de escritorio
-- **🎨 UI Moderna:** Interfaz elegante construida con Tailwind CSS y componentes shadcn/ui
+- **📹 Transmisión en Tiempo Real:** Visualiza streams de video en vivo desde Santa Teresa
+- **📱 Progressive Web App (PWA):** Instalable en dispositivos móviles y de escritorio
+- **🔐 Sistema de Autenticación Avanzado:** Acceso con diferentes niveles (Gratuito/Premium)
+- **⏱️ Sistema de Prueba Gratuita:** 60 segundos de acceso para usuarios gratuitos
+- **📊 Panel de Administración:** Gestión de usuarios y métricas en tiempo real
+- **📈 Análisis de Usuarios:** Tracking completo de actividad y sesiones
+- **🏨 Páginas Informativas:** Hospedaje, clases de surf, restaurantes y contacto
+- **🎨 UI Moderna:** Interfaz elegante construida con Tailwind CSS y shadcn/ui
 - **🚀 Proxy HLS Inteligente:** Solución CORS integrada para streams HLS
+- **🌐 Diseño Responsivo:** Optimizado para todos los dispositivos
 
 ## 🛠️ Tecnologías Utilizadas
 
@@ -19,19 +23,24 @@ Una aplicación web moderna que proporciona acceso en tiempo real a las condicio
 - **TypeScript** - Tipado estático para JavaScript
 - **Tailwind CSS** - Framework CSS utility-first
 - **shadcn/ui** - Componentes de UI modernos y accesibles
+- **Lucide React** - Iconos modernos y consistentes
 
-### Streaming & Multimedia
-- **HLS.js** - Biblioteca para reproducción de streams HLS en navegadores
+### Progressive Web App (PWA)
+- **Web App Manifest** - Configuración de instalación
+- **Service Worker** - Caching y funcionalidades offline
+- **HLS.js** - Biblioteca para reproducción de streams HLS
 - **HTTP Live Streaming (HLS)** - Protocolo de streaming adaptativo
 
-### Autenticación & Backend
-- **Firebase Authentication** - Sistema de autenticación seguro
-- **Next.js API Routes** - Endpoints del servidor para proxy HLS
+### Backend & Base de Datos
+- **MongoDB Atlas** - Base de datos en la nube
+- **Mongoose** - ODM para MongoDB
+- **bcryptjs** - Hashing de contraseñas
+- **Next.js API Routes** - Endpoints del servidor
 
 ### Herramientas de Desarrollo
 - **ESLint** - Linting de código
 - **PostCSS** - Procesamiento de CSS
-- **Vercel** - Plataforma de despliegue (configurada)
+- **Vercel** - Plataforma de despliegue
 
 ## 🚀 Instalación y Configuración
 
@@ -39,7 +48,7 @@ Una aplicación web moderna que proporciona acceso en tiempo real a las condicio
 
 - **Node.js** (versión 18 o superior)
 - **npm** o **yarn** como gestor de paquetes
-- **Cuenta de Firebase** para autenticación
+- **Cuenta de MongoDB Atlas** para la base de datos
 
 ### Pasos de Instalación
 
@@ -60,27 +69,26 @@ Una aplicación web moderna que proporciona acceso en tiempo real a las condicio
    
    Crea un archivo `.env.local` en la raíz del proyecto:
    ```env
-   # Firebase Configuration
-   NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
-   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-   NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
-   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
-   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-   NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+   # MongoDB Configuration
+   MONGODB_URI=your_mongodb_atlas_connection_string
 
    # HLS Stream Configuration (opcional)
    NEXT_PUBLIC_HLS_STREAM_URL=http://your-hls-server.com/hls
 
    # Development Configuration
    NEXT_PUBLIC_APP_URL=http://localhost:9002
+
+   # Admin Configuration
+   ADMIN_EMAIL=josephquesada92@gmail.com
+   ADMIN_PASSWORD=surfoQ2194
    ```
 
-4. **Configurar Firebase**
+4. **Configurar MongoDB Atlas**
    
-   - Ve a [Firebase Console](https://console.firebase.google.com/)
-   - Crea un nuevo proyecto o usa uno existente
-   - Habilita Authentication con Email/Password
-   - Copia las credenciales de configuración a tu `.env.local`
+   - Ve a [MongoDB Atlas](https://cloud.mongodb.com/)
+   - Crea un nuevo cluster
+   - Obtén la cadena de conexión
+   - Configura las variables de entorno
 
 5. **Ejecutar en desarrollo**
    ```bash
@@ -100,27 +108,58 @@ SurfCam/
 ├── src/
 │   ├── app/                    # Next.js App Router
 │   │   ├── api/               # API Routes
+│   │   │   ├── admin/         # Endpoints de administración
+│   │   │   ├── auth/          # Autenticación y registro
 │   │   │   └── hls-proxy/     # Proxy HLS para CORS
+│   │   ├── admin/             # Panel de administración
+│   │   ├── contacto/          # Página de planes premium
+│   │   ├── hospedaje/         # Página de hospedaje
+│   │   ├── restaurantes/      # Página de restaurantes
+│   │   ├── surf-lessons/      # Página de clases de surf
 │   │   ├── globals.css        # Estilos globales
 │   │   ├── layout.tsx         # Layout principal
 │   │   └── page.tsx           # Página principal
 │   ├── components/            # Componentes React
 │   │   ├── ui/               # Componentes shadcn/ui
-│   │   ├── AppHeader.tsx     # Header de la aplicación
+│   │   ├── AppHeader.tsx     # Header principal
+│   │   ├── HospedajeHeader.tsx # Header para hospedaje
+│   │   ├── SimpleHeader.tsx  # Header simple
 │   │   ├── HlsPlayer.tsx     # Reproductor HLS
 │   │   ├── Login.tsx         # Componente de login
-│   │   └── SurfCam.tsx       # Componente principal
+│   │   ├── SurfCam.tsx       # Componente principal
+│   │   ├── InstallPWAButton.tsx # Botón de instalación PWA
+│   │   └── PWAProvider.tsx   # Proveedor PWA
 │   ├── context/              # Contextos de React
 │   │   └── AuthContext.tsx   # Contexto de autenticación
 │   ├── hooks/                # Custom hooks
-│   │   ├── useAuth.ts        # Hook de autenticación
-│   │   └── use-mobile.tsx    # Hook para detección móvil
-│   └── lib/                  # Utilidades
-│       └── utils.ts          # Funciones utilitarias
+│   │   └── usePWA.ts         # Hook para funcionalidades PWA
+│   ├── lib/                  # Utilidades
+│   │   └── mongodb.ts        # Conexión a MongoDB
+│   └── models/               # Modelos de MongoDB
+│       ├── User.ts           # Modelo de usuario
+│       ├── Admin.ts          # Modelo de administrador
+│       └── Metrics.ts        # Modelo de métricas
 ├── public/                   # Archivos estáticos
-├── docs/                     # Documentación adicional
+│   ├── manifest.json         # Web App Manifest
+│   ├── sw.js                 # Service Worker
+│   ├── seataya.png           # Logo de Seataya
+│   └── wave-*.png            # Iconos de la aplicación
 └── package.json             # Dependencias y scripts
 ```
+
+## 📱 Progressive Web App (PWA)
+
+### Características PWA
+- **Instalación nativa** en dispositivos móviles y de escritorio
+- **Funcionalidad offline** con Service Worker
+- **Iconos adaptativos** para diferentes tamaños
+- **Splash screen** personalizado
+- **Actualizaciones automáticas**
+
+### Instalación
+- **Chrome/Edge:** Toca el ícono de instalación en la barra de direcciones
+- **Safari:** Toca el botón compartir y selecciona "Añadir a pantalla de inicio"
+- **Android:** Aparecerá un banner automático para instalar
 
 ## 🔧 Configuración del Proxy HLS
 
@@ -137,32 +176,54 @@ La aplicación incluye un proxy inteligente para manejar streams HLS que resuelv
 GET /api/hls-proxy/[path]
 ```
 
-### Ejemplo de Uso
-```javascript
-// En lugar de acceder directamente a:
-// http://hls-server.com/hls/stream.m3u8
-
-// Usar el proxy:
-// http://localhost:9002/api/hls-proxy/stream.m3u8
-```
-
 ## 🎯 Funcionalidades Principales
 
 ### Sistema de Autenticación
-- **Login/Logout** con Firebase Authentication
+- **Login/Logout** con base de datos MongoDB
 - **Diferentes niveles de acceso** (Gratuito/Premium)
 - **Persistencia de sesión** entre recargas
+- **Tracking de actividad** y métricas de usuario
 
 ### Sistema de Prueba Gratuita
 - **60 segundos de acceso** para usuarios gratuitos
 - **Contador visual** del tiempo restante
 - **Pantalla de bloqueo** al terminar el tiempo
+- **Opciones de upgrade** a premium
+
+### Panel de Administración (`/admin`)
+- **Métricas en tiempo real** (usuarios activos, gratuitos, premium)
+- **Gestión de usuarios** (activar/desactivar, cambiar tipo)
+- **Análisis detallado** (sesiones, dispositivos, actividad)
+- **Acceso restringido** solo para administradores
+
+### Páginas Informativas
+- **Hospedaje** (`/hospedaje`): Seataya Luxury Villas y Leidymar Apartments
+- **Clases de Surf** (`/surf-lessons`): Información de instructores locales
+- **Restaurantes** (`/restaurantes`): Recomendaciones gastronómicas
+- **Contacto** (`/contacto`): Planes premium y servicios de desarrollo
 
 ### Reproductor HLS
 - **Reproducción automática** al cargar
 - **Controles nativos** del navegador
 - **Manejo de errores** y recuperación automática
 - **Soporte para Safari** (HLS nativo) y otros navegadores (HLS.js)
+- **Prevención de reproducción** después del tiempo gratuito
+
+## 📊 Análisis de Usuarios
+
+### Métricas Recolectadas
+- **Conteo de logins** y frecuencia de uso
+- **Tiempo de sesión** promedio y total
+- **Dispositivos y navegadores** utilizados
+- **Actividad por hora y día**
+- **Historial de sesiones** detallado
+
+### API Endpoints
+- `POST /api/auth/register` - Registro y tracking de login
+- `POST /api/auth/logout` - Tracking de logout
+- `POST /api/auth/activity` - Tracking de actividad
+- `GET /api/admin/users` - Lista de usuarios
+- `GET /api/admin/metrics` - Métricas en tiempo real
 
 ## 🚀 Despliegue
 
@@ -171,25 +232,35 @@ GET /api/hls-proxy/[path]
 2. Configura las variables de entorno en el dashboard de Vercel
 3. Despliega automáticamente en cada push
 
-### Otros Proveedores
-La aplicación es compatible con cualquier proveedor que soporte Next.js:
-- Netlify
-- Railway
-- DigitalOcean App Platform
-- AWS Amplify
+### Variables de Entorno para Producción
+```env
+MONGODB_URI=your_mongodb_atlas_connection_string
+NEXT_PUBLIC_APP_URL=https://your-domain.com
+ADMIN_EMAIL=josephquesada92@gmail.com
+ADMIN_PASSWORD=your_secure_password
+```
 
 ## 🔒 Variables de Entorno
 
 | Variable | Descripción | Requerida |
 |----------|-------------|-----------|
-| `NEXT_PUBLIC_FIREBASE_API_KEY` | Clave API de Firebase | ✅ |
-| `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` | Dominio de autenticación | ✅ |
-| `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | ID del proyecto Firebase | ✅ |
-| `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` | Bucket de almacenamiento | ✅ |
-| `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | ID del remitente | ✅ |
-| `NEXT_PUBLIC_FIREBASE_APP_ID` | ID de la aplicación | ✅ |
+| `MONGODB_URI` | Cadena de conexión de MongoDB Atlas | ✅ |
 | `NEXT_PUBLIC_HLS_STREAM_URL` | URL del servidor HLS | ❌ |
 | `NEXT_PUBLIC_APP_URL` | URL de la aplicación | ❌ |
+| `ADMIN_EMAIL` | Email del administrador | ✅ |
+| `ADMIN_PASSWORD` | Contraseña del administrador | ✅ |
+
+## 📞 Contacto y Soporte
+
+### Información de Contacto
+- **Email:** josephquesada92@gmail.com
+- **WhatsApp:** +50683161976
+- **Sitio Web:** https://doc-manager-front.vercel.app
+
+### Planes Premium
+- **Individual:** $5/mes (SINPE)
+- **Empresarial:** Contacto directo
+- **Servicios de Desarrollo:** Sitios web y aplicaciones
 
 ## 🤝 Contribución
 
@@ -206,17 +277,11 @@ Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más det
 ## 🙏 Agradecimientos
 
 - **Seataya Luxury Villas** - Por proporcionar la increíble vista a las olas
+- **Leidymar Apartments** - Por el hospedaje de calidad
 - **shadcn/ui** - Por los componentes de UI de alta calidad
 - **HLS.js** - Por la biblioteca de streaming HLS
-- **Firebase** - Por el sistema de autenticación robusto
-
-## 📞 Soporte
-
-Si tienes preguntas o necesitas ayuda:
-- Abre un issue en GitHub
-- Contacta al equipo de desarrollo
-- Revisa la documentación en `/docs`
+- **MongoDB Atlas** - Por la base de datos en la nube
 
 ---
 
-**¡Disfruta surfeando! 🏄‍♂️🌊**
+**¡Disfruta surfeando en Santa Teresa! 🏄‍♂️🌊**
