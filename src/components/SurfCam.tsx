@@ -7,13 +7,26 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import HlsPlayer from "./HlsPlayer";
+import { usePWA } from "@/hooks/usePWA";
 
 const FREE_TIER_DURATION_SECONDS = 60;
 
 export default function SurfCam() {
   const { user, logout } = useAuth();
+  const { isInstallable, isInstalled, installApp } = usePWA();
   const [timeLeft, setTimeLeft] = useState(FREE_TIER_DURATION_SECONDS);
   const [isTimeExpired, setIsTimeExpired] = useState(false);
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
+
+  // Show install prompt after 3 seconds if not installed
+  useEffect(() => {
+    if (!isInstalled) {
+      const timer = setTimeout(() => {
+        setShowInstallPrompt(true);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [isInstalled]);
 
   useEffect(() => {
     if (user?.accessType === "free") {
@@ -126,6 +139,15 @@ export default function SurfCam() {
     }
   }, [isTimeExpired, user?.accessType]);
 
+  const handleInstall = async () => {
+    if (isInstallable) {
+      await installApp();
+    } else {
+      // Show manual install instructions
+      setShowInstallPrompt(true);
+    }
+  };
+
   // Ya no redirigimos automáticamente, dejamos que el usuario elija
 
   return (
@@ -133,6 +155,35 @@ export default function SurfCam() {
       <AppHeader />
       <main className="flex-1 p-4 md:p-8">
         <div className="container mx-auto">
+          {/* Install PWA Banner */}
+          {showInstallPrompt && !isInstalled && (
+            <div className="mb-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-lg shadow-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-bold text-lg">📱 Instalar Santa Teresa Surf Cam</h3>
+                  <p className="text-sm opacity-90">Disfruta de las olas sin interrupciones</p>
+                </div>
+                <div className="flex gap-2">
+                  {isInstallable ? (
+                    <Button 
+                      onClick={handleInstall}
+                      className="bg-white text-blue-600 hover:bg-gray-100"
+                    >
+                      Instalar
+                    </Button>
+                  ) : (
+                    <Button 
+                      onClick={() => setShowInstallPrompt(false)}
+                      className="bg-white text-blue-600 hover:bg-gray-100"
+                    >
+                      Cerrar
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="flex-grow w-full relative">
             <div className="aspect-video w-full relative rounded-xl overflow-hidden shadow-2xl shadow-primary/20">
               <HlsPlayer src="/api/hls-proxy/surfcam.m3u8" isPaused={isTimeExpired} />
@@ -152,34 +203,34 @@ export default function SurfCam() {
                       </Link>
                     </div>
                   )}
-                                     {isTimeExpired && (
-                     <div className="fixed inset-0 bg-background/95 backdrop-blur-lg flex flex-col items-center justify-center z-50 p-6 text-center">
-                       <div className="bg-red-100 border-2 border-red-400 rounded-xl p-8 max-w-md shadow-2xl">
-                         <div className="text-6xl mb-4">⏰</div>
-                         <h2 className="text-3xl font-bold text-red-800 mb-4">¡Tiempo Agotado!</h2>
-                         <p className="text-red-700 mb-6 text-lg">
-                           Tu minuto de prueba gratuita ha terminado. El video se ha detenido completamente.
-                         </p>
-                         <div className="space-y-4">
-                           <Link href="/contacto">
-                             <Button className="w-full bg-primary hover:bg-primary/90 text-white text-lg py-3">
-                               💎 ¡Actualizar a Premium por Solo $5/mes!
-                             </Button>
-                           </Link>
-                           <Button 
-                             variant="outline" 
-                             onClick={logout}
-                             className="w-full text-lg py-3"
-                           >
-                             🏠 Volver al Inicio
-                           </Button>
-                         </div>
-                         <p className="text-sm text-red-600 mt-4 font-medium">
-                           ¡No más interrupciones con Premium!
-                         </p>
-                       </div>
-                     </div>
-                   )}
+                                      {isTimeExpired && (
+                      <div className="fixed inset-0 bg-background/95 backdrop-blur-lg flex flex-col items-center justify-center z-50 p-6 text-center">
+                        <div className="bg-red-100 border-2 border-red-400 rounded-xl p-8 max-w-md shadow-2xl">
+                          <div className="text-6xl mb-4">⏰</div>
+                          <h2 className="text-3xl font-bold text-red-800 mb-4">¡Tiempo Agotado!</h2>
+                          <p className="text-red-700 mb-6 text-lg">
+                            Tu minuto de prueba gratuita ha terminado. El video se ha detenido completamente.
+                          </p>
+                          <div className="space-y-4">
+                            <Link href="/contacto">
+                              <Button className="w-full bg-primary hover:bg-primary/90 text-white text-lg py-3">
+                                💎 ¡Actualizar a Premium por Solo $5/mes!
+                              </Button>
+                            </Link>
+                            <Button 
+                              variant="outline" 
+                              onClick={logout}
+                              className="w-full text-lg py-3"
+                            >
+                              🏠 Volver al Inicio
+                            </Button>
+                          </div>
+                          <p className="text-sm text-red-600 mt-4 font-medium">
+                            ¡No más interrupciones con Premium!
+                          </p>
+                        </div>
+                      </div>
+                    )}
                 </>
               )}
             </div>
