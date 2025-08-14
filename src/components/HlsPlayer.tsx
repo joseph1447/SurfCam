@@ -27,9 +27,30 @@ export default function HlsPlayer({ src, isPaused = false }: HlsPlayerProps) {
             hls.attachMedia(video);
             
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                video.play().catch(error => {
-                    console.error("Error trying to play video:", error);
-                });
+                // Intentar reproducir automáticamente cuando el manifiesto esté listo
+                if (!isPaused) {
+                    // Intentar reproducir inmediatamente
+                    video.play().catch(error => {
+                        if (error.name !== 'AbortError') {
+                            console.error("Error trying to play video:", error);
+                        }
+                    });
+                    
+                    // Si falla, intentar de nuevo cuando el video esté más listo
+                    if (video.readyState < 2) {
+                        const playWhenReady = () => {
+                            if (video.readyState >= 2 && !isPaused) {
+                                video.play().catch(error => {
+                                    if (error.name !== 'AbortError') {
+                                        console.error("Error trying to play video:", error);
+                                    }
+                                });
+                                video.removeEventListener('canplay', playWhenReady);
+                            }
+                        };
+                        video.addEventListener('canplay', playWhenReady);
+                    }
+                }
             });
             
             hls.on(Hls.Events.ERROR, (event, data) => {
@@ -51,9 +72,29 @@ export default function HlsPlayer({ src, isPaused = false }: HlsPlayerProps) {
             // For Safari, which has native HLS support
             video.src = src;
             video.addEventListener('loadedmetadata', () => {
-                video.play().catch(error => {
-                    console.error("Error trying to play video:", error);
-                });
+                // Intentar reproducir automáticamente cuando los metadatos estén cargados
+                if (!isPaused) {
+                    video.play().catch(error => {
+                        if (error.name !== 'AbortError') {
+                            console.error("Error trying to play video:", error);
+                        }
+                    });
+                    
+                    // Si falla, intentar de nuevo cuando el video esté más listo
+                    if (video.readyState < 2) {
+                        const playWhenReady = () => {
+                            if (video.readyState >= 2 && !isPaused) {
+                                video.play().catch(error => {
+                                    if (error.name !== 'AbortError') {
+                                        console.error("Error trying to play video:", error);
+                                    }
+                                });
+                                video.removeEventListener('canplay', playWhenReady);
+                            }
+                        };
+                        video.addEventListener('canplay', playWhenReady);
+                    }
+                }
             });
         }
 
@@ -62,7 +103,26 @@ export default function HlsPlayer({ src, isPaused = false }: HlsPlayerProps) {
                 hls.destroy();
             }
         };
-    }, [src]);
+    }, [src, isPaused]);
+
+    // Efecto adicional para asegurar autoplay inicial
+    useEffect(() => {
+        const video = videoRef.current;
+        if (!video || isPaused) return;
+
+        // Intentar reproducir después de un breve delay para asegurar que todo esté listo
+        const initialPlayAttempt = setTimeout(() => {
+            if (!isPaused && video.readyState >= 1) { // HAVE_METADATA
+                video.play().catch(error => {
+                    if (error.name !== 'AbortError') {
+                        console.error("Error in initial play attempt:", error);
+                    }
+                });
+            }
+        }, 500);
+
+        return () => clearTimeout(initialPlayAttempt);
+    }, [src, isPaused]);
 
     // Efecto para pausar/reanudar el video
     useEffect(() => {
@@ -72,9 +132,20 @@ export default function HlsPlayer({ src, isPaused = false }: HlsPlayerProps) {
         if (isPaused) {
             video.pause();
         } else {
-            video.play().catch(error => {
-                console.error("Error trying to play video:", error);
-            });
+            // Intentar reproducir cuando se reanude
+            const attemptPlay = () => {
+                if (video.readyState >= 2) {
+                    video.play().catch(error => {
+                        if (error.name !== 'AbortError') {
+                            console.error("Error trying to play video:", error);
+                        }
+                    });
+                } else {
+                    // Si no está listo, esperar y intentar de nuevo
+                    setTimeout(attemptPlay, 100);
+                }
+            };
+            attemptPlay();
         }
     }, [isPaused]);
 
@@ -93,6 +164,7 @@ export default function HlsPlayer({ src, isPaused = false }: HlsPlayerProps) {
             autoPlay 
             muted 
             playsInline
+            preload="auto"
             className="w-full h-full"
         />
     );

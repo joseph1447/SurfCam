@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import AppHeader from "@/components/AppHeader";
+import SimpleHeader from "@/components/SimpleHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -42,7 +42,7 @@ export default function ContactoPage() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <AppHeader />
+      <SimpleHeader />
       <main className="flex-1 p-4 md:p-8">
         <div className="container mx-auto max-w-4xl">
           {/* Header */}

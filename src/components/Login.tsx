@@ -13,8 +13,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
-import { Waves } from "lucide-react";
+import { Waves, Contact } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import Link from "next/link";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -76,10 +77,18 @@ export default function Login() {
             </Button>
           </form>
         </CardContent>
-        <CardFooter>
+        <CardFooter className="flex flex-col space-y-3">
             <p className="text-xs text-muted-foreground text-center w-full">
                 La contraseña de acceso gratuito es 'santateresa2025'.
             </p>
+            <div className="w-full pt-2 border-t border-border/50">
+                <Link href="/contacto" className="w-full">
+                    <Button variant="outline" className="w-full">
+                        <Contact className="w-4 h-4 mr-2" />
+                        Ver Planes Premium
+                    </Button>
+                </Link>
+            </div>
         </CardFooter>
       </Card>
     </div>

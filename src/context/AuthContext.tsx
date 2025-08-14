@@ -2,6 +2,7 @@
 
 import type { ReactNode, Dispatch, SetStateAction } from 'react';
 import { createContext, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 
 type User = {
   email: string;
@@ -20,6 +21,7 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const router = useRouter();
 
   const login = useCallback(
     async (email: string, pass: string) => {
@@ -47,7 +49,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => {
     // In a real app, you would also sign out from Firebase here.
     setUser(null);
-  }, []);
+    // Redirigir al login después del logout
+    router.push('/');
+  }, [router]);
 
   return (
     <AuthContext.Provider value={{ user, setUser, login, loginWithGoogle, logout }}>
