@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
 import { Toaster } from "@/components/ui/toaster";
@@ -8,8 +8,6 @@ export const metadata: Metadata = {
   title: 'Santa Teresa Surf Cam',
   description: 'Transmisión en vivo de las olas de Santa Teresa, Costa Rica. Disfruta de las mejores olas en tiempo real.',
   manifest: '/manifest.json',
-  themeColor: '#3b82f6',
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -18,15 +16,24 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: '/wave-16.png', sizes: '16x16', type: 'image/png' },
-      { url: '/wave-16.png', sizes: '32x32', type: 'image/png' },
-      { url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
-      { url: '/icons/icon-512x512.png', sizes: '512x512', type: 'image/png' },
+      { url: '/wave-32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/wave-128.png', sizes: '128x128', type: 'image/png' },
+      { url: '/wave-128.png', sizes: '192x192', type: 'image/png' },
+      { url: '/wave-128.png', sizes: '512x512', type: 'image/png' },
     ],
     apple: [
       { url: '/wave-16.png', sizes: '16x16', type: 'image/png' },
-      { url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/wave-128.png', sizes: '192x192', type: 'image/png' },
     ],
   },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: '#3b82f6',
 };
 
 export default function RootLayout({
@@ -42,7 +49,7 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
         <link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap" rel="stylesheet" />
         <link rel="icon" type="image/png" sizes="16x16" href="/wave-16.png" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/wave-16.png" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/wave-32.png" />
         <link rel="shortcut icon" href="/wave-16.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />

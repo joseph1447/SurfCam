@@ -114,7 +114,7 @@ export default function HlsPlayer({ src, isPaused = false }: HlsPlayerProps) {
                 window.hlsInstance = null;
             }
         };
-    }, [src, isPaused]);
+    }, [src]);
 
     // Efecto adicional para asegurar autoplay inicial
     useEffect(() => {

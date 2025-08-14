@@ -2,13 +2,13 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, Check, Info } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { usePWA } from '@/hooks/usePWA';
 
 export default function InstallPWAButton() {
-  const { isInstallable, isInstalled, installApp, debugInfo } = usePWA();
+  const { isInstallable, isInstalled, installApp } = usePWA();
   const [isInstalling, setIsInstalling] = useState(false);
-  const [showDebug, setShowDebug] = useState(false);
+
 
   const handleInstall = async () => {
     setIsInstalling(true);
@@ -26,28 +26,7 @@ export default function InstallPWAButton() {
 
   return (
     <>
-               {/* Debug info for development only */}
-         {process.env.NODE_ENV === 'development' && (
-           <div className="fixed top-4 right-4 z-50 bg-black/80 text-white p-2 rounded text-xs max-w-xs">
-             <div className="flex items-center gap-2 mb-1">
-               <Info className="h-3 w-3" />
-               <span className="font-bold">PWA Debug:</span>
-               <button 
-                 onClick={() => setShowDebug(!showDebug)}
-                 className="text-blue-300 hover:text-blue-100"
-               >
-                 {showDebug ? 'Hide' : 'Show'}
-               </button>
-             </div>
-             {showDebug && (
-               <div className="text-xs">
-                 <div>Installable: {isInstallable ? 'Yes' : 'No'}</div>
-                 <div>Installed: {isInstalled ? 'Yes' : 'No'}</div>
-                 <div>Debug: {debugInfo}</div>
-               </div>
-             )}
-           </div>
-         )}
+               
 
       {/* Install button - show if installable and not installed */}
       {isInstallable && !isInstalled && (

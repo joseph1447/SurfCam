@@ -15,7 +15,7 @@ export function usePWA() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<string>('');
+
 
   useEffect(() => {
     // Check if app is already installed
@@ -25,36 +25,29 @@ export function usePWA() {
         const isInApp = window.navigator.standalone === true;
         const isInstalled = isStandalone || isInApp;
         
-        console.log('PWA Installation Check:', {
-          isStandalone,
-          isInApp,
-          isInstalled,
-          userAgent: navigator.userAgent
-        });
+
         
         setIsInstalled(isInstalled);
-        setDebugInfo(`Standalone: ${isStandalone}, InApp: ${isInApp}, Installed: ${isInstalled}`);
+  
       }
     };
 
     checkInstallation();
 
     const handleBeforeInstallPrompt = (e: Event) => {
-      console.log('beforeinstallprompt event fired');
       // Prevent the mini-infobar from appearing on mobile
       e.preventDefault();
       // Stash the event so it can be triggered later
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       setIsInstallable(true);
-      setDebugInfo('Install prompt available');
+      
     };
 
     const handleAppInstalled = () => {
-      console.log('PWA was installed');
       setIsInstalled(true);
       setIsInstallable(false);
       setDeferredPrompt(null);
-      setDebugInfo('App installed');
+      
     };
 
     // Check for installation status periodically
@@ -81,13 +74,10 @@ export function usePWA() {
 
   const installApp = async () => {
     if (!deferredPrompt) {
-      console.log('No install prompt available');
-      setDebugInfo('No install prompt available');
       return false;
     }
 
     try {
-      console.log('Showing install prompt...');
       // Show the install prompt
       deferredPrompt.prompt();
       
@@ -95,20 +85,17 @@ export function usePWA() {
       const { outcome } = await deferredPrompt.userChoice;
       
       if (outcome === 'accepted') {
-        console.log('User accepted the install prompt');
         setIsInstalled(true);
         setIsInstallable(false);
         setDeferredPrompt(null);
-        setDebugInfo('Install accepted');
+
         return true;
       } else {
-        console.log('User dismissed the install prompt');
-        setDebugInfo('Install dismissed');
         return false;
       }
     } catch (error) {
       console.error('Error installing PWA:', error);
-      setDebugInfo(`Install error: ${error}`);
+      
       return false;
     }
   };
@@ -117,16 +104,11 @@ export function usePWA() {
     if ('serviceWorker' in navigator) {
       try {
         const registration = await navigator.serviceWorker.register('/sw.js');
-        console.log('SW registered: ', registration);
-        setDebugInfo('Service Worker registered');
         return registration;
       } catch (registrationError) {
-        console.log('SW registration failed: ', registrationError);
-        setDebugInfo(`SW registration failed: ${registrationError}`);
         return null;
       }
     } else {
-      setDebugInfo('Service Worker not supported');
       return null;
     }
   };
@@ -136,6 +118,6 @@ export function usePWA() {
     isInstalled,
     installApp,
     registerServiceWorker,
-    debugInfo,
+
   };
 }

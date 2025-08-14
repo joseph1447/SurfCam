@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import AppHeader from "@/components/AppHeader";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import HlsPlayer from "./HlsPlayer";
@@ -17,18 +17,21 @@ export default function SurfCam() {
   const [timeLeft, setTimeLeft] = useState(FREE_TIER_DURATION_SECONDS);
   const [isTimeExpired, setIsTimeExpired] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const hasStartedTimerRef = useRef(false);
 
 
 
   useEffect(() => {
+    // Limpiar timer anterior si existe
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+
     if (user?.accessType === "free") {
-      // Solo iniciar el timer si no se ha iniciado antes para este usuario
-      if (hasStartedTimerRef.current) {
-        return;
-      }
-      
+      // Reiniciar el timer para usuarios gratuitos
       hasStartedTimerRef.current = true;
       setTimeLeft(FREE_TIER_DURATION_SECONDS);
       setIsTimeExpired(false);
@@ -64,22 +67,20 @@ export default function SurfCam() {
           return prevTime - 1;
         });
       }, 1000);
-
-      return () => {
-        if (timerRef.current) {
-          clearInterval(timerRef.current);
-          timerRef.current = null;
-        }
-      };
     } else {
       // Si no es usuario gratuito, resetear las referencias
       hasStartedTimerRef.current = false;
+      setTimeLeft(FREE_TIER_DURATION_SECONDS);
+      setIsTimeExpired(false);
+    }
+
+    return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
-    }
-  }, [user?.accessType, user?.email]); // Solo depender del tipo de acceso y email, no del objeto user completo
+    };
+  }, [user?.accessType, user?.email]);
 
   // Efecto para limpiar referencias cuando el usuario hace logout
   useEffect(() => {
@@ -172,18 +173,18 @@ export default function SurfCam() {
       setIsInstalling(true);
       try {
         const success = await installApp();
-        if (success) {
-          console.log('App installed successfully');
-        } else {
-          console.log('Installation was dismissed');
-        }
+              if (success) {
+        // App installed successfully
+      } else {
+        // Installation was dismissed
+      }
       } catch (error) {
         console.error('Installation failed:', error);
       } finally {
         setIsInstalling(false);
       }
     } else {
-      console.log('App is not installable');
+      // App is not installable
     }
   };
 
@@ -194,16 +195,16 @@ export default function SurfCam() {
       <AppHeader />
       <main className="flex-1 p-4 md:p-8">
         <div className="container mx-auto">
-          {/* Install PWA Banner */}
-          {isInstallable && !isInstalled && (
-            <div className="mb-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-lg shadow-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-bold text-lg">📱 Instalar Santa Teresa Surf Cam</h3>
-                  <p className="text-sm opacity-90">Disfruta de las olas sin interrupciones</p>
-                </div>
-                <div className="flex gap-2">
-                                     <Button 
+                     {/* Install PWA Banner */}
+           {isInstallable && !isInstalled && (
+             <div className="mb-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-lg shadow-lg">
+               <div className="flex items-center justify-between">
+                 <div>
+                   <h3 className="font-bold text-lg">📱 Instalar Santa Teresa Surf Cam</h3>
+                   <p className="text-sm opacity-90">Disfruta de las olas sin interrupciones</p>
+                 </div>
+                 <div className="flex gap-2">
+                   <Button 
                      onClick={handleInstall}
                      disabled={isInstalling}
                      className="bg-white text-blue-600 hover:bg-gray-100"
@@ -217,10 +218,46 @@ export default function SurfCam() {
                        'Instalar'
                      )}
                    </Button>
-                </div>
-              </div>
-            </div>
-          )}
+                   <Button 
+                     variant="outline"
+                     onClick={() => setShowInstructions(true)}
+                     className="border-white text-white hover:bg-white hover:text-blue-600"
+                   >
+                     ¿Cómo?
+                   </Button>
+                 </div>
+               </div>
+             </div>
+           )}
+
+           {/* Instructions Modal */}
+           {showInstructions && (
+             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+               <div className="bg-white rounded-lg p-6 max-w-md w-full">
+                 <h3 className="text-lg font-bold mb-4">📱 Cómo instalar la app</h3>
+                 <div className="space-y-3 text-sm">
+                   <div className="flex items-start gap-3">
+                     <span className="bg-blue-100 text-blue-600 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">1</span>
+                     <p><strong>Chrome/Edge:</strong> Toca el ícono de instalación en la barra de direcciones</p>
+                   </div>
+                   <div className="flex items-start gap-3">
+                     <span className="bg-blue-100 text-blue-600 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">2</span>
+                     <p><strong>Safari:</strong> Toca el botón compartir y selecciona "Añadir a pantalla de inicio"</p>
+                   </div>
+                   <div className="flex items-start gap-3">
+                     <span className="bg-blue-100 text-blue-600 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">3</span>
+                     <p><strong>Android:</strong> Aparecerá un banner automático, tócalo para instalar</p>
+                   </div>
+                 </div>
+                 <Button 
+                   onClick={() => setShowInstructions(false)}
+                   className="w-full mt-4"
+                 >
+                   Entendido
+                 </Button>
+               </div>
+             </div>
+           )}
 
           <div className="flex-grow w-full relative">
             <div className="aspect-video w-full relative rounded-xl overflow-hidden shadow-2xl shadow-primary/20">

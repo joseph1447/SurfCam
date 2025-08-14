@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode, Dispatch, SetStateAction } from 'react';
-import { createContext, useState, useCallback } from 'react';
+import { createContext, useState, useCallback, useContext } from 'react';
 import { useRouter } from 'next/navigation';
 
 type User = {
@@ -19,21 +19,55 @@ interface AuthContextType {
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const router = useRouter();
 
   const login = useCallback(
     async (email: string, pass: string) => {
-      const freePassword = process.env.NEXT_PUBLIC_CAM_PASSWORD || '';
-      const premiumPassword = process.env.NEXT_PUBLIC_PREMIUM_PASSWORD || '';
+      try {
+        // Determinar el tipo de acceso basado en la contraseña
+        let accessType = "free";
+        if (pass === "surfoQ2194") {
+          accessType = "premium";
+        } else if (pass !== "santateresa2025") {
+          throw new Error("La contraseña es incorrecta. Inténtalo de nuevo.");
+        }
 
-      if (pass === freePassword) {
-        setUser({ email, accessType: 'free' });
-      } else if (pass === premiumPassword) {
-        setUser({ email, accessType: 'premium' });
-      } else {
-        throw new Error('La contraseña es incorrecta. Inténtalo de nuevo.');
+        // Registrar el usuario en la base de datos
+        const response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email,
+            password: accessType === "premium" ? pass : undefined,
+            accessType
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          setUser({
+            email,
+            accessType: accessType as "free" | "premium",
+          });
+        } else {
+          throw new Error(data.error || "Error al iniciar sesión");
+        }
+      } catch (error) {
+        console.error('Login error:', error);
+        throw error;
       }
     },
     []
@@ -46,12 +80,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser({ email: 'usuario@google.com', accessType: 'premium' });
   }, []);
 
-  const logout = useCallback(() => {
-    // In a real app, you would also sign out from Firebase here.
-    setUser(null);
-    // Redirigir al login después del logout
-    router.push('/');
-  }, [router]);
+  const logout = useCallback(async () => {
+    try {
+      // Registrar el logout en la base de datos si hay un usuario activo
+      if (user?.email) {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: user.email
+          }),
+        });
+      }
+    } catch (error) {
+      console.error('Logout tracking error:', error);
+    } finally {
+      // In a real app, you would also sign out from Firebase here.
+      setUser(null);
+      // Redirigir al login después del logout
+      router.push('/');
+    }
+  }, [router, user?.email]);
 
   return (
     <AuthContext.Provider value={{ user, setUser, login, loginWithGoogle, logout }}>

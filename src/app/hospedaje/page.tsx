@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import SimpleHeader from "@/components/SimpleHeader";
+import HospedajeHeader from "@/components/HospedajeHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ExternalLink, Star, MapPin, Wifi, Car, Loader2 } from "lucide-react";
+import { ExternalLink, Star, MapPin, Wifi, Car, Loader2, Crown } from "lucide-react";
+import Link from "next/link";
 
 export default function Hospedaje() {
   const [seatayaLoaded, setSeatayaLoaded] = useState(false);
@@ -16,7 +17,7 @@ export default function Hospedaje() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <SimpleHeader />
+      <HospedajeHeader />
       
       <main className="container mx-auto px-4 py-8">
         {/* Hero Section */}
@@ -317,6 +318,29 @@ export default function Hospedaje() {
                   <li>• Actividades turísticas organizadas</li>
                 </ul>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* CTA Section */}
+        <Card className="mb-8 bg-gradient-to-r from-purple-600 to-blue-600 text-white">
+          <CardContent className="pt-8 pb-8">
+            <div className="text-center">
+              <div className="mx-auto w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+              </div>
+              <h3 className="text-2xl font-bold mb-2">¿Te Gustó Santa Teresa?</h3>
+              <p className="text-lg mb-6 opacity-90">
+                ¡Adquiere nuestro Plan Premium y disfruta de la transmisión en vivo de las olas sin interrupciones!
+              </p>
+              <Link href="/contacto">
+                <Button className="bg-white text-purple-600 hover:bg-gray-100 text-lg px-8 py-3">
+                  <Crown className="h-5 w-5 mr-2" />
+                  Adquirir Plan Premium - Solo $5/mes
+                </Button>
+              </Link>
             </div>
           </CardContent>
         </Card>
