@@ -18,44 +18,29 @@ export default function HlsPlayer({ src }: HlsPlayerProps) {
 
         if (Hls.isSupported()) {
             hls = new Hls({
-                debug: true,
                 enableWorker: true,
                 lowLatencyMode: true,
             });
             
-            console.log('Loading HLS source:', src);
             hls.loadSource(src);
             hls.attachMedia(video);
             
-            hls.on(Hls.Events.MANIFEST_LOADING, () => {
-                console.log('HLS: Manifest loading...');
-            });
-            
-            hls.on(Hls.Events.MANIFEST_LOADED, () => {
-                console.log('HLS: Manifest loaded successfully');
-            });
-            
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                console.log('HLS: Manifest parsed, attempting to play');
                 video.play().catch(error => {
                     console.error("Error trying to play video:", error);
                 });
             });
             
             hls.on(Hls.Events.ERROR, (event, data) => {
-                console.error('HLS Error:', data);
                 if (data.fatal) {
                     switch(data.type) {
                         case Hls.ErrorTypes.NETWORK_ERROR:
-                            console.error('Fatal network error, trying to recover...');
                             hls?.startLoad();
                             break;
                         case Hls.ErrorTypes.MEDIA_ERROR:
-                            console.error('Fatal media error, trying to recover...');
                             hls?.recoverMediaError();
                             break;
                         default:
-                            console.error('Fatal error, destroying HLS instance');
                             hls?.destroy();
                             break;
                     }

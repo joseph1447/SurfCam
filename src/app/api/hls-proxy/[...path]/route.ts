@@ -31,9 +31,6 @@ export async function GET(
     if (path.endsWith('.m3u8')) {
       // For manifest files, treat as text
       const content = await response.text();
-      
-      console.log(`Proxy: ${path} - Content-Type: ${contentType}`);
-      console.log(`Proxy: Manifest content preview:`, content.substring(0, 200));
 
       // For HLS manifests, we need to rewrite the URLs to go through our proxy
       let processedContent = content;
@@ -57,8 +54,6 @@ export async function GET(
         }
       );
       
-      console.log(`Proxy: Processed manifest content preview:`, processedContent.substring(0, 200));
-      
       return new NextResponse(processedContent, {
         status: 200,
         headers: {
@@ -70,11 +65,9 @@ export async function GET(
           'Access-Control-Expose-Headers': 'Content-Length, Content-Range',
         },
       });
-    } else {
-      // For segment files (.ts), treat as binary data
-      const arrayBuffer = await response.arrayBuffer();
-      
-      console.log(`Proxy: ${path} - Content-Type: ${contentType} - Size: ${arrayBuffer.byteLength} bytes`);
+         } else {
+       // For segment files (.ts), treat as binary data
+       const arrayBuffer = await response.arrayBuffer();
       
       return new NextResponse(arrayBuffer, {
         status: 200,
