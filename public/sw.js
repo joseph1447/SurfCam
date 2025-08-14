@@ -3,6 +3,7 @@ const urlsToCache = [
   '/',
   '/contacto',
   '/manifest.json',
+  '/wave-16.png',
   '/icons/icon-192x192.png',
   '/icons/icon-512x512.png'
 ];
