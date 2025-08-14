@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import AppHeader from "@/components/AppHeader";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,18 +16,30 @@ export default function SurfCam() {
   const { isInstallable, isInstalled, installApp } = usePWA();
   const [timeLeft, setTimeLeft] = useState(FREE_TIER_DURATION_SECONDS);
   const [isTimeExpired, setIsTimeExpired] = useState(false);
+  const [isInstalling, setIsInstalling] = useState(false);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const hasStartedTimerRef = useRef(false);
 
 
 
   useEffect(() => {
     if (user?.accessType === "free") {
+      // Solo iniciar el timer si no se ha iniciado antes para este usuario
+      if (hasStartedTimerRef.current) {
+        return;
+      }
+      
+      hasStartedTimerRef.current = true;
       setTimeLeft(FREE_TIER_DURATION_SECONDS);
       setIsTimeExpired(false);
 
-      const timer = setInterval(() => {
+      timerRef.current = setInterval(() => {
         setTimeLeft((prevTime) => {
           if (prevTime <= 1) {
-            clearInterval(timer);
+            if (timerRef.current) {
+              clearInterval(timerRef.current);
+              timerRef.current = null;
+            }
             setIsTimeExpired(true);
             
             // Forzar salida de pantalla completa inmediatamente
@@ -53,7 +65,32 @@ export default function SurfCam() {
         });
       }, 1000);
 
-      return () => clearInterval(timer);
+      return () => {
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+      };
+    } else {
+      // Si no es usuario gratuito, resetear las referencias
+      hasStartedTimerRef.current = false;
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    }
+  }, [user?.accessType, user?.email]); // Solo depender del tipo de acceso y email, no del objeto user completo
+
+  // Efecto para limpiar referencias cuando el usuario hace logout
+  useEffect(() => {
+    if (!user) {
+      hasStartedTimerRef.current = false;
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      setTimeLeft(FREE_TIER_DURATION_SECONDS);
+      setIsTimeExpired(false);
     }
   }, [user]);
 
@@ -132,7 +169,21 @@ export default function SurfCam() {
 
   const handleInstall = async () => {
     if (isInstallable) {
-      await installApp();
+      setIsInstalling(true);
+      try {
+        const success = await installApp();
+        if (success) {
+          console.log('App installed successfully');
+        } else {
+          console.log('Installation was dismissed');
+        }
+      } catch (error) {
+        console.error('Installation failed:', error);
+      } finally {
+        setIsInstalling(false);
+      }
+    } else {
+      console.log('App is not installable');
     }
   };
 
@@ -152,12 +203,20 @@ export default function SurfCam() {
                   <p className="text-sm opacity-90">Disfruta de las olas sin interrupciones</p>
                 </div>
                 <div className="flex gap-2">
-                  <Button 
-                    onClick={handleInstall}
-                    className="bg-white text-blue-600 hover:bg-gray-100"
-                  >
-                    Instalar
-                  </Button>
+                                     <Button 
+                     onClick={handleInstall}
+                     disabled={isInstalling}
+                     className="bg-white text-blue-600 hover:bg-gray-100"
+                   >
+                     {isInstalling ? (
+                       <div className="flex items-center gap-2">
+                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600" />
+                         Instalando...
+                       </div>
+                     ) : (
+                       'Instalar'
+                     )}
+                   </Button>
                 </div>
               </div>
             </div>

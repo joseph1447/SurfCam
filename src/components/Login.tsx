@@ -20,6 +20,7 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [isPremiumMode, setIsPremiumMode] = useState(false);
   const [error, setError] = useState("");
+  const [isInstalling, setIsInstalling] = useState(false);
 
   const handleGuestLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,35 +61,54 @@ export default function Login() {
 
   const handleInstall = async () => {
     if (isInstallable) {
-      await installApp();
+      setIsInstalling(true);
+      try {
+        const success = await installApp();
+        if (success) {
+          console.log('App installed successfully');
+        } else {
+          console.log('Installation was dismissed');
+        }
+      } catch (error) {
+        console.error('Installation failed:', error);
+      } finally {
+        setIsInstalling(false);
+      }
+    } else {
+      console.log('App is not installable');
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
       <div className="w-full max-w-md space-y-6">
-        {/* PWA Install Banner */}
-        {!isInstalled && (
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-lg shadow-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-bold text-lg">📱 Instalar App</h3>
-                <p className="text-sm opacity-90">Disfruta de las olas sin interrupciones</p>
-              </div>
-              <div className="flex gap-2">
-                {isInstallable && (
-                  <Button 
-                    onClick={handleInstall}
-                    className="bg-white text-blue-600 hover:bg-gray-100 text-sm"
-                  >
-                    Instalar
-                  </Button>
-                )}
-              </div>
-            </div>
-
-          </div>
-        )}
+                 {/* PWA Install Banner */}
+         {isInstallable && !isInstalled && (
+           <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-lg shadow-lg">
+             <div className="flex items-center justify-between">
+               <div>
+                 <h3 className="font-bold text-lg">📱 Instalar App</h3>
+                 <p className="text-sm opacity-90">Disfruta de las olas sin interrupciones</p>
+               </div>
+               <div className="flex gap-2">
+                 <Button 
+                   onClick={handleInstall}
+                   disabled={isInstalling}
+                   className="bg-white text-blue-600 hover:bg-gray-100 text-sm"
+                 >
+                   {isInstalling ? (
+                     <div className="flex items-center gap-2">
+                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600" />
+                       Instalando...
+                     </div>
+                   ) : (
+                     'Instalar'
+                   )}
+                 </Button>
+               </div>
+             </div>
+           </div>
+         )}
 
         <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
           <CardHeader className="text-center space-y-4">
