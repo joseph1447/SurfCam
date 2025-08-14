@@ -5,9 +5,10 @@ import Hls from 'hls.js';
 
 interface HlsPlayerProps {
     src: string;
+    isPaused?: boolean;
 }
 
-export default function HlsPlayer({ src }: HlsPlayerProps) {
+export default function HlsPlayer({ src, isPaused = false }: HlsPlayerProps) {
     const videoRef = useRef<HTMLVideoElement>(null);
 
     useEffect(() => {
@@ -62,6 +63,20 @@ export default function HlsPlayer({ src }: HlsPlayerProps) {
             }
         };
     }, [src]);
+
+    // Efecto para pausar/reanudar el video
+    useEffect(() => {
+        const video = videoRef.current;
+        if (!video) return;
+
+        if (isPaused) {
+            video.pause();
+        } else {
+            video.play().catch(error => {
+                console.error("Error trying to play video:", error);
+            });
+        }
+    }, [isPaused]);
 
     if (!src) {
         return (
