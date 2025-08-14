@@ -13,13 +13,7 @@ export default function SimpleHeader() {
           <span className="font-bold text-lg">Santa Teresa Surf Cam</span>
         </Link>
         
-        <div className="flex items-center space-x-4">
-          <Link href="/">
-            <Button variant="outline" size="sm">
-              Iniciar Sesión
-            </Button>
-          </Link>
-        </div>
+
       </div>
     </header>
   );

@@ -6,7 +6,7 @@ Una aplicación web moderna y Progressive Web App (PWA) que proporciona acceso e
 
 - **📹 Transmisión en Tiempo Real:** Visualiza streams de video en vivo desde Santa Teresa
 - **📱 Progressive Web App (PWA):** Instalable en dispositivos móviles y de escritorio
-- **🔐 Sistema de Autenticación Avanzado:** Acceso con diferentes niveles (Gratuito/Premium)
+- **🔐 Sistema de Autenticación Avanzado:** Acceso gratuito solo con email, premium con contraseña
 - **⏱️ Sistema de Prueba Gratuita:** 60 segundos de acceso para usuarios gratuitos
 - **📊 Panel de Administración:** Gestión de usuarios y métricas en tiempo real
 - **📈 Análisis de Usuarios:** Tracking completo de actividad y sesiones
@@ -78,10 +78,14 @@ Una aplicación web moderna y Progressive Web App (PWA) que proporciona acceso e
    # Development Configuration
    NEXT_PUBLIC_APP_URL=http://localhost:9002
 
-   # Admin Configuration
-   ADMIN_EMAIL=josephquesada92@gmail.com
-   ADMIN_PASSWORD=surfoQ2194
-   ```
+       # Premium Password (configurable)
+    NEXT_PUBLIC_PREMIUM_PASSWORD=your_premium_password
+    
+    # Admin credentials (configure as needed)
+    ADMIN_EMAIL=your_admin_email
+    ADMIN_PASSWORD=your_admin_password
+
+
 
 4. **Configurar MongoDB Atlas**
    
@@ -180,7 +184,9 @@ GET /api/hls-proxy/[path]
 
 ### Sistema de Autenticación
 - **Login/Logout** con base de datos MongoDB
-- **Diferentes niveles de acceso** (Gratuito/Premium)
+- **Acceso gratuito** solo requiere email
+- **Acceso premium** cualquier email + contraseña premium configurable
+- **Admin Panel** acceso restringido con credenciales específicas
 - **Persistencia de sesión** entre recargas
 - **Tracking de actividad** y métricas de usuario
 
@@ -194,7 +200,7 @@ GET /api/hls-proxy/[path]
 - **Métricas en tiempo real** (usuarios activos, gratuitos, premium)
 - **Gestión de usuarios** (activar/desactivar, cambiar tipo)
 - **Análisis detallado** (sesiones, dispositivos, actividad)
-- **Acceso restringido** solo para administradores
+- **Acceso restringido** solo para administradores autorizados
 
 ### Páginas Informativas
 - **Hospedaje** (`/hospedaje`): Seataya Luxury Villas y Leidymar Apartments
@@ -236,8 +242,9 @@ GET /api/hls-proxy/[path]
 ```env
 MONGODB_URI=your_mongodb_atlas_connection_string
 NEXT_PUBLIC_APP_URL=https://your-domain.com
-ADMIN_EMAIL=josephquesada92@gmail.com
-ADMIN_PASSWORD=your_secure_password
+ADMIN_EMAIL=your_admin_email
+ADMIN_PASSWORD=your_admin_password
+NEXT_PUBLIC_PREMIUM_PASSWORD=your_premium_password
 ```
 
 ## 🔒 Variables de Entorno
@@ -249,18 +256,19 @@ ADMIN_PASSWORD=your_secure_password
 | `NEXT_PUBLIC_APP_URL` | URL de la aplicación | ❌ |
 | `ADMIN_EMAIL` | Email del administrador | ✅ |
 | `ADMIN_PASSWORD` | Contraseña del administrador | ✅ |
+| `NEXT_PUBLIC_PREMIUM_PASSWORD` | Contraseña para acceso premium | ✅ |
 
 ## 📞 Contacto y Soporte
 
 ### Información de Contacto
-- **Email:** josephquesada92@gmail.com
-- **WhatsApp:** +50683161976
-- **Sitio Web:** https://doc-manager-front.vercel.app
+- **Email:** [Configurar en variables de entorno]
+- **WhatsApp:** [Configurar en variables de entorno]
+- **Sitio Web:** [Configurar en variables de entorno]
 
 ### Planes Premium
-- **Individual:** $5/mes (SINPE)
-- **Empresarial:** Contacto directo
-- **Servicios de Desarrollo:** Sitios web y aplicaciones
+- **Individual:** [Configurar precio y método de pago]
+- **Empresarial:** [Configurar contacto]
+- **Servicios de Desarrollo:** [Configurar servicios]
 
 ## 🤝 Contribución
 
@@ -276,8 +284,8 @@ Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más det
 
 ## 🙏 Agradecimientos
 
-- **Seataya Luxury Villas** - Por proporcionar la increíble vista a las olas
-- **Leidymar Apartments** - Por el hospedaje de calidad
+- **Proveedores de hospedaje** - Por proporcionar la increíble vista a las olas
+- **Socios comerciales** - Por el hospedaje de calidad
 - **shadcn/ui** - Por los componentes de UI de alta calidad
 - **HLS.js** - Por la biblioteca de streaming HLS
 - **MongoDB Atlas** - Por la base de datos en la nube

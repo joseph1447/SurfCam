@@ -52,10 +52,11 @@ export async function POST(request: NextRequest) {
       const currentHour = loginTime.getHours().toString();
       const currentDay = loginTime.getDay().toString();
       
-      // Actualizar contadores
+      // Actualizar contadores y accessType
       user.loginCount += 1;
       user.lastLogin = loginTime;
       user.lastActivity = loginTime;
+      user.accessType = accessType || user.accessType; // Actualizar accessType si se proporciona
       
       // Actualizar estadísticas de actividad
       if (user.activityStats) {
@@ -78,10 +79,13 @@ export async function POST(request: NextRequest) {
           return acc;
         }, {});
         
-        const mostActiveDay = Object.keys(dayCounts).reduce((a, b) => 
-          dayCounts[a] > dayCounts[b] ? a : b
-        );
-        user.activityStats.mostActiveDay = mostActiveDay;
+        // Solo calcular mostActiveDay si hay datos de sesiones
+        if (Object.keys(dayCounts).length > 0) {
+          const mostActiveDay = Object.keys(dayCounts).reduce((a, b) => 
+            dayCounts[a] > dayCounts[b] ? a : b
+          );
+          user.activityStats.mostActiveDay = mostActiveDay;
+        }
       }
       
       // Agregar nueva sesión al historial

@@ -50,8 +50,8 @@ MONGODB_URI=mongodb+srv://surfcam_admin:tu_contraseña@cluster.mongodb.net/surfc
 1. Ejecuta `npm run dev`
 2. Ve a `http://localhost:3000/admin`
 3. Inicia sesión con:
-   - Email: `josephquesada92@gmail.com`
-   - Password: `surfoQ2194`
+   - Email: `asd@asd.com`
+   - Password: `asdsad`
 
 ## 🔧 Estructura de la Base de Datos
 

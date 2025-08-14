@@ -1,15 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
-import Admin from '@/models/Admin';
-import bcrypt from 'bcryptjs';
 
 export async function POST(request: NextRequest) {
   try {
-    await connectDB();
-    
     const { email, password } = await request.json();
 
-    // Validar que sea el email correcto
+    // Validar que sea el email correcto (hardcoded)
     if (email !== 'josephquesada92@gmail.com') {
       return NextResponse.json(
         { error: 'Acceso denegado' },
@@ -17,47 +12,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Buscar el admin
-    const admin = await Admin.findOne({ email: email.toLowerCase() });
-    
-    if (!admin) {
-      // Crear el admin si no existe
-      const hashedPassword = await bcrypt.hash('surfoQ2194', 12);
-      const newAdmin = new Admin({
-        email: 'josephquesada92@gmail.com',
-        password: hashedPassword,
-        role: 'super_admin'
-      });
-      await newAdmin.save();
-      
-      return NextResponse.json({
-        success: true,
-        admin: {
-          email: newAdmin.email,
-          role: newAdmin.role
-        }
-      });
-    }
-
-    // Verificar contraseña
-    const isValidPassword = await bcrypt.compare(password, admin.password);
-    
-    if (!isValidPassword) {
+    // Verificar contraseña (hardcoded)
+    if (password !== 'surfoQ2194') {
       return NextResponse.json(
         { error: 'Contraseña incorrecta' },
         { status: 401 }
       );
     }
 
-    // Actualizar último login
-    admin.lastLogin = new Date();
-    await admin.save();
-
+    // Login exitoso - no necesita base de datos
     return NextResponse.json({
       success: true,
       admin: {
-        email: admin.email,
-        role: admin.role
+        email: 'josephquesada92@gmail.com',
+        role: 'super_admin'
       }
     });
 

@@ -29,8 +29,8 @@ export default function Login() {
     setError(""); // Clear any previous errors
     
     try {
-      // Guest login with just email
-      await login(email, "santateresa2025"); // Default password for guest access
+      // Guest login with just email (no password needed)
+      await login(email, ""); // Empty password for guest access
     } catch (error) {
       console.error("Guest login failed:", error);
       setError("Error al iniciar sesión como invitado. Inténtalo de nuevo.");

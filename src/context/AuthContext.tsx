@@ -36,11 +36,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         // Determinar el tipo de acceso basado en la contraseña
         let accessType = "free";
-        if (pass === "surfoQ2194") {
+        const premiumPassword = process.env.NEXT_PUBLIC_PREMIUM_PASSWORD;
+        
+        // Si se proporciona una contraseña, verificar si es premium
+        if (pass && pass === premiumPassword) {
           accessType = "premium";
-        } else if (pass !== "santateresa2025") {
-          throw new Error("La contraseña es incorrecta. Inténtalo de nuevo.");
+        } else if (pass && pass !== premiumPassword) {
+          // Solo validar contraseña si se proporciona una (modo premium)
+          throw new Error("La contraseña premium es incorrecta. Inténtalo de nuevo.");
         }
+        // Si no se proporciona contraseña, es acceso gratuito (solo email)
+        // Cualquier email puede ser premium si tiene la contraseña correcta
 
         // Registrar el usuario en la base de datos
         const response = await fetch('/api/auth/register', {
