@@ -3,6 +3,13 @@
 import { useEffect, useRef } from 'react';
 import Hls from 'hls.js';
 
+// Extender window para incluir la instancia de HLS
+declare global {
+    interface Window {
+        hlsInstance: Hls | null;
+    }
+}
+
 interface HlsPlayerProps {
     src: string;
     isPaused?: boolean;
@@ -22,6 +29,9 @@ export default function HlsPlayer({ src, isPaused = false }: HlsPlayerProps) {
                 enableWorker: true,
                 lowLatencyMode: true,
             });
+            
+            // Guardar la instancia en window para poder destruirla desde otros efectos
+            window.hlsInstance = hls;
             
             hls.loadSource(src);
             hls.attachMedia(video);
@@ -101,6 +111,7 @@ export default function HlsPlayer({ src, isPaused = false }: HlsPlayerProps) {
         return () => {
             if (hls) {
                 hls.destroy();
+                window.hlsInstance = null;
             }
         };
     }, [src, isPaused]);
@@ -130,17 +141,38 @@ export default function HlsPlayer({ src, isPaused = false }: HlsPlayerProps) {
         if (!video) return;
 
         if (isPaused) {
+            // Pausar el video
             video.pause();
+            
+            // Forzar salida de pantalla completa si está activa
+            if (document.fullscreenElement) {
+                document.exitFullscreen().catch(() => {
+                    // Si falla exitFullscreen, intentar con webkit
+                    if (document.webkitExitFullscreen) {
+                        document.webkitExitFullscreen();
+                    }
+                });
+            }
+            
+            // Detener la carga del video para asegurar que no siga reproduciéndose
+            video.src = '';
+            video.load();
+            
+            // Si hay una instancia de HLS, destruirla
+            if (window.hlsInstance) {
+                window.hlsInstance.destroy();
+                window.hlsInstance = null;
+            }
         } else {
-            // Intentar reproducir cuando se reanude
+            // Solo intentar reproducir si no está pausado
             const attemptPlay = () => {
-                if (video.readyState >= 2) {
+                if (video.readyState >= 2 && !isPaused) {
                     video.play().catch(error => {
                         if (error.name !== 'AbortError') {
                             console.error("Error trying to play video:", error);
                         }
                     });
-                } else {
+                } else if (!isPaused) {
                     // Si no está listo, esperar y intentar de nuevo
                     setTimeout(attemptPlay, 100);
                 }
@@ -160,12 +192,13 @@ export default function HlsPlayer({ src, isPaused = false }: HlsPlayerProps) {
     return (
         <video 
             ref={videoRef} 
-            controls 
+            controls={!isPaused}
             autoPlay 
             muted 
             playsInline
             preload="auto"
             className="w-full h-full"
+            style={{ pointerEvents: isPaused ? 'none' : 'auto' }}
         />
     );
 }

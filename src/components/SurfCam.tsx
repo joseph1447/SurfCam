@@ -25,6 +25,24 @@ export default function SurfCam() {
           if (prevTime <= 1) {
             clearInterval(timer);
             setIsTimeExpired(true);
+            
+            // Forzar salida de pantalla completa inmediatamente
+            if (document.fullscreenElement) {
+              document.exitFullscreen().catch(() => {
+                if (document.webkitExitFullscreen) {
+                  document.webkitExitFullscreen();
+                }
+              });
+            }
+            
+            // Detener cualquier reproducción de video
+            const video = document.querySelector('video');
+            if (video) {
+              video.pause();
+              video.src = '';
+              video.load();
+            }
+            
             return 0;
           }
           return prevTime - 1;
@@ -34,6 +52,79 @@ export default function SurfCam() {
       return () => clearInterval(timer);
     }
   }, [user]);
+
+  // Efecto para monitorear pantalla completa y forzar salida cuando se acaba el tiempo
+  useEffect(() => {
+    if (isTimeExpired && user?.accessType === "free") {
+      const checkFullscreen = () => {
+        if (document.fullscreenElement) {
+          document.exitFullscreen().catch(() => {
+            if (document.webkitExitFullscreen) {
+              document.webkitExitFullscreen();
+            }
+          });
+        }
+      };
+
+      // Verificar cada 500ms si está en pantalla completa
+      const fullscreenCheck = setInterval(checkFullscreen, 500);
+
+      // También verificar cuando cambia el estado de pantalla completa
+      const handleFullscreenChange = () => {
+        if (document.fullscreenElement) {
+          checkFullscreen();
+        }
+      };
+
+      document.addEventListener('fullscreenchange', handleFullscreenChange);
+      document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+
+      return () => {
+        clearInterval(fullscreenCheck);
+        document.removeEventListener('fullscreenchange', handleFullscreenChange);
+        document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      };
+    }
+  }, [isTimeExpired, user?.accessType]);
+
+  // Efecto para prevenir entrada en pantalla completa después de que se acabe el tiempo
+  useEffect(() => {
+    if (isTimeExpired && user?.accessType === "free") {
+      const preventFullscreen = (e: Event) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Mostrar mensaje de que necesita premium para pantalla completa
+        alert('¡Necesitas Premium para disfrutar de pantalla completa sin interrupciones!');
+        
+        // Redirigir a la página de contacto
+        window.location.href = '/contacto';
+      };
+
+      // Prevenir entrada en pantalla completa
+      document.addEventListener('fullscreenchange', preventFullscreen);
+      document.addEventListener('webkitfullscreenchange', preventFullscreen);
+
+      return () => {
+        document.removeEventListener('fullscreenchange', preventFullscreen);
+        document.removeEventListener('webkitfullscreenchange', preventFullscreen);
+      };
+    }
+  }, [isTimeExpired, user?.accessType]);
+
+  // Efecto para redirigir automáticamente a contacto después de un delay
+  useEffect(() => {
+    if (isTimeExpired && user?.accessType === "free") {
+      const redirectTimer = setTimeout(() => {
+        // Solo redirigir si el usuario no ha hecho clic en ningún botón
+        if (isTimeExpired) {
+          window.location.href = '/contacto';
+        }
+      }, 10000); // 10 segundos de delay
+
+      return () => clearTimeout(redirectTimer);
+    }
+  }, [isTimeExpired, user?.accessType]);
 
   // Ya no redirigimos automáticamente, dejamos que el usuario elija
 
@@ -61,33 +152,34 @@ export default function SurfCam() {
                       </Link>
                     </div>
                   )}
-                  {isTimeExpired && (
-                    <div className="absolute inset-0 bg-background/90 backdrop-blur-lg flex flex-col items-center justify-center z-30 p-6 text-center">
-                      <div className="bg-red-100 border border-red-300 rounded-lg p-6 max-w-sm">
-                        <h2 className="text-2xl font-bold text-red-800 mb-3">⏰ Tiempo Agotado</h2>
-                        <p className="text-red-700 mb-4">
-                          Tu tiempo de prueba gratuita ha terminado. El video se ha pausado.
-                        </p>
-                        <div className="space-y-3">
-                          <Link href="/contacto">
-                            <Button className="w-full bg-primary hover:bg-primary/90 text-white">
-                              💎 Actualizar a Premium
-                            </Button>
-                          </Link>
-                                                     <Button 
+                                     {isTimeExpired && (
+                     <div className="fixed inset-0 bg-background/95 backdrop-blur-lg flex flex-col items-center justify-center z-50 p-6 text-center">
+                       <div className="bg-red-100 border-2 border-red-400 rounded-xl p-8 max-w-md shadow-2xl">
+                         <div className="text-6xl mb-4">⏰</div>
+                         <h2 className="text-3xl font-bold text-red-800 mb-4">¡Tiempo Agotado!</h2>
+                         <p className="text-red-700 mb-6 text-lg">
+                           Tu minuto de prueba gratuita ha terminado. El video se ha detenido completamente.
+                         </p>
+                         <div className="space-y-4">
+                           <Link href="/contacto">
+                             <Button className="w-full bg-primary hover:bg-primary/90 text-white text-lg py-3">
+                               💎 ¡Actualizar a Premium por Solo $5/mes!
+                             </Button>
+                           </Link>
+                           <Button 
                              variant="outline" 
                              onClick={logout}
-                             className="w-full"
+                             className="w-full text-lg py-3"
                            >
                              🏠 Volver al Inicio
                            </Button>
-                        </div>
-                                                 <p className="text-xs text-red-600 mt-3">
-                           Elige una opción para continuar
+                         </div>
+                         <p className="text-sm text-red-600 mt-4 font-medium">
+                           ¡No más interrupciones con Premium!
                          </p>
-                      </div>
-                    </div>
-                  )}
+                       </div>
+                     </div>
+                   )}
                 </>
               )}
             </div>
