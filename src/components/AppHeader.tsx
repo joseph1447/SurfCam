@@ -1,75 +1,108 @@
 "use client";
 
-import { useAuth } from "@/hooks/useAuth";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { LogOut, Hotel, Utensils, Waves } from "lucide-react";
-
-const SurfboardIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        {...props}
-    >
-        <path d="M2.3 14.7c-1.3 1.3-1.3 3.4 0 4.7s3.4 1.3 4.7 0l2.8-2.8-4.7-4.7-2.8 2.8z" />
-        <path d="M12.2 4.2 18 10l3.8-3.8c1.3-1.3 1.3-3.4 0-4.7s-3.4-1.3-4.7 0L12.2 4.2z" />
-        <path d="m5.2 9.2 4-4" />
-        <path d="m14.2 18.2 4-4" />
-        <path d="m7.2 12.2 4.5 4.5" />
-    </svg>
-);
-
+import { useAuth } from "@/hooks/useAuth";
+import Link from "next/link";
+import { Menu, X } from "lucide-react";
 
 export default function AppHeader() {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
 
   return (
-    <header className="bg-background/80 backdrop-blur-sm sticky top-0 z-40 w-full border-b">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
-        <div className="flex items-center gap-3">
-          <Waves className="h-7 w-7 text-primary" />
-          <h1 className="text-xl font-bold font-headline text-primary">
-            Santa Teresa Surf Cam
-          </h1>
-        </div>
-        <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
-          <a
-            href="#"
-            className="flex items-center gap-2 transition-colors hover:text-primary"
+    <header className="bg-white/95 backdrop-blur-sm border-b border-border/50 sticky top-0 z-40">
+      <div className="container mx-auto px-4 py-3">
+        <div className="flex items-center justify-between">
+          {/* Logo - Clickable for mobile menu */}
+          <button
+            onClick={toggleMobileMenu}
+            className="flex items-center gap-2 text-xl font-bold text-primary hover:text-primary/80 transition-colors"
           >
-            <SurfboardIcon className="h-4 w-4" />
-            Clases de Surf
-          </a>
-          <a
-            href="#"
-            className="flex items-center gap-2 transition-colors hover:text-primary"
-          >
-            <Hotel className="h-4 w-4" />
-            Hospedaje
-          </a>
-          <a
-            href="#"
-            className="flex items-center gap-2 transition-colors hover:text-primary"
-          >
-            <Utensils className="h-4 w-4" />
-            Restaurantes
-          </a>
-        </nav>
-        <div className="flex items-center gap-4">
-          <div className="text-sm text-right hidden sm:block">
-            <p className="font-semibold">{user?.email}</p>
-            <p className="text-xs text-muted-foreground capitalize">{user?.accessType} Access</p>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
+              <path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"></path>
+              <path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"></path>
+              <path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"></path>
+            </svg>
+            <span>Santa Teresa Surf Cam</span>
+          </button>
+
+          {/* Desktop Menu */}
+          <div className="hidden md:flex items-center gap-4">
+            <Link href="/surf-lessons">
+              <Button variant="ghost" className="text-sm">
+                Clases de Surf
+              </Button>
+            </Link>
+            <Link href="/hospedaje">
+              <Button variant="ghost" className="text-sm">
+                Hospedaje
+              </Button>
+            </Link>
+            <Link href="/restaurantes">
+              <Button variant="ghost" className="text-sm">
+                Restaurantes
+              </Button>
+            </Link>
+            <Link href="/contacto">
+              <Button variant="ghost" className="text-sm">
+                Contacto
+              </Button>
+            </Link>
+            <Button onClick={logout} variant="outline" size="sm">
+              Cerrar Sesión
+            </Button>
           </div>
-          <Button variant="ghost" size="icon" onClick={logout} aria-label="Cerrar sesión">
-            <LogOut className="h-5 w-5" />
-          </Button>
+
+          {/* Mobile Menu Toggle */}
+          <div className="md:hidden">
+            <Button
+              onClick={toggleMobileMenu}
+              variant="ghost"
+              size="sm"
+              className="p-2"
+            >
+              {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
+          </div>
         </div>
+
+        {/* Mobile Menu */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden mt-4 pb-4 border-t border-border/50 pt-4">
+            <div className="flex flex-col space-y-2">
+              <Link href="/surf-lessons">
+                <Button variant="ghost" className="w-full justify-start text-left">
+                  🏄‍♂️ Clases de Surf
+                </Button>
+              </Link>
+              <Link href="/hospedaje">
+                <Button variant="ghost" className="w-full justify-start text-left">
+                  🏠 Hospedaje
+                </Button>
+              </Link>
+              <Link href="/restaurantes">
+                <Button variant="ghost" className="w-full justify-start text-left">
+                  🍽️ Restaurantes
+                </Button>
+              </Link>
+              <Link href="/contacto">
+                <Button variant="ghost" className="w-full justify-start text-left">
+                  📞 Contacto
+                </Button>
+              </Link>
+              <div className="pt-2 border-t border-border/50">
+                <Button onClick={logout} variant="outline" className="w-full">
+                  Cerrar Sesión
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </header>
   );

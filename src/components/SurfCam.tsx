@@ -16,17 +16,8 @@ export default function SurfCam() {
   const { isInstallable, isInstalled, installApp } = usePWA();
   const [timeLeft, setTimeLeft] = useState(FREE_TIER_DURATION_SECONDS);
   const [isTimeExpired, setIsTimeExpired] = useState(false);
-  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
 
-  // Show install prompt after 3 seconds if not installed
-  useEffect(() => {
-    if (!isInstalled) {
-      const timer = setTimeout(() => {
-        setShowInstallPrompt(true);
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [isInstalled]);
+
 
   useEffect(() => {
     if (user?.accessType === "free") {
@@ -142,9 +133,6 @@ export default function SurfCam() {
   const handleInstall = async () => {
     if (isInstallable) {
       await installApp();
-    } else {
-      // Show manual install instructions
-      setShowInstallPrompt(true);
     }
   };
 
@@ -156,7 +144,7 @@ export default function SurfCam() {
       <main className="flex-1 p-4 md:p-8">
         <div className="container mx-auto">
           {/* Install PWA Banner */}
-          {showInstallPrompt && !isInstalled && (
+          {isInstallable && !isInstalled && (
             <div className="mb-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-lg shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
@@ -164,21 +152,12 @@ export default function SurfCam() {
                   <p className="text-sm opacity-90">Disfruta de las olas sin interrupciones</p>
                 </div>
                 <div className="flex gap-2">
-                  {isInstallable ? (
-                    <Button 
-                      onClick={handleInstall}
-                      className="bg-white text-blue-600 hover:bg-gray-100"
-                    >
-                      Instalar
-                    </Button>
-                  ) : (
-                    <Button 
-                      onClick={() => setShowInstallPrompt(false)}
-                      className="bg-white text-blue-600 hover:bg-gray-100"
-                    >
-                      Cerrar
-                    </Button>
-                  )}
+                  <Button 
+                    onClick={handleInstall}
+                    className="bg-white text-blue-600 hover:bg-gray-100"
+                  >
+                    Instalar
+                  </Button>
                 </div>
               </div>
             </div>

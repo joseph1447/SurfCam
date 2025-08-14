@@ -24,33 +24,30 @@ export default function InstallPWAButton() {
     }
   };
 
-  // Show debug info in development
-  const isDevelopment = process.env.NODE_ENV === 'development';
-
   return (
     <>
-      {/* Debug info for development */}
-      {isDevelopment && (
-        <div className="fixed top-4 right-4 z-50 bg-black/80 text-white p-2 rounded text-xs max-w-xs">
-          <div className="flex items-center gap-2 mb-1">
-            <Info className="h-3 w-3" />
-            <span className="font-bold">PWA Debug:</span>
-            <button 
-              onClick={() => setShowDebug(!showDebug)}
-              className="text-blue-300 hover:text-blue-100"
-            >
-              {showDebug ? 'Hide' : 'Show'}
-            </button>
-          </div>
-          {showDebug && (
-            <div className="text-xs">
-              <div>Installable: {isInstallable ? 'Yes' : 'No'}</div>
-              <div>Installed: {isInstalled ? 'Yes' : 'No'}</div>
-              <div>Debug: {debugInfo}</div>
-            </div>
-          )}
-        </div>
-      )}
+               {/* Debug info for development only */}
+         {process.env.NODE_ENV === 'development' && (
+           <div className="fixed top-4 right-4 z-50 bg-black/80 text-white p-2 rounded text-xs max-w-xs">
+             <div className="flex items-center gap-2 mb-1">
+               <Info className="h-3 w-3" />
+               <span className="font-bold">PWA Debug:</span>
+               <button 
+                 onClick={() => setShowDebug(!showDebug)}
+                 className="text-blue-300 hover:text-blue-100"
+               >
+                 {showDebug ? 'Hide' : 'Show'}
+               </button>
+             </div>
+             {showDebug && (
+               <div className="text-xs">
+                 <div>Installable: {isInstallable ? 'Yes' : 'No'}</div>
+                 <div>Installed: {isInstalled ? 'Yes' : 'No'}</div>
+                 <div>Debug: {debugInfo}</div>
+               </div>
+             )}
+           </div>
+         )}
 
       {/* Install button - show if installable and not installed */}
       {isInstallable && !isInstalled && (
@@ -68,20 +65,7 @@ export default function InstallPWAButton() {
         </Button>
       )}
 
-      {/* Alternative install prompt for when beforeinstallprompt doesn't fire */}
-      {!isInstallable && !isInstalled && (
-        <div className="fixed bottom-4 right-4 z-50 bg-blue-600 text-white p-3 rounded-lg shadow-lg max-w-xs">
-          <div className="text-sm font-medium mb-2">📱 Instalar App</div>
-          <div className="text-xs mb-2">
-            Para instalar Santa Teresa Surf Cam:
-          </div>
-          <div className="text-xs space-y-1">
-            <div>• Chrome: Menú → "Instalar app"</div>
-            <div>• Safari: Compartir → "Añadir a pantalla de inicio"</div>
-            <div>• Firefox: Menú → "Instalar app"</div>
-          </div>
-        </div>
-      )}
+      
     </>
   );
 }

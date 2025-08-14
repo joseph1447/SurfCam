@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/useAuth";
-import { Contact } from "lucide-react";
+import { Contact, Crown, User } from "lucide-react";
 import Link from "next/link";
 import { usePWA } from "@/hooks/usePWA";
 
@@ -18,16 +18,41 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
+  const [isPremiumMode, setIsPremiumMode] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleGuestLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(""); // Clear any previous errors
     
     try {
+      // Guest login with just email
+      await login(email, "santateresa2025"); // Default password for guest access
+    } catch (error) {
+      console.error("Guest login failed:", error);
+      setError("Error al iniciar sesión como invitado. Inténtalo de nuevo.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePremiumLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(""); // Clear any previous errors
+    
+    try {
+      // Premium login with email and password validation
       await login(email, password);
     } catch (error) {
-      console.error("Login failed:", error);
+      console.error("Premium login failed:", error);
+      // Check if it's a password error or general error
+      if (error instanceof Error && error.message.includes("contraseña")) {
+        setError("La contraseña es incorrecta. Inténtalo de nuevo.");
+      } else {
+        setError("Error al iniciar sesión. Inténtalo de nuevo.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -36,8 +61,6 @@ export default function Login() {
   const handleInstall = async () => {
     if (isInstallable) {
       await installApp();
-    } else {
-      setShowInstallPrompt(true);
     }
   };
 
@@ -53,30 +76,17 @@ export default function Login() {
                 <p className="text-sm opacity-90">Disfruta de las olas sin interrupciones</p>
               </div>
               <div className="flex gap-2">
-                {isInstallable ? (
+                {isInstallable && (
                   <Button 
                     onClick={handleInstall}
                     className="bg-white text-blue-600 hover:bg-gray-100 text-sm"
                   >
                     Instalar
                   </Button>
-                ) : (
-                  <Button 
-                    onClick={() => setShowInstallPrompt(!showInstallPrompt)}
-                    className="bg-white text-blue-600 hover:bg-gray-100 text-sm"
-                  >
-                    {showInstallPrompt ? 'Cerrar' : 'Cómo'}
-                  </Button>
                 )}
               </div>
             </div>
-            {showInstallPrompt && (
-              <div className="mt-3 text-xs space-y-1">
-                <div>• Chrome: Menú → "Instalar app"</div>
-                <div>• Safari: Compartir → "Añadir a pantalla de inicio"</div>
-                <div>• Firefox: Menú → "Instalar app"</div>
-              </div>
-            )}
+
           </div>
         )}
 
@@ -100,53 +110,109 @@ export default function Login() {
           </CardHeader>
 
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="tu@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="password">Contraseña</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                />
-              </div>
+                         {/* Mode Toggle */}
+             <div className="flex gap-2 mb-6">
+               <Button
+                 variant={!isPremiumMode ? "default" : "outline"}
+                 onClick={() => setIsPremiumMode(false)}
+                 className="flex-1"
+               >
+                 <User className="h-4 w-4 mr-2" />
+                 Invitado
+               </Button>
+               <Button
+                 variant={isPremiumMode ? "default" : "outline"}
+                 onClick={() => setIsPremiumMode(true)}
+                 className="flex-1"
+               >
+                 <Crown className="h-4 w-4 mr-2" />
+                 Premium
+               </Button>
+             </div>
 
-              <Button 
-                type="submit" 
-                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3"
-                disabled={isLoading}
-              >
-                {isLoading ? "Iniciando sesión..." : "Iniciar Sesión"}
-              </Button>
-            </form>
+             {/* Error Message */}
+             {error && (
+               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                 <p className="text-red-700 text-sm font-medium">{error}</p>
+               </div>
+             )}
+
+            {/* Guest Mode Form */}
+            {!isPremiumMode && (
+              <form onSubmit={handleGuestLogin} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="tu@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+
+                <Button 
+                  type="submit" 
+                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Iniciando como invitado..." : "Iniciar como Invitado"}
+                </Button>
+              </form>
+            )}
+
+            {/* Premium Mode Form */}
+            {isPremiumMode && (
+              <form onSubmit={handlePremiumLogin} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="premium-email">Email</Label>
+                  <Input
+                    id="premium-email"
+                    type="email"
+                    placeholder="tu@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="premium-password">Contraseña Premium</Label>
+                  <Input
+                    id="premium-password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+
+                <Button 
+                  type="submit" 
+                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-3"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Iniciando Premium..." : "Inicio Premium"}
+                </Button>
+              </form>
+            )}
 
             <div className="mt-6 space-y-4">
               <Separator />
               
               <div className="text-center">
-                <p className="text-sm text-gray-600 mb-3">Acceso de prueba disponible</p>
+                <p className="text-sm text-gray-600 mb-3">Acceso disponible</p>
                 <div className="flex flex-wrap gap-2 justify-center">
                   <Badge variant="secondary" className="bg-green-100 text-green-800">
                     🌊 1 minuto gratis
                   </Badge>
-                  <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                    💎 Premium $5/mes
+                  <Badge variant="secondary" className="bg-purple-100 text-purple-800">
+                    💎 Premium sin límites
                   </Badge>
                 </div>
               </div>
@@ -174,7 +240,15 @@ export default function Login() {
             📍 Santa Teresa, Costa Rica
           </p>
           <p className="text-xs text-gray-500 mt-1">
-            Powered by Seataya Luxury Villas
+            Powered by{' '}
+            <a
+              href="https://doc-manager-front.vercel.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-primary hover:underline"
+            >
+              JS Solutions
+            </a>
           </p>
         </div>
       </div>
