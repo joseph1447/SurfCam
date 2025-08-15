@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import HospedajeHeader from "@/components/HospedajeHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,35 @@ export default function Hospedaje() {
   const [leidymarLoaded, setLeidymarLoaded] = useState(false);
   const [seatayaError, setSeatayaError] = useState(false);
   const [leidymarError, setLeidymarError] = useState(false);
+
+  // Handle iframe load errors
+  const handleIframeError = (type: 'seataya' | 'leidymar') => {
+    if (type === 'seataya') {
+      setSeatayaError(true);
+    } else {
+      setLeidymarError(true);
+    }
+  };
+
+  // Handle iframe load success
+  const handleIframeLoad = (type: 'seataya' | 'leidymar') => {
+    if (type === 'seataya') {
+      setSeatayaLoaded(true);
+    } else {
+      setLeidymarLoaded(true);
+    }
+  };
+
+  // Set timeout to detect CSP errors for Leidy Mar (Shopify sites often block iframe embedding)
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (!leidymarLoaded && !leidymarError) {
+        setLeidymarError(true);
+      }
+    }, 5000); // 5 second timeout
+
+    return () => clearTimeout(timeout);
+  }, [leidymarLoaded, leidymarError]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -70,8 +99,8 @@ export default function Hospedaje() {
                        title="Seataya Luxury Villas"
                        loading="lazy"
                        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
-                       onLoad={() => setSeatayaLoaded(true)}
-                       onError={() => setSeatayaError(true)}
+                       onLoad={() => handleIframeLoad('seataya')}
+                       onError={() => handleIframeError('seataya')}
                        style={{ opacity: seatayaLoaded ? 1 : 0 }}
                      />
                      <div className="absolute top-4 right-4">
@@ -147,38 +176,12 @@ export default function Hospedaje() {
 
                            {/* Leidymar Apartments */}
                  <Card className="overflow-hidden shadow-xl hover:shadow-2xl transition-shadow duration-300">
-                   <div className="aspect-video relative">
-                     {!leidymarLoaded && !leidymarError && (
-                       <div className="absolute inset-0 bg-gradient-to-br from-green-400 to-blue-600 flex items-center justify-center">
-                         <div className="text-center text-white">
-                           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
-                           <p>Cargando Leidymar Apartments...</p>
-                         </div>
-                       </div>
-                     )}
-                     {leidymarError && (
-                       <div className="absolute inset-0 bg-gradient-to-br from-green-400 to-blue-600 flex items-center justify-center">
-                         <div className="text-center text-white">
-                           <p className="mb-2">No se pudo cargar la página</p>
-                           <Button 
-                             onClick={() => window.open('https://leidymar-apartments.com/', '_blank')}
-                             className="bg-white text-green-600 hover:bg-gray-100"
-                           >
-                             <ExternalLink className="h-4 w-4 mr-2" />
-                             Visitar Sitio Web
-                           </Button>
-                         </div>
-                       </div>
-                     )}
-                     <iframe 
-                       src="https://leidymar-apartments.com/"
-                       className="w-full h-full border-0"
-                       title="Leidymar Apartments"
-                       loading="lazy"
-                       sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
-                       onLoad={() => setLeidymarLoaded(true)}
-                       onError={() => setLeidymarError(true)}
-                       style={{ opacity: leidymarLoaded ? 1 : 0 }}
+                   <div className="aspect-video relative flex items-center justify-center bg-gradient-to-br from-green-400 to-blue-600">
+                     <img 
+                       src="/leidymar-preview.png" 
+                       alt="Preview Leidymar Apartments" 
+                       className="mx-auto rounded-lg shadow-lg max-h-60 object-contain bg-white/80 p-2"
+                       style={{ background: 'rgba(255,255,255,0.8)' }}
                      />
                      <div className="absolute top-4 right-4">
                        <Badge className="bg-white/90 text-green-600 font-semibold">
@@ -187,67 +190,64 @@ export default function Hospedaje() {
                        </Badge>
                      </div>
                    </div>
-            <CardHeader>
-              <CardTitle className="text-xl">Leidymar Apartments</CardTitle>
-              <CardDescription>
-                Apartamentos locales a solo 150m de las mejores olas de Santa Teresa
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <MapPin className="h-5 w-5 text-green-600 mt-0.5" />
-                  <div>
-                    <p className="font-medium">Ubicación</p>
-                    <p className="text-sm text-gray-600">150m del mejor spot de surf, Santa Teresa Norte</p>
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <h4 className="font-semibold">Características:</h4>
-                  <div className="flex flex-wrap gap-2">
-                    <Badge variant="secondary" className="text-xs">
-                      <Wifi className="h-3 w-3 mr-1" />
-                      WiFi 100MB
-                    </Badge>
-                    <Badge variant="secondary" className="text-xs">
-                      <Car className="h-3 w-3 mr-1" />
-                      Estacionamiento
-                    </Badge>
-                    <Badge variant="secondary" className="text-xs">
-                      🏄‍♂️ Cerca del Surf
-                    </Badge>
-                    <Badge variant="secondary" className="text-xs">
-                      🏠 Familiar
-                    </Badge>
-                    <Badge variant="secondary" className="text-xs">
-                      🐕 Mascotas
-                    </Badge>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <h4 className="font-semibold">Opciones Disponibles:</h4>
-                  <ul className="text-sm text-gray-600 space-y-1">
-                    <li>• Casa Capulín - 2 habitaciones</li>
-                    <li>• Studio Pochote - Estudio completo</li>
-                    <li>• Casa Papaya - 2 habitaciones</li>
-                    <li>• TK Studio - Estudio con área de trabajo</li>
-                  </ul>
-                </div>
-
-                <div className="pt-4">
-                  <Button 
-                    onClick={() => window.open('https://leidymar-apartments.com/', '_blank')}
-                    className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
-                  >
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Ver Leidymar Apartments
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                   <CardHeader>
+                     <CardTitle className="text-xl">Leidymar Apartments</CardTitle>
+                     <CardDescription>
+                       Apartamentos locales a solo 150m de las mejores olas de Santa Teresa
+                     </CardDescription>
+                   </CardHeader>
+                   <CardContent>
+                     <div className="space-y-4">
+                       <div className="flex items-start gap-3">
+                         <MapPin className="h-5 w-5 text-green-600 mt-0.5" />
+                         <div>
+                           <p className="font-medium">Ubicación</p>
+                           <p className="text-sm text-gray-600">150m del mejor spot de surf, Santa Teresa Norte</p>
+                         </div>
+                       </div>
+                       <div className="space-y-2">
+                         <h4 className="font-semibold">Características:</h4>
+                         <div className="flex flex-wrap gap-2">
+                           <Badge variant="secondary" className="text-xs">
+                             <Wifi className="h-3 w-3 mr-1" />
+                             WiFi 100MB
+                           </Badge>
+                           <Badge variant="secondary" className="text-xs">
+                             <Car className="h-3 w-3 mr-1" />
+                             Estacionamiento
+                           </Badge>
+                           <Badge variant="secondary" className="text-xs">
+                             🏄‍♂️ Cerca del Surf
+                           </Badge>
+                           <Badge variant="secondary" className="text-xs">
+                             🏠 Familiar
+                           </Badge>
+                           <Badge variant="secondary" className="text-xs">
+                             🐕 Mascotas
+                           </Badge>
+                         </div>
+                       </div>
+                       <div className="space-y-2">
+                         <h4 className="font-semibold">Opciones Disponibles:</h4>
+                         <ul className="text-sm text-gray-600 space-y-1">
+                           <li>• Casa Capulín - 2 habitaciones</li>
+                           <li>• Studio Pochote - Estudio completo</li>
+                           <li>• Casa Papaya - 2 habitaciones</li>
+                           <li>• TK Studio - Estudio con área de trabajo</li>
+                         </ul>
+                       </div>
+                       <div className="pt-4">
+                         <Button 
+                           onClick={() => window.open('https://leidymar-apartments.com/', '_blank')}
+                           className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
+                         >
+                           <ExternalLink className="h-4 w-4 mr-2" />
+                           Ver Leidymar Apartments
+                         </Button>
+                       </div>
+                     </div>
+                   </CardContent>
+                 </Card>
         </div>
 
         {/* Why Choose These Options */}
