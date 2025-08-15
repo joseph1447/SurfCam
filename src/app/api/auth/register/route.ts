@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 import bcrypt from 'bcryptjs';
+import { validateEmail } from '@/lib/emailValidation';
 
 // Función para detectar el tipo de dispositivo
 function getDeviceType(userAgent: string): 'mobile' | 'tablet' | 'desktop' {
@@ -42,6 +43,15 @@ export async function POST(request: NextRequest) {
     const ipAddress = request.headers.get('x-forwarded-for') || 
                      request.headers.get('x-real-ip') || 
                      'unknown';
+
+    // Validate email
+    const emailValidation = await validateEmail(email);
+    if (!emailValidation.isValid) {
+      return NextResponse.json(
+        { error: emailValidation.error || 'Email inválido' },
+        { status: 400 }
+      );
+    }
 
     // Verificar si el usuario ya existe
     let user = await User.findOne({ email: email.toLowerCase() });

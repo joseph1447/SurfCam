@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Users, 
   Crown, 
@@ -21,6 +23,8 @@ import {
   LogOut,
   RefreshCw
 } from "lucide-react";
+import EditUserModal from "@/components/EditUserModal";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 interface AdminUser {
   _id: string;
@@ -88,6 +92,9 @@ export default function AdminPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<AdminUser | null>(null);
 
   // Login del admin
   const handleLogin = async (e: React.FormEvent) => {
@@ -146,22 +153,64 @@ export default function AdminPage() {
   };
 
   // Actualizar usuario
-  const updateUser = async (userId: string, updates: any) => {
+  const updateUser = async (userData: any) => {
+    if (!selectedUser) return;
+    
     try {
-      const response = await fetch('/api/admin/users', {
+      const response = await fetch(`/api/admin/users/${selectedUser._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, updates })
+        body: JSON.stringify(userData)
       });
 
       const data = await response.json();
       if (data.success) {
         loadUsers(currentPage);
-        setIsEditing(false);
+        loadMetrics();
+        setIsEditModalOpen(false);
         setSelectedUser(null);
+      } else {
+        throw new Error(data.error || 'Error al actualizar usuario');
       }
     } catch (error) {
       console.error('Error updating user:', error);
+      throw error;
+    }
+  };
+
+  // Eliminar usuario
+  const deleteUser = async (userId: string) => {
+    try {
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        loadUsers(currentPage);
+        loadMetrics();
+        setIsEditModalOpen(false);
+        setSelectedUser(null);
+      } else {
+        throw new Error(data.error || 'Error al eliminar usuario');
+      }
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      throw error;
+    }
+  };
+
+  // Handle delete user confirmation
+  const handleDeleteUserClick = (user: AdminUser) => {
+    setUserToDelete(user);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (userToDelete) {
+      await deleteUser(userToDelete._id);
+      setUserToDelete(null);
     }
   };
 
@@ -413,10 +462,18 @@ export default function AdminPage() {
                           size="sm"
                           onClick={() => {
                             setSelectedUser(user);
-                            setIsEditing(true);
+                            setIsEditModalOpen(true);
                           }}
                         >
                           <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteUserClick(user)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
@@ -563,6 +620,33 @@ export default function AdminPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Edit User Modal */}
+      <EditUserModal
+        user={selectedUser}
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedUser(null);
+        }}
+        onSave={updateUser}
+        onDelete={deleteUser}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={isDeleteDialogOpen}
+        onClose={() => {
+          setIsDeleteDialogOpen(false);
+          setUserToDelete(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        title="Eliminar Usuario"
+        message={`¿Estás seguro de que quieres eliminar al usuario "${userToDelete?.email}"? Esta acción no se puede deshacer y se perderán todos los datos del usuario.`}
+        confirmText="Sí, Eliminar"
+        cancelText="Cancelar"
+        isDestructive={true}
+      />
     </div>
   );
 }

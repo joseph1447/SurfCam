@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Contact, Crown, User } from "lucide-react";
 import Link from "next/link";
 import { usePWA } from "@/hooks/usePWA";
+import { validateEmailClient } from "@/lib/emailValidation";
 
 export default function Login() {
   const { login } = useAuth();
@@ -22,6 +23,7 @@ export default function Login() {
   const [error, setError] = useState("");
   const [isInstalling, setIsInstalling] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
+  const [emailValidation, setEmailValidation] = useState<{ isValid: boolean; error?: string }>({ isValid: true });
 
   const handleGuestLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,6 +31,13 @@ export default function Login() {
     setError(""); // Clear any previous errors
     
     try {
+      // Validate email first
+      const emailValidation = validateEmailClient(email);
+      if (!emailValidation.isValid) {
+        setError(emailValidation.error || "Email inválido");
+        return;
+      }
+
       // Guest login with just email (no password needed)
       await login(email, ""); // Empty password for guest access
     } catch (error) {
@@ -45,6 +54,13 @@ export default function Login() {
     setError(""); // Clear any previous errors
     
     try {
+      // Validate email first
+      const emailValidation = validateEmailClient(email);
+      if (!emailValidation.isValid) {
+        setError(emailValidation.error || "Email inválido");
+        return;
+      }
+
       // Premium login with email and password validation
       await login(email, password);
     } catch (error) {
@@ -58,6 +74,21 @@ export default function Login() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newEmail = e.target.value;
+    setEmail(newEmail);
+    
+    // Clear validation if email is empty
+    if (!newEmail.trim()) {
+      setEmailValidation({ isValid: true });
+      return;
+    }
+    
+    // Validate email in real-time
+    const validation = validateEmailClient(newEmail);
+    setEmailValidation(validation);
   };
 
   const handleInstall = async () => {
@@ -205,15 +236,20 @@ export default function Login() {
               <form onSubmit={handleGuestLogin} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="tu@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  />
+                                     <Input
+                     id="email"
+                     type="email"
+                     placeholder="tu@email.com"
+                     value={email}
+                     onChange={handleEmailChange}
+                     required
+                     className={`border-gray-300 focus:border-blue-500 focus:ring-blue-500 ${
+                       email && !emailValidation.isValid ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                     }`}
+                   />
+                   {email && !emailValidation.isValid && (
+                     <p className="text-red-500 text-sm mt-1">{emailValidation.error}</p>
+                   )}
                 </div>
 
                 <Button 
@@ -231,15 +267,20 @@ export default function Login() {
               <form onSubmit={handlePremiumLogin} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="premium-email">Email</Label>
-                  <Input
-                    id="premium-email"
-                    type="email"
-                    placeholder="tu@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  />
+                                     <Input
+                     id="premium-email"
+                     type="email"
+                     placeholder="tu@email.com"
+                     value={email}
+                     onChange={handleEmailChange}
+                     required
+                     className={`border-gray-300 focus:border-blue-500 focus:ring-blue-500 ${
+                       email && !emailValidation.isValid ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                     }`}
+                   />
+                   {email && !emailValidation.isValid && (
+                     <p className="text-red-500 text-sm mt-1">{emailValidation.error}</p>
+                   )}
                 </div>
                 
                 <div className="space-y-2">

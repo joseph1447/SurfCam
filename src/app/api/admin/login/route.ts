@@ -1,8 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { validateEmailClient } from '@/lib/emailValidation';
 
 export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json();
+
+    // Validate email format first
+    const emailValidation = validateEmailClient(email);
+    if (!emailValidation.isValid) {
+      return NextResponse.json(
+        { error: emailValidation.error || 'Email inválido' },
+        { status: 400 }
+      );
+    }
 
     // Validar que sea el email correcto (hardcoded)
     if (email !== 'josephquesada92@gmail.com') {

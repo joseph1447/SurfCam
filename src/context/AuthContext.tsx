@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode, Dispatch, SetStateAction } from 'react';
-import { createContext, useState, useCallback, useContext } from 'react';
+import { createContext, useState, useCallback, useContext, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
 type User = {
@@ -15,6 +15,8 @@ interface AuthContextType {
   login: (email: string, pass: string) => Promise<void>;
   loginWithGoogle: () => void;
   logout: () => void;
+  timeLeft: number;
+  isTimeExpired: boolean;
 }
 
 export const AuthContext = createContext<AuthContextType | null>(null);
@@ -29,7 +31,11 @@ export function useAuth() {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [timeLeft, setTimeLeft] = useState(60);
+  const [isTimeExpired, setIsTimeExpired] = useState(false);
   const router = useRouter();
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const FREE_TIER_DURATION_SECONDS = 60;
 
   const login = useCallback(
     async (email: string, pass: string) => {
@@ -99,10 +105,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             email: user.email
           }),
         });
+        
+        // Limpiar el timer específico del usuario
+        localStorage.removeItem(`surfcam_timer_${user.email}`);
       }
     } catch (error) {
       console.error('Logout tracking error:', error);
     } finally {
+      // Limpiar timer
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      setTimeLeft(FREE_TIER_DURATION_SECONDS);
+      setIsTimeExpired(false);
+      
       // In a real app, you would also sign out from Firebase here.
       setUser(null);
       // Redirigir al login después del logout
@@ -110,8 +127,108 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [router, user?.email]);
 
+  // Efecto para manejar el timer del usuario gratuito
+  useEffect(() => {
+    // Limpiar timer anterior si existe
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+
+    if (user?.accessType === "free") {
+      // Verificar si ya existe un timer activo en localStorage
+      const timerKey = `surfcam_timer_${user.email}`;
+      const storedTimer = localStorage.getItem(timerKey);
+      
+      if (storedTimer) {
+        try {
+          const { startTime, timeLeft: storedTimeLeft } = JSON.parse(storedTimer);
+          const elapsed = Math.floor((Date.now() - startTime) / 1000);
+          const remainingTime = Math.max(0, storedTimeLeft - elapsed);
+          
+          if (remainingTime > 0) {
+            // Continuar con el tiempo restante
+            setTimeLeft(remainingTime);
+            setIsTimeExpired(false);
+            
+            timerRef.current = setInterval(() => {
+              setTimeLeft((prevTime) => {
+                if (prevTime <= 1) {
+                  if (timerRef.current) {
+                    clearInterval(timerRef.current);
+                    timerRef.current = null;
+                  }
+                  setIsTimeExpired(true);
+                  localStorage.removeItem(timerKey);
+                  return 0;
+                }
+                return prevTime - 1;
+              });
+            }, 1000);
+          } else {
+            // El tiempo ya expiró
+            setIsTimeExpired(true);
+            setTimeLeft(0);
+            localStorage.removeItem(timerKey);
+          }
+        } catch (error) {
+          // Si hay error al parsear, iniciar nuevo timer
+          console.error('Error parsing stored timer:', error);
+          localStorage.removeItem(timerKey);
+          startNewTimer(timerKey);
+        }
+      } else {
+        // Iniciar nuevo timer
+        startNewTimer(timerKey);
+      }
+    } else {
+      // Si no es usuario gratuito, resetear las referencias
+      setTimeLeft(FREE_TIER_DURATION_SECONDS);
+      setIsTimeExpired(false);
+      
+      // Limpiar cualquier timer almacenado
+      if (user?.email) {
+        localStorage.removeItem(`surfcam_timer_${user.email}`);
+      }
+    }
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [user?.accessType, user?.email]);
+
+  // Función auxiliar para iniciar nuevo timer
+  const startNewTimer = (timerKey: string) => {
+    setTimeLeft(FREE_TIER_DURATION_SECONDS);
+    setIsTimeExpired(false);
+    
+    // Guardar el timer en localStorage
+    localStorage.setItem(timerKey, JSON.stringify({
+      startTime: Date.now(),
+      timeLeft: FREE_TIER_DURATION_SECONDS
+    }));
+
+    timerRef.current = setInterval(() => {
+      setTimeLeft((prevTime) => {
+        if (prevTime <= 1) {
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+          }
+          setIsTimeExpired(true);
+          localStorage.removeItem(timerKey);
+          return 0;
+        }
+        return prevTime - 1;
+      });
+    }, 1000);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, setUser, login, loginWithGoogle, logout }}>
+    <AuthContext.Provider value={{ user, setUser, login, loginWithGoogle, logout, timeLeft, isTimeExpired }}>
       {children}
     </AuthContext.Provider>
   );

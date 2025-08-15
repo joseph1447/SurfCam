@@ -9,91 +9,35 @@ import { Button } from "@/components/ui/button";
 import HlsPlayer from "./HlsPlayer";
 import { usePWA } from "@/hooks/usePWA";
 
-const FREE_TIER_DURATION_SECONDS = 60;
-
 export default function SurfCam() {
-  const { user, logout } = useAuth();
+  const { user, logout, timeLeft, isTimeExpired } = useAuth();
   const { isInstallable, isInstalled, installApp } = usePWA();
-  const [timeLeft, setTimeLeft] = useState(FREE_TIER_DURATION_SECONDS);
-  const [isTimeExpired, setIsTimeExpired] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const hasStartedTimerRef = useRef(false);
 
 
 
+  // Efecto para manejar la expiración del tiempo (pantalla completa y video)
   useEffect(() => {
-    // Limpiar timer anterior si existe
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-
-    if (user?.accessType === "free") {
-      // Reiniciar el timer para usuarios gratuitos
-      hasStartedTimerRef.current = true;
-      setTimeLeft(FREE_TIER_DURATION_SECONDS);
-      setIsTimeExpired(false);
-
-      timerRef.current = setInterval(() => {
-        setTimeLeft((prevTime) => {
-          if (prevTime <= 1) {
-            if (timerRef.current) {
-              clearInterval(timerRef.current);
-              timerRef.current = null;
-            }
-            setIsTimeExpired(true);
-            
-            // Forzar salida de pantalla completa inmediatamente
-            if (document.fullscreenElement) {
-              document.exitFullscreen().catch(() => {
-                if (document.webkitExitFullscreen) {
-                  document.webkitExitFullscreen();
-                }
-              });
-            }
-            
-            // Detener cualquier reproducción de video
-            const video = document.querySelector('video');
-            if (video) {
-              video.pause();
-              video.src = '';
-              video.load();
-            }
-            
-            return 0;
+    if (isTimeExpired && user?.accessType === "free") {
+      // Forzar salida de pantalla completa inmediatamente
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {
+          if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
           }
-          return prevTime - 1;
         });
-      }, 1000);
-    } else {
-      // Si no es usuario gratuito, resetear las referencias
-      hasStartedTimerRef.current = false;
-      setTimeLeft(FREE_TIER_DURATION_SECONDS);
-      setIsTimeExpired(false);
-    }
-
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
       }
-    };
-  }, [user?.accessType, user?.email]);
-
-  // Efecto para limpiar referencias cuando el usuario hace logout
-  useEffect(() => {
-    if (!user) {
-      hasStartedTimerRef.current = false;
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
+      
+      // Detener cualquier reproducción de video
+      const video = document.querySelector('video');
+      if (video) {
+        video.pause();
+        video.src = '';
+        video.load();
       }
-      setTimeLeft(FREE_TIER_DURATION_SECONDS);
-      setIsTimeExpired(false);
     }
-  }, [user]);
+  }, [isTimeExpired, user?.accessType]);
 
   // Efecto para monitorear pantalla completa y forzar salida cuando se acaba el tiempo
   useEffect(() => {
