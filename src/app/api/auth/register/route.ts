@@ -55,49 +55,41 @@ export async function POST(request: NextRequest) {
 
     // Verificar si el usuario ya existe
     let user = await User.findOne({ email: email.toLowerCase() });
-    
+    const loginTime = new Date();
     if (user) {
-      // Usuario existe, actualizar información de login
-      const loginTime = new Date();
-      const currentHour = loginTime.getHours().toString();
-      const currentDay = loginTime.getDay().toString();
-      
-      // Actualizar contadores y accessType
-      user.loginCount += 1;
+      // Si el usuario existe y la clave premium es correcta, actualizar a premium
+      if (accessType === 'premium' && user.accessType !== 'premium') {
+        user.accessType = 'premium';
+        if (password) {
+          user.password = await bcrypt.hash(password, 12);
+        }
+      }
+      // Actualizar contadores y login info
+      user.loginCount = (user.loginCount || 0) + 1;
       user.lastLogin = loginTime;
       user.lastActivity = loginTime;
-      user.accessType = accessType || user.accessType; // Actualizar accessType si se proporciona
-      
       // Actualizar estadísticas de actividad
       if (user.activityStats) {
         user.activityStats.lastActivity = loginTime;
-        
         // Actualizar días activos consecutivos
         const lastActivity = new Date(user.activityStats.lastActivity);
         const daysDiff = Math.floor((loginTime.getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24));
-        
         if (daysDiff === 1) {
           user.activityStats.consecutiveDaysActive += 1;
         } else if (daysDiff > 1) {
           user.activityStats.consecutiveDaysActive = 1;
         }
-        
         // Actualizar día más activo
         const dayCounts = user.sessionHistory.reduce((acc: any, session) => {
           const day = new Date(session.loginTime).getDay().toString();
           acc[day] = (acc[day] || 0) + 1;
           return acc;
         }, {});
-        
-        // Solo calcular mostActiveDay si hay datos de sesiones
         if (Object.keys(dayCounts).length > 0) {
-          const mostActiveDay = Object.keys(dayCounts).reduce((a, b) => 
-            dayCounts[a] > dayCounts[b] ? a : b
-          );
+          const mostActiveDay = Object.keys(dayCounts).reduce((a, b) => dayCounts[a] > dayCounts[b] ? a : b);
           user.activityStats.mostActiveDay = mostActiveDay;
         }
       }
-      
       // Agregar nueva sesión al historial
       user.sessionHistory.push({
         loginTime,
@@ -107,20 +99,18 @@ export async function POST(request: NextRequest) {
         browser: getBrowser(userAgent),
         os: getOS(userAgent)
       });
-      
       // Mantener solo las últimas 50 sesiones
       if (user.sessionHistory.length > 50) {
         user.sessionHistory = user.sessionHistory.slice(-50);
       }
-      
       await user.save();
-      
       return NextResponse.json({
         success: true,
         user: {
           _id: user._id,
           email: user.email,
           accessType: user.accessType,
+          username: user.username,
           loginCount: user.loginCount,
           lastLogin: user.lastLogin
         }
@@ -128,8 +118,6 @@ export async function POST(request: NextRequest) {
     } else {
       // Crear nuevo usuario
       const hashedPassword = password ? await bcrypt.hash(password, 12) : undefined;
-      const loginTime = new Date();
-      
       const newUser = new User({
         email: email.toLowerCase(),
         accessType: accessType || 'free',
@@ -153,15 +141,14 @@ export async function POST(request: NextRequest) {
           mostActiveDay: loginTime.getDay().toString()
         }
       });
-      
       await newUser.save();
-      
       return NextResponse.json({
         success: true,
         user: {
           _id: newUser._id,
           email: newUser.email,
           accessType: newUser.accessType,
+          username: newUser.username,
           loginCount: newUser.loginCount,
           lastLogin: newUser.lastLogin
         }

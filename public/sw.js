@@ -4,8 +4,8 @@ const urlsToCache = [
   '/contacto',
   '/manifest.json',
   '/wave-16.png',
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png'
+  '/wave-32.png',
+  '/wave-128.png'
 ];
 
 // Install event - cache resources
@@ -14,7 +14,9 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('Opened cache');
-        return cache.addAll(urlsToCache);
+        return cache.addAll(urlsToCache).catch(err => {
+          console.error('Service Worker cache addAll failed:', err);
+        });
       })
   );
 });
@@ -66,8 +68,8 @@ function doBackgroundSync() {
 self.addEventListener('push', (event) => {
   const options = {
     body: event.data ? event.data.text() : '¡Nuevas olas en Santa Teresa!',
-    icon: '/icons/icon-192x192.png',
-    badge: '/icons/icon-72x72.png',
+    icon: '/wave-128.png',
+    badge: '/wave-16.png',
     vibrate: [100, 50, 100],
     data: {
       dateOfArrival: Date.now(),
@@ -77,12 +79,12 @@ self.addEventListener('push', (event) => {
       {
         action: 'explore',
         title: 'Ver Surf Cam',
-        icon: '/icons/icon-96x96.png'
+        icon: '/wave-32.png'
       },
       {
         action: 'close',
         title: 'Cerrar',
-        icon: '/icons/icon-96x96.png'
+        icon: '/wave-32.png'
       }
     ]
   };

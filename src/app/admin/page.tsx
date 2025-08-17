@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import EditUserModal from "@/components/EditUserModal";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import { useToast } from "@/hooks/use-toast";
 
 interface AdminUser {
   _id: string;
@@ -95,6 +96,9 @@ export default function AdminPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<AdminUser | null>(null);
+  const { toast } = useToast();
+  const [fixingIndex, setFixingIndex] = useState(false);
+  const [fixIndexResult, setFixIndexResult] = useState<string | null>(null);
 
   // Login del admin
   const handleLogin = async (e: React.FormEvent) => {
@@ -236,6 +240,22 @@ export default function AdminPage() {
   const handleLogout = () => {
     setIsAuthenticated(false);
     localStorage.removeItem('adminToken');
+  };
+
+  const handleFixUserIndex = async () => {
+    setFixingIndex(true);
+    setFixIndexResult(null);
+    try {
+      const res = await fetch("/api/admin/fix-user-index");
+      const data = await res.json();
+      setFixIndexResult(data.message);
+      toast({ title: "Índices de email", description: data.message });
+    } catch (err) {
+      setFixIndexResult("Error al intentar arreglar los índices.");
+      toast({ title: "Error", description: "No se pudo arreglar los índices." });
+    } finally {
+      setFixingIndex(false);
+    }
   };
 
   // Verificar autenticación al cargar
@@ -400,9 +420,16 @@ export default function AdminPage() {
                    <RefreshCw className="h-4 w-4 mr-2" />
                    Actualizar
                  </Button>
-                 
+                 <Button onClick={handleFixUserIndex} variant="outline" size="sm" disabled={fixingIndex}>
+                   {fixingIndex ? "Arreglando..." : "Arreglar Índices de Email"}
+                 </Button>
                </div>
              </div>
+            {fixIndexResult && (
+              <div className="p-2 bg-blue-50 border border-blue-200 rounded text-blue-700 text-sm mt-2">
+                {fixIndexResult}
+              </div>
+            )}
 
             {metrics && (
               <Card>

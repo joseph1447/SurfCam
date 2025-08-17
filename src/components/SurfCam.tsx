@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import HlsPlayer from "./HlsPlayer";
 import { usePWA } from "@/hooks/usePWA";
+import Chat from "@/components/Chat";
 
 export default function SurfCam() {
   const { user, logout, timeLeft, isTimeExpired } = useAuth();
@@ -254,7 +255,8 @@ export default function SurfCam() {
               )}
             </div>
           </div>
-
+          {/* Chat component below the video */}
+          <Chat />
           <footer className="text-center mt-12 py-6 border-t">
             <p className="text-sm text-muted-foreground">
               Un agradecimiento especial a{' '}

@@ -5,8 +5,12 @@ import { createContext, useState, useCallback, useContext, useEffect, useRef } f
 import { useRouter } from 'next/navigation';
 
 type User = {
+  _id: string;
   email: string;
   accessType: 'free' | 'premium';
+  username?: string;
+  loginCount?: number;
+  lastLogin?: string;
 };
 
 interface AuthContextType {
@@ -70,10 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data = await response.json();
 
         if (data.success) {
-          setUser({
-            email,
-            accessType: accessType as "free" | "premium",
-          });
+          setUser(data.user);
         } else {
           throw new Error(data.error || "Error al iniciar sesión");
         }

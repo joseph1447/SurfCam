@@ -64,6 +64,13 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: false
   },
+  username: {
+    type: String,
+    required: false,
+    trim: true,
+    maxlength: 32,
+    unique: false
+  },
   // Métricas del usuario
   totalViews: {
     type: Number,

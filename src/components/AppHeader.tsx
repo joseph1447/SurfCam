@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 
 export default function AppHeader() {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const toggleMobileMenu = () => {
@@ -28,7 +28,7 @@ export default function AppHeader() {
               <path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"></path>
               <path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"></path>
             </svg>
-            <span>Santa Teresa Surf Cam</span>
+            <span>{user?.accessType === 'premium' ? 'Premium' : 'Santa Teresa Surf Cam'}</span>
           </button>
 
           {/* Desktop Menu */}
@@ -51,6 +51,11 @@ export default function AppHeader() {
             <Link href="/contacto">
               <Button variant="ghost" className="text-sm">
                 Contacto
+              </Button>
+            </Link>
+            <Link href="/perfil">
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold shadow transition-all">
+                Perfil
               </Button>
             </Link>
             <Button onClick={logout} variant="outline" size="sm">
@@ -93,6 +98,11 @@ export default function AppHeader() {
               <Link href="/contacto">
                 <Button variant="ghost" className="w-full justify-start text-left">
                   📞 Contacto
+                </Button>
+              </Link>
+              <Link href="/perfil">
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold shadow transition-all">
+                  Perfil
                 </Button>
               </Link>
               <div className="pt-2 border-t border-border/50">
