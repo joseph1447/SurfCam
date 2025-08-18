@@ -15,6 +15,7 @@ self.addEventListener('install', (event) => {
       .then((cache) => {
         console.log('Opened cache');
         return cache.addAll(urlsToCache).catch(err => {
+          // Suppress and log cache errors
           console.error('Service Worker cache addAll failed:', err);
         });
       })

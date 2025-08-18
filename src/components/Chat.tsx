@@ -5,7 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-const SOCKET_URL = "/api/socket";
+const SOCKET_URL = "http://localhost:5000";
 const GROUPS = [
   { key: "general", label: "General", protected: false },
   { key: "el-trillo", label: "El Trillo", protected: true },
@@ -13,8 +13,17 @@ const GROUPS = [
 
 export default function Chat() {
   const { user } = useAuth();
+  const userId = user?._id;
   const [activeTab, setActiveTab] = useState("general");
-  const [messages, setMessages] = useState<{_id?: string, userId: string, username: string, message: string, timestamp: string}[]>([]);
+  const [messages, setMessages] = useState<{
+    _id?: string;
+    userId: string;
+    username: string;
+    message: string;
+    timestamp: string;
+    edited?: boolean;
+    email?: string;
+  }[]>([]);
   const [input, setInput] = useState("");
   const [joinedGroups, setJoinedGroups] = useState<string[]>(["general"]);
   const [joining, setJoining] = useState(false);
@@ -24,16 +33,18 @@ export default function Chat() {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editInput, setEditInput] = useState("");
+  const chatBoxRef = useRef<HTMLDivElement | null>(null);
+  const [showScrollButton, setShowScrollButton] = useState(false);
+  const [sending, setSending] = useState(false);
 
   const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMINUSER || 'josephquesada92@gmail.com';
 
   // Connect to socket
   useEffect(() => {
     if (!user) return;
-    console.log('Chat user object:', user);
-    const userId = user._id || user.id;
+    console.log('[Socket] Initializing connection to', SOCKET_URL);
     if (!userId) return;
-    const socket = io(window.location.origin, { path: "/api/socket" });
+    const socket = io(SOCKET_URL, { path: "/socket" });
     socketRef.current = socket;
     // Join general by default
     socket.emit("join", { group: "general", userId });
@@ -43,22 +54,30 @@ export default function Chat() {
     }
     // Listen for messages
     socket.on("message", (msg) => {
-      setMessages((prev) => [...prev, msg]);
+      console.log('[Socket] Received message:', msg, '| Current userId:', userId);
+      setMessages((prev) => {
+        if (msg._id && prev.some(m => m._id === msg._id)) {
+          return prev; // Duplicate, do not add
+        }
+        return [...prev, msg];
+      });
     });
     // Listen for messageDeleted
     socket.on("messageDeleted", (data) => {
+      console.log('[Socket] Message deleted:', data);
       setMessages((prev) => prev.filter((msg) => msg._id !== data._id));
     });
     // Listen for messageEdited
     socket.on("messageEdited", (data) => {
+      console.log('[Socket] Message edited:', data);
       setMessages((prev) => prev.map((msg) => msg._id === data._id ? { ...msg, message: data.message, edited: true } : msg));
     });
     // Log connection errors
     socket.on("connect_error", (err) => {
-      console.error("Socket.IO connect_error:", err);
+      console.error("[Socket] connect_error:", err);
     });
     socket.on("error", (err) => {
-      console.error("Socket.IO error:", err);
+      console.error("[Socket] error:", err);
     });
     return () => {
       socket.disconnect();
@@ -66,10 +85,45 @@ export default function Chat() {
     // eslint-disable-next-line
   }, [user]);
 
-  // Scroll to bottom on new message
+  // Helper: check if user is at bottom
+  const isAtBottom = () => {
+    const el = chatBoxRef.current;
+    if (!el) return true;
+    return el.scrollHeight - el.scrollTop - el.clientHeight < 40; // 40px tolerance
+  };
+
+  // Listen for scroll to toggle button
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = chatBoxRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      setShowScrollButton(!isAtBottom());
+    };
+    el.addEventListener('scroll', onScroll);
+    return () => el.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // Show button if new messages arrive and not at bottom
+  useEffect(() => {
+    if (!isAtBottom()) {
+      setShowScrollButton(true);
+    } else {
+      setShowScrollButton(false);
+    }
   }, [messages]);
+
+  // Scroll to bottom only when sending a message (not on every new message)
+  const prevMessagesLength = useRef(messages.length);
+  useEffect(() => {
+    if (messages.length > prevMessagesLength.current) {
+      // Only scroll if the last message is from the current user
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg && lastMsg.userId === userId) {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }
+    }
+    prevMessagesLength.current = messages.length;
+  }, [messages, userId]);
 
   // Fetch chat history on tab change
   useEffect(() => {
@@ -79,17 +133,43 @@ export default function Chat() {
       .then((data) => setMessages(data.messages || []));
   }, [activeTab, user]);
 
+  // Listen for messages
+  useEffect(() => {
+    if (!socketRef.current) return;
+    const socket = socketRef.current;
+    const onMessage = (msg: any) => {
+      console.log('[Socket] Received message:', msg);
+      setMessages((prev) => {
+        const updated = [...prev, msg];
+        console.log('[Chat] Updated messages array:', updated);
+        return updated;
+      });
+    };
+    socket.on('message', onMessage);
+    return () => {
+      socket.off('message', onMessage);
+    };
+  }, [socketRef.current]);
+
+  // Log messages state on every update
+  useEffect(() => {
+    console.log('[Chat] Current messages state:', messages);
+  }, [messages]);
+
   const handleSend = () => {
-    if (!input.trim() || !user) return;
-    const userId = user._id || user.id;
+    if (!input.trim() || !user || sending) return;
     if (!userId) return;
-    socketRef.current?.emit("message", {
+    setSending(true);
+    const msgObj = {
       group: activeTab,
       userId,
-      username: user.username || user.email,
+      username: user.username || "",
       message: input,
-    });
+    };
+    console.log('[Socket] Sending message:', msgObj);
+    socketRef.current?.emit('message', msgObj);
     setInput("");
+    setTimeout(() => setSending(false), 500); // Prevent rapid double send
   };
 
   const handleJoinGroup = async () => {
@@ -104,7 +184,9 @@ export default function Chat() {
     const data = await res.json();
     if (data.success) {
       setJoinedGroups((prev) => [...prev, "el-trillo"]);
-      socketRef.current?.emit("join", { group: "el-trillo", userId: user._id });
+      if (user && user._id) {
+        socketRef.current?.emit("join", { group: "el-trillo", userId: user._id });
+      }
       setActiveTab("el-trillo");
       setJoinPassword("");
     } else {
@@ -169,8 +251,6 @@ export default function Chat() {
     return joinedGroups.includes(groupKey);
   };
 
-  const userId = user?._id || user?.id;
-
   return (
     <Card className="mt-8 max-w-2xl mx-auto">
       <CardContent className="p-0">
@@ -189,7 +269,7 @@ export default function Chat() {
             </button>
           ))}
         </div>
-        <div className="h-80 overflow-y-auto p-4 bg-white">
+        <div className="h-80 overflow-y-auto p-4 bg-white relative" ref={chatBoxRef}>
           {activeTab === "el-trillo" && !canAccessTab("el-trillo") ? (
             <div className="flex flex-col items-center justify-center h-full">
               <h3 className="text-lg font-bold mb-2">Unirse a El Trillo</h3>
@@ -213,7 +293,7 @@ export default function Chat() {
               ) : (
                 messages.map((msg) => (
                   <div key={msg._id || Math.random()} className="mb-2 flex items-center group">
-                    <span className="font-semibold text-primary">{msg.username || msg.email}:</span> {editingId === msg._id ? (
+                    <span className="font-semibold text-primary">{msg.username || ""}:</span> {editingId === msg._id ? (
                       <>
                         <input
                           className="border rounded px-2 py-1 text-sm mr-2"
@@ -254,6 +334,17 @@ export default function Chat() {
               <div ref={messagesEndRef} />
             </>
           )}
+          {showScrollButton && (
+            <button
+              className="fixed bottom-24 right-8 z-50 bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg hover:bg-blue-700 transition-all"
+              onClick={() => {
+                messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+                setShowScrollButton(false);
+              }}
+            >
+              ↓ Ir al último mensaje
+            </button>
+          )}
         </div>
         {canAccessTab(activeTab) && (
           <div className="flex border-t p-2 bg-gray-50">
@@ -266,10 +357,12 @@ export default function Chat() {
               placeholder="Escribe un mensaje..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSend()}
-              disabled={!user || !userId}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !sending) handleSend();
+              }}
+              disabled={!user || !userId || sending}
             />
-            <Button onClick={handleSend} disabled={!input.trim() || !user || !userId}>
+            <Button onClick={handleSend} disabled={!input.trim() || !user || !userId || sending}>
               Enviar
             </Button>
           </div>
