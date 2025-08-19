@@ -15,15 +15,8 @@ export default function Chat() {
   const { user } = useAuth();
   const userId = user?._id;
   const [activeTab, setActiveTab] = useState("general");
-  const [messages, setMessages] = useState<{
-    _id?: string;
-    userId: string;
-    username: string;
-    message: string;
-    timestamp: string;
-    edited?: boolean;
-    email?: string;
-  }[]>([]);
+  // Use a Map for messages to guarantee uniqueness by _id
+  const [messagesMap, setMessagesMap] = useState(new Map<string, any>());
   const [input, setInput] = useState("");
   const [joinedGroups, setJoinedGroups] = useState<string[]>(["general"]);
   const [joining, setJoining] = useState(false);
@@ -55,22 +48,34 @@ export default function Chat() {
     // Listen for messages
     socket.on("message", (msg) => {
       console.log('[Socket] Received message:', msg, '| Current userId:', userId);
-      setMessages((prev) => {
-        if (msg._id && prev.some(m => m._id === msg._id)) {
-          return prev; // Duplicate, do not add
+      setMessagesMap((prev) => {
+        if (msg._id && prev.has(msg._id)) {
+          console.log('[Chat] Duplicate message detected, not adding:', msg);
+          return prev;
         }
-        return [...prev, msg];
+        const newMap = new Map(prev);
+        newMap.set(msg._id, msg);
+        console.log('[Chat] Updated messages map:', Array.from(newMap.values()));
+        return newMap;
       });
     });
     // Listen for messageDeleted
     socket.on("messageDeleted", (data) => {
       console.log('[Socket] Message deleted:', data);
-      setMessages((prev) => prev.filter((msg) => msg._id !== data._id));
+      setMessagesMap((prev) => {
+        const newMap = new Map(prev);
+        newMap.delete(data._id);
+        return newMap;
+      });
     });
     // Listen for messageEdited
     socket.on("messageEdited", (data) => {
       console.log('[Socket] Message edited:', data);
-      setMessages((prev) => prev.map((msg) => msg._id === data._id ? { ...msg, message: data.message, edited: true } : msg));
+      setMessagesMap((prev) => {
+        const newMap = new Map(prev);
+        newMap.set(data._id, { ...newMap.get(data._id), message: data.message, edited: true });
+        return newMap;
+      });
     });
     // Log connection errors
     socket.on("connect_error", (err) => {
@@ -110,27 +115,31 @@ export default function Chat() {
     } else {
       setShowScrollButton(false);
     }
-  }, [messages]);
+  }, [messagesMap]);
 
   // Scroll to bottom only when sending a message (not on every new message)
-  const prevMessagesLength = useRef(messages.length);
+  const prevMessagesLength = useRef(messagesMap.size);
   useEffect(() => {
-    if (messages.length > prevMessagesLength.current) {
+    if (messagesMap.size > prevMessagesLength.current) {
       // Only scroll if the last message is from the current user
-      const lastMsg = messages[messages.length - 1];
+      const lastMsg = Array.from(messagesMap.values())[messagesMap.size - 1];
       if (lastMsg && lastMsg.userId === userId) {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
       }
     }
-    prevMessagesLength.current = messages.length;
-  }, [messages, userId]);
+    prevMessagesLength.current = messagesMap.size;
+  }, [messagesMap, userId]);
 
-  // Fetch chat history on tab change
+  // Fetch chat history on tab change (replace, do not merge)
   useEffect(() => {
     if (!user) return;
     fetch(`/api/chat/messages?group=${activeTab}`)
       .then((res) => res.json())
-      .then((data) => setMessages(data.messages || []));
+      .then((data) => {
+        const map = new Map<string, any>();
+        (data.messages || []).forEach(m => map.set(m._id, m));
+        setMessagesMap(map);
+      });
   }, [activeTab, user]);
 
   // Listen for messages
@@ -139,10 +148,10 @@ export default function Chat() {
     const socket = socketRef.current;
     const onMessage = (msg: any) => {
       console.log('[Socket] Received message:', msg);
-      setMessages((prev) => {
-        const updated = [...prev, msg];
-        console.log('[Chat] Updated messages array:', updated);
-        return updated;
+      setMessagesMap((prev) => {
+        const newMap = new Map(prev);
+        newMap.set(msg._id, msg);
+        return newMap;
       });
     };
     socket.on('message', onMessage);
@@ -153,8 +162,8 @@ export default function Chat() {
 
   // Log messages state on every update
   useEffect(() => {
-    console.log('[Chat] Current messages state:', messages);
-  }, [messages]);
+    console.log('[Chat] Current messages state:', Array.from(messagesMap.values()));
+  }, [messagesMap]);
 
   const handleSend = () => {
     if (!input.trim() || !user || sending) return;
@@ -206,7 +215,11 @@ export default function Chat() {
       });
       const data = await res.json();
       if (data.success) {
-        setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
+        setMessagesMap((prev) => {
+          const newMap = new Map(prev);
+          newMap.delete(messageId);
+          return newMap;
+        });
       } else {
         alert(data.error || 'No se pudo eliminar el mensaje');
       }
@@ -251,6 +264,13 @@ export default function Chat() {
     return joinedGroups.includes(groupKey);
   };
 
+  // Before rendering messages
+  const uniqueMessages = Array.from(messagesMap.values());
+  console.log('[Chat] Rendering messages with keys:', uniqueMessages.map(m => m._id));
+  uniqueMessages.forEach(m => {
+    if (!m._id) console.warn('[Chat] Message missing _id:', m);
+  });
+
   return (
     <Card className="mt-8 max-w-2xl mx-auto">
       <CardContent className="p-0">
@@ -288,11 +308,11 @@ export default function Chat() {
             </div>
           ) : (
             <>
-              {messages.length === 0 ? (
+              {messagesMap.size === 0 ? (
                 <div className="text-gray-400 text-center mt-8">No hay mensajes aún.</div>
               ) : (
-                messages.map((msg) => (
-                  <div key={msg._id || Math.random()} className="mb-2 flex items-center group">
+                uniqueMessages.map((msg) => (
+                  <div key={msg._id} className="mb-2 flex items-center group">
                     <span className="font-semibold text-primary">{msg.username || ""}:</span> {editingId === msg._id ? (
                       <>
                         <input
