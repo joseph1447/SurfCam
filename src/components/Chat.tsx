@@ -6,22 +6,20 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 const SOCKET_URL = "https://socket-pbvr.onrender.com";
-const GROUPS = [
-  { key: "general", label: "General", protected: false },
-  { key: "el-trillo", label: "El Trillo", protected: true },
-];
 
 export default function Chat() {
   const { user } = useAuth();
   const userId = user?._id;
+  const [groups, setGroups] = useState<any[]>([{ key: "general", name: "General", protected: false }]);
   const [activeTab, setActiveTab] = useState("general");
-  // Use a Map for messages to guarantee uniqueness by _id
   const [messagesMap, setMessagesMap] = useState(new Map<string, any>());
   const [input, setInput] = useState("");
   const [joinedGroups, setJoinedGroups] = useState<string[]>(["general"]);
   const [joining, setJoining] = useState(false);
   const [joinPassword, setJoinPassword] = useState("");
   const [joinError, setJoinError] = useState("");
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [pendingGroup, setPendingGroup] = useState<string | null>(null);
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -29,8 +27,18 @@ export default function Chat() {
   const chatBoxRef = useRef<HTMLDivElement | null>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [sending, setSending] = useState(false);
-
   const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMINUSER || 'josephquesada92@gmail.com';
+
+  // Fetch groups from API
+  useEffect(() => {
+    fetch("/api/chat/groups/list")
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setGroups([{ key: "general", name: "General", protected: false }, ...data.groups.map((g: any) => ({ key: g.name, name: g.name, protected: true }))]);
+        }
+      });
+  }, []);
 
   // Connect to socket
   useEffect(() => {
@@ -181,22 +189,40 @@ export default function Chat() {
     setTimeout(() => setSending(false), 500); // Prevent rapid double send
   };
 
+  // Password flow: check localStorage for access
+  const hasGroupAccess = (groupKey: string) => {
+    if (groupKey === "general") return true;
+    return localStorage.getItem(`group_access_${groupKey}`) === "true" || joinedGroups.includes(groupKey);
+  };
+
+  // When clicking a tab
+  const handleTabClick = (group: any) => {
+    if (!group.protected || hasGroupAccess(group.key)) {
+      setActiveTab(group.key);
+    } else {
+      setPendingGroup(group.key);
+      setShowPasswordModal(true);
+      setJoinPassword("");
+      setJoinError("");
+    }
+  };
+
+  // Join group with password
   const handleJoinGroup = async () => {
     setJoining(true);
     setJoinError("");
-    // Call API to join group (password protected)
+    if (!pendingGroup) return;
     const res = await fetch("/api/chat/groups/join", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ group: "el-trillo", password: joinPassword }),
+      body: JSON.stringify({ group: pendingGroup, password: joinPassword, userId }),
     });
     const data = await res.json();
     if (data.success) {
-      setJoinedGroups((prev) => [...prev, "el-trillo"]);
-      if (user && user._id) {
-        socketRef.current?.emit("join", { group: "el-trillo", userId: user._id });
-      }
-      setActiveTab("el-trillo");
+      setJoinedGroups((prev) => [...prev, pendingGroup]);
+      localStorage.setItem(`group_access_${pendingGroup}`, "true");
+      setActiveTab(pendingGroup);
+      setShowPasswordModal(false);
       setJoinPassword("");
     } else {
       setJoinError(data.error || "No se pudo unir al grupo");
@@ -274,25 +300,46 @@ export default function Chat() {
   return (
     <Card className="mt-8 max-w-2xl mx-auto">
       <CardContent className="p-0">
-        <div className="flex border-b">
-          {GROUPS.map((g) => (
+        <div className="flex border-b overflow-x-auto no-scrollbar">
+          {groups.map((g) => (
             <button
               key={g.key}
-              className={`flex-1 py-2 px-4 text-center font-semibold transition-colors ${activeTab === g.key ? "bg-primary text-white" : "bg-gray-100 hover:bg-gray-200"}`}
-              onClick={() => {
-                if (g.protected && !canAccessTab(g.key)) return;
-                setActiveTab(g.key);
-              }}
-              disabled={g.protected && !canAccessTab(g.key)}
+              className={`flex-1 py-2 px-4 text-center font-semibold transition-colors whitespace-nowrap ${activeTab === g.key ? "bg-primary text-white" : "bg-gray-100 hover:bg-gray-200"}`}
+              onClick={() => handleTabClick(g)}
+              disabled={g.protected && !hasGroupAccess(g.key)}
             >
-              {g.label}
+              {g.name}
             </button>
           ))}
         </div>
+        {/* Password modal */}
+        {showPasswordModal && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg p-6 max-w-sm w-full shadow-xl">
+              <h3 className="text-lg font-bold mb-2">Acceso a grupo protegido</h3>
+              <div className="mb-2">
+                <label className="block mb-1 font-medium">Contraseña</label>
+                <input
+                  type="password"
+                  value={joinPassword}
+                  onChange={e => setJoinPassword(e.target.value)}
+                  className="border rounded px-3 py-2 w-full"
+                  placeholder="Contraseña del grupo"
+                  disabled={joining}
+                />
+              </div>
+              {joinError && <div className="text-red-500 text-sm mb-2">{joinError}</div>}
+              <div className="flex gap-2 mt-4">
+                <Button onClick={handleJoinGroup} className="flex-1">Entrar</Button>
+                <Button variant="outline" onClick={() => setShowPasswordModal(false)} className="flex-1">Cancelar</Button>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="h-80 overflow-y-auto p-4 bg-white relative" ref={chatBoxRef}>
-          {activeTab === "el-trillo" && !canAccessTab("el-trillo") ? (
+          {groups.find(g => g.key === activeTab)?.protected && !canAccessTab(activeTab) ? (
             <div className="flex flex-col items-center justify-center h-full">
-              <h3 className="text-lg font-bold mb-2">Unirse a El Trillo</h3>
+              <h3 className="text-lg font-bold mb-2">Unirse a {groups.find(g => g.key === activeTab)?.name}</h3>
               <input
                 type="password"
                 placeholder="Contraseña del grupo"
@@ -301,7 +348,25 @@ export default function Chat() {
                 className="border rounded px-3 py-2 mb-2 w-full max-w-xs"
                 disabled={joining}
               />
-              <Button onClick={handleJoinGroup} disabled={joining || !joinPassword}>
+              <Button onClick={async () => {
+                setJoining(true);
+                setJoinError("");
+                const res = await fetch("/api/chat/groups/join", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ group: activeTab, password: joinPassword, userId }),
+                });
+                const data = await res.json();
+                if (data.success) {
+                  setJoinedGroups((prev) => [...prev, activeTab]);
+                  localStorage.setItem(`group_access_${activeTab}`, "true");
+                  setJoinPassword("");
+                  setJoinError("");
+                } else {
+                  setJoinError(data.error || "No se pudo unir al grupo");
+                }
+                setJoining(false);
+              }} disabled={joining || !joinPassword}>
                 {joining ? "Uniendo..." : "Unirse"}
               </Button>
               {joinError && <div className="text-red-500 mt-2">{joinError}</div>}

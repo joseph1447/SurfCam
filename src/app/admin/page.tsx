@@ -21,7 +21,13 @@ import {
   Edit,
   Trash2,
   LogOut,
-  RefreshCw
+  RefreshCw,
+  Lock,
+  PlusCircle,
+  KeyRound,
+  MoreVertical,
+  Users as UsersIcon,
+  X
 } from "lucide-react";
 import EditUserModal from "@/components/EditUserModal";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -81,6 +87,13 @@ interface Metrics {
   };
 }
 
+interface ChatGroup {
+  _id: string;
+  name: string;
+  createdBy: string;
+  members: { _id: string; email: string; username?: string }[];
+}
+
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -99,6 +112,24 @@ export default function AdminPage() {
   const { toast } = useToast();
   const [fixingIndex, setFixingIndex] = useState(false);
   const [fixIndexResult, setFixIndexResult] = useState<string | null>(null);
+  const [groups, setGroups] = useState<ChatGroup[]>([]);
+  const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [newGroupName, setNewGroupName] = useState("");
+  const [newGroupPassword, setNewGroupPassword] = useState("");
+  const [groupError, setGroupError] = useState("");
+  const [changingPasswordGroup, setChangingPasswordGroup] = useState<ChatGroup | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [loadingGroups, setLoadingGroups] = useState(false);
+  const [editingGroup, setEditingGroup] = useState<ChatGroup | null>(null);
+  const [editGroupName, setEditGroupName] = useState("");
+  const [editGroupError, setEditGroupError] = useState("");
+  const [deletingGroup, setDeletingGroup] = useState<ChatGroup | null>(null);
+  const [membersGroup, setMembersGroup] = useState<ChatGroup | null>(null);
+  const [members, setMembers] = useState<any[]>([]);
+  const [loadingMembers, setLoadingMembers] = useState(false);
+  const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
+  const [showActions, setShowActions] = useState<string | null>(null); // groupId for mobile menu
 
   // Login del admin
   const handleLogin = async (e: React.FormEvent) => {
@@ -258,6 +289,153 @@ export default function AdminPage() {
     }
   };
 
+  // Cargar grupos
+  const loadGroups = async () => {
+    setLoadingGroups(true);
+    try {
+      const res = await fetch("/api/chat/groups/list");
+      const data = await res.json();
+      if (data.success) setGroups(data.groups);
+    } catch (err) {
+      setGroups([]);
+    } finally {
+      setLoadingGroups(false);
+    }
+  };
+
+  // Crear grupo
+  const handleCreateGroup = async () => {
+    setGroupError("");
+    if (!newGroupName || !newGroupPassword) {
+      setGroupError("Nombre y contraseña requeridos");
+      toast({ title: "Error", description: "Nombre y contraseña requeridos", variant: "destructive" });
+      return;
+    }
+    const res = await fetch("/api/chat/groups/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: newGroupName, password: newGroupPassword, userId: users[0]?._id }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      setShowCreateGroup(false);
+      setNewGroupName("");
+      setNewGroupPassword("");
+      loadGroups();
+      toast({ title: "Grupo creado", description: `El grupo "${newGroupName}" fue creado exitosamente.` });
+    } else {
+      setGroupError(data.error || "Error al crear grupo");
+      toast({ title: "Error", description: data.error || "Error al crear grupo", variant: "destructive" });
+    }
+  };
+
+  // Cambiar contraseña
+  const handleChangePassword = async () => {
+    setPasswordError("");
+    if (!changingPasswordGroup || !newPassword) {
+      setPasswordError("Contraseña requerida");
+      toast({ title: "Error", description: "Contraseña requerida", variant: "destructive" });
+      return;
+    }
+    const res = await fetch("/api/chat/groups/change-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ group: changingPasswordGroup.name, newPassword, userId: users[0]?._id }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      setChangingPasswordGroup(null);
+      setNewPassword("");
+      loadGroups();
+      toast({ title: "Contraseña cambiada", description: `La contraseña de "${changingPasswordGroup.name}" fue actualizada.` });
+    } else {
+      setPasswordError(data.error || "Error al cambiar contraseña");
+      toast({ title: "Error", description: data.error || "Error al cambiar contraseña", variant: "destructive" });
+    }
+  };
+
+  // Editar nombre
+  const handleEditGroup = (group: ChatGroup) => {
+    setEditingGroup(group);
+    setEditGroupName(group.name);
+    setEditGroupError("");
+  };
+  const handleSaveEditGroup = async () => {
+    setEditGroupError("");
+    if (!editingGroup || !editGroupName) {
+      setEditGroupError("Nombre requerido");
+      toast({ title: "Error", description: "Nombre requerido", variant: "destructive" });
+      return;
+    }
+    const res = await fetch("/api/chat/groups/rename", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ groupId: editingGroup._id, newName: editGroupName, userId: users[0]?._id }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      setEditingGroup(null);
+      setEditGroupName("");
+      loadGroups();
+      toast({ title: "Grupo editado", description: `El grupo fue renombrado a "${editGroupName}".` });
+    } else {
+      setEditGroupError(data.error || "Error al editar grupo");
+      toast({ title: "Error", description: data.error || "Error al editar grupo", variant: "destructive" });
+    }
+  };
+
+  // Eliminar grupo
+  const handleDeleteGroup = async () => {
+    if (!deletingGroup) return;
+    const res = await fetch("/api/chat/groups/delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ groupId: deletingGroup._id, userId: users[0]?._id }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      setDeletingGroup(null);
+      loadGroups();
+      toast({ title: "Grupo eliminado", description: `El grupo fue eliminado correctamente.` });
+    } else {
+      toast({ title: "Error", description: data.error || "Error al eliminar grupo", variant: "destructive" });
+    }
+  };
+
+  // Ver miembros
+  const handleViewMembers = async (group: ChatGroup) => {
+    setMembersGroup(group);
+    setLoadingMembers(true);
+    setMembers([]);
+    const res = await fetch(`/api/chat/groups/members?groupId=${group._id}`);
+    const data = await res.json();
+    if (data.success) {
+      setMembers(data.members);
+      toast({ title: "Miembros cargados", description: `Miembros de "${group.name}" cargados.` });
+    } else {
+      toast({ title: "Error", description: data.error || "Error al cargar miembros", variant: "destructive" });
+    }
+    setLoadingMembers(false);
+  };
+  // Quitar miembro
+  const handleRemoveMember = async (memberId: string) => {
+    if (!membersGroup) return;
+    setRemovingMemberId(memberId);
+    const res = await fetch("/api/chat/groups/remove-member", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ groupId: membersGroup._id, memberId, userId: users[0]?._id }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      setMembers(members.filter(m => m._id !== memberId));
+      toast({ title: "Miembro eliminado", description: `El usuario fue eliminado del grupo."` });
+    } else {
+      toast({ title: "Error", description: data.error || "Error al eliminar miembro", variant: "destructive" });
+    }
+    setRemovingMemberId(null);
+  };
+
   // Verificar autenticación al cargar
   useEffect(() => {
     const token = localStorage.getItem('adminToken');
@@ -272,6 +450,7 @@ export default function AdminPage() {
     if (isAuthenticated) {
       loadMetrics();
       loadUsers();
+      loadGroups();
     }
   }, [isAuthenticated]);
 
@@ -346,13 +525,14 @@ export default function AdminPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-8">
         <Tabs defaultValue="dashboard" className="space-y-6">
-          <TabsList>
+          <TabsList className="overflow-x-auto no-scrollbar">
             <TabsTrigger value="dashboard">📊 Dashboard</TabsTrigger>
             <TabsTrigger value="users">👥 Usuarios</TabsTrigger>
             <TabsTrigger value="analytics">📈 Análisis</TabsTrigger>
             <TabsTrigger value="premium">💎 Premium</TabsTrigger>
+            <TabsTrigger value="groups">💬 Grupos</TabsTrigger>
           </TabsList>
 
           {/* Dashboard */}
@@ -644,6 +824,152 @@ export default function AdminPage() {
                 {/* Contenido de gestión premium */}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Grupos */}
+          <TabsContent value="groups" className="space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <h2 className="text-lg font-semibold flex items-center gap-2"><Lock className="w-5 h-5" /> Gestión de Grupos de Chat</h2>
+              <Button onClick={() => setShowCreateGroup(true)} className="flex items-center gap-2">
+                <PlusCircle className="w-4 h-4" /> Nuevo Grupo
+              </Button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {loadingGroups ? (
+                <div className="col-span-full text-center text-gray-400">Cargando grupos...</div>
+              ) : groups.length === 0 ? (
+                <div className="col-span-full text-center text-gray-400">No hay grupos aún.</div>
+              ) : (
+                groups.map((group) => (
+                  <Card key={group._id} className="flex flex-col justify-between relative group shadow-md">
+                    <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                      <div>
+                        <CardTitle className="truncate text-base">{group.name}</CardTitle>
+                        <CardDescription className="truncate text-xs">ID: {group._id}</CardDescription>
+                      </div>
+                      {/* Acciones: desktop y mobile */}
+                      <div className="hidden md:flex gap-2">
+                        <Button size="icon" variant="ghost" onClick={() => handleEditGroup(group)} title="Editar nombre"><Edit className="w-4 h-4" /></Button>
+                        <Button size="icon" variant="ghost" onClick={() => setChangingPasswordGroup(group)} title="Cambiar contraseña"><KeyRound className="w-4 h-4" /></Button>
+                        <Button size="icon" variant="ghost" onClick={() => handleViewMembers(group)} title="Ver miembros"><UsersIcon className="w-4 h-4" /></Button>
+                        <Button size="icon" variant="ghost" onClick={() => setDeletingGroup(group)} title="Eliminar grupo"><Trash2 className="w-4 h-4 text-red-500" /></Button>
+                      </div>
+                      <div className="md:hidden relative">
+                        <Button size="icon" variant="ghost" onClick={() => setShowActions(showActions === group._id ? null : group._id)}><MoreVertical className="w-5 h-5" /></Button>
+                        {showActions === group._id && (
+                          <div className="absolute right-0 mt-2 bg-white border rounded shadow-lg z-20 flex flex-col min-w-[120px]">
+                            <button className="px-4 py-2 text-left hover:bg-gray-100" onClick={() => { handleEditGroup(group); setShowActions(null); }}>Editar nombre</button>
+                            <button className="px-4 py-2 text-left hover:bg-gray-100" onClick={() => { setChangingPasswordGroup(group); setShowActions(null); }}>Cambiar contraseña</button>
+                            <button className="px-4 py-2 text-left hover:bg-gray-100" onClick={() => { handleViewMembers(group); setShowActions(null); }}>Ver miembros</button>
+                            <button className="px-4 py-2 text-left text-red-600 hover:bg-red-50" onClick={() => { setDeletingGroup(group); setShowActions(null); }}>Eliminar</button>
+                          </div>
+                        )}
+                      </div>
+                    </CardHeader>
+                    <CardContent className="flex flex-col gap-2 pb-4">
+                      <span className="text-xs text-gray-500">Miembros: {group.members?.length ?? 0}</span>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+            {/* Modal crear grupo */}
+            {showCreateGroup && (
+              <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-lg p-6 max-w-sm w-full shadow-xl">
+                  <h3 className="text-lg font-bold mb-2">Nuevo Grupo</h3>
+                  <div className="mb-2">
+                    <Label>Nombre</Label>
+                    <Input value={newGroupName} onChange={e => setNewGroupName(e.target.value)} placeholder="Nombre del grupo" />
+                  </div>
+                  <div className="mb-2">
+                    <Label>Contraseña</Label>
+                    <Input type="password" value={newGroupPassword} onChange={e => setNewGroupPassword(e.target.value)} placeholder="Contraseña" />
+                  </div>
+                  {groupError && <div className="text-red-500 text-sm mb-2">{groupError}</div>}
+                  <div className="flex gap-2 mt-4">
+                    <Button onClick={handleCreateGroup} className="flex-1">Crear</Button>
+                    <Button variant="outline" onClick={() => setShowCreateGroup(false)} className="flex-1">Cancelar</Button>
+                  </div>
+                </div>
+              </div>
+            )}
+            {/* Modal cambiar contraseña */}
+            {changingPasswordGroup && (
+              <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-lg p-6 max-w-sm w-full shadow-xl">
+                  <h3 className="text-lg font-bold mb-2">Cambiar Contraseña</h3>
+                  <div className="mb-2">
+                    <Label>Nuevo Password</Label>
+                    <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Nueva contraseña" />
+                  </div>
+                  {passwordError && <div className="text-red-500 text-sm mb-2">{passwordError}</div>}
+                  <div className="flex gap-2 mt-4">
+                    <Button onClick={handleChangePassword} className="flex-1">Guardar</Button>
+                    <Button variant="outline" onClick={() => setChangingPasswordGroup(null)} className="flex-1">Cancelar</Button>
+                  </div>
+                </div>
+              </div>
+            )}
+            {/* Modal editar nombre */}
+            {editingGroup && (
+              <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-lg p-6 max-w-sm w-full shadow-xl">
+                  <h3 className="text-lg font-bold mb-2">Editar Nombre de Grupo</h3>
+                  <div className="mb-2">
+                    <Label>Nuevo nombre</Label>
+                    <Input value={editGroupName} onChange={e => setEditGroupName(e.target.value)} placeholder="Nuevo nombre" />
+                  </div>
+                  {editGroupError && <div className="text-red-500 text-sm mb-2">{editGroupError}</div>}
+                  <div className="flex gap-2 mt-4">
+                    <Button onClick={handleSaveEditGroup} className="flex-1">Guardar</Button>
+                    <Button variant="outline" onClick={() => setEditingGroup(null)} className="flex-1">Cancelar</Button>
+                  </div>
+                </div>
+              </div>
+            )}
+            {/* Modal eliminar grupo */}
+            {deletingGroup && (
+              <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-lg p-6 max-w-sm w-full shadow-xl text-center">
+                  <h3 className="text-lg font-bold mb-2 text-red-700">¿Eliminar grupo?</h3>
+                  <p className="mb-4">Esta acción no se puede deshacer.<br />Se eliminarán todos los mensajes y miembros del grupo <b>{deletingGroup.name}</b>.</p>
+                  <div className="flex gap-2 mt-4">
+                    <Button onClick={handleDeleteGroup} className="flex-1 bg-red-600 hover:bg-red-700 text-white">Eliminar</Button>
+                    <Button variant="outline" onClick={() => setDeletingGroup(null)} className="flex-1">Cancelar</Button>
+                  </div>
+                </div>
+              </div>
+            )}
+            {/* Modal ver miembros */}
+            {membersGroup && (
+              <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-lg p-6 max-w-sm w-full shadow-xl">
+                  <h3 className="text-lg font-bold mb-2 flex items-center gap-2"><UsersIcon className="w-5 h-5" /> Miembros de {membersGroup.name}</h3>
+                  {loadingMembers ? (
+                    <div className="text-center text-gray-400">Cargando...</div>
+                  ) : members.length === 0 ? (
+                    <div className="text-center text-gray-400">No hay miembros.</div>
+                  ) : (
+                    <ul className="divide-y divide-gray-200">
+                      {members.map((m) => (
+                        <li key={m._id} className="flex items-center justify-between py-2">
+                          <span className="truncate">{m.username || m.email}</span>
+                          <button
+                            className="ml-2 text-red-500 hover:text-red-700 text-xs flex items-center gap-1"
+                            onClick={() => handleRemoveMember(m._id)}
+                            disabled={removingMemberId === m._id}
+                          >
+                            <X className="w-4 h-4" /> Quitar
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <Button variant="outline" onClick={() => setMembersGroup(null)} className="w-full mt-4">Cerrar</Button>
+                </div>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>
