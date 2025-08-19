@@ -4,6 +4,8 @@ import { io, Socket } from "socket.io-client";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { MessageBox, ChatList } from 'react-chat-elements';
+import 'react-chat-elements/dist/main.css';
 
 const SOCKET_URL = "https://socket-pbvr.onrender.com";
 
@@ -378,58 +380,64 @@ export default function Chat() {
               {messagesMap.size === 0 ? (
                 <div className="text-gray-400 text-center mt-8">No hay mensajes aún.</div>
               ) : (
-                uniqueMessages.map((msg: ChatMessage) => (
-                  <div key={msg._id} className="mb-2 flex items-center group">
-                    {msg.instagram ? (
-                      <a
-                        href={msg.instagram}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-semibold text-primary hover:underline"
-                        title="Ver Instagram"
-                      >
-                        {msg.username || msg.email}
-                      </a>
-                    ) : (
-                      <span className="font-semibold text-primary">{msg.username || msg.email}</span>
-                    )}
-                    : {editingId === msg._id ? (
-                      <>
-                        <input
-                          className="border rounded px-2 py-1 text-sm mr-2"
-                          value={editInput}
-                          onChange={e => setEditInput(e.target.value)}
-                          maxLength={500}
+                uniqueMessages.map((msg: ChatMessage) => {
+                  const isOwn = user && msg.userId === user._id;
+                  const isEditing = editingId === msg._id;
+                  return (
+                    <div key={msg._id} className={`mb-2 flex ${isOwn ? 'justify-end' : 'justify-start'}`}> 
+                      {isEditing ? (
+                        <div className="flex flex-col max-w-xs w-full">
+                          <input
+                            className="border rounded px-2 py-1 text-sm mb-1"
+                            value={editInput}
+                            onChange={e => setEditInput(e.target.value)}
+                            maxLength={500}
+                          />
+                          <div className="flex gap-2">
+                            <button onClick={() => handleSaveEdit(msg)} className="text-green-600 text-xs">Guardar</button>
+                            <button onClick={() => { setEditingId(null); setEditInput(""); }} className="text-gray-400 text-xs">Cancelar</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <MessageBox
+                          id={msg._id}
+                          position={isOwn ? 'right' : 'left'}
+                          type={'text'}
+                          title={msg.username || msg.email}
+                          titleColor={isOwn ? '#075e54' : '#128c7e'}
+                          text={`${msg.message}${msg.edited ? ' (editado)' : ''}`}
+                          date={new Date(msg.timestamp)}
+                          dateString={new Date(msg.timestamp).toLocaleTimeString()}
+                          notch={true}
+                          focus={false}
+                          forwarded={false}
+                          replyButton={false}
+                          removeButton={false}
+                          status={'waiting'}
+                          retracted={false}
                         />
-                        <button onClick={() => handleSaveEdit(msg)} className="text-green-600 text-xs mr-2">Guardar</button>
-                        <button onClick={() => { setEditingId(null); setEditInput(""); }} className="text-gray-400 text-xs">Cancelar</button>
-                      </>
-                    ) : (
-                      <>
-                        {msg.message} {msg.edited && <span className="text-xs text-gray-400">(editado)</span>}
-                        {canEditMessage(msg) && (
-                          <button
-                            onClick={() => handleEditMessage(msg)}
-                            className="ml-2 text-blue-500 hover:text-blue-700 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                            title="Editar mensaje"
-                          >
-                            Editar
-                          </button>
-                        )}
-                      </>
-                    )}
-                    <span className="text-xs text-gray-400 ml-2">{new Date(msg.timestamp).toLocaleTimeString()}</span>
-                    {user && user.email === ADMIN_EMAIL && msg._id && (
-                      <button
-                        onClick={() => handleDeleteMessage(msg._id!)}
-                        className="ml-2 text-red-500 hover:text-red-700 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Eliminar mensaje"
-                      >
-                        Eliminar
-                      </button>
-                    )}
-                  </div>
-                ))
+                      )}
+                      {!isEditing && canEditMessage(msg) && (
+                        <button
+                          onClick={() => handleEditMessage(msg)}
+                          className="ml-2 text-blue-500 hover:text-blue-700 text-xs opacity-80 self-end"
+                          title="Editar mensaje"
+                        >
+                          Editar
+                        </button>
+                      )}
+                      {user && user.email === ADMIN_EMAIL && msg._id && !isEditing && (
+                        <button
+                          onClick={() => handleDeleteMessage(msg._id!)}
+                          className="ml-2 text-red-500 hover:text-red-700 text-xs opacity-80 self-end"
+                          title="Eliminar mensaje"
+                        >
+                          Eliminar
+                        </button>
+                      )}
+                    </div>
+                  );
+                })
               )}
               <div ref={messagesEndRef} />
             </>
