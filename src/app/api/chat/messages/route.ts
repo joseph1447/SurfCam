@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import ChatMessage from '@/models/ChatMessage';
+import User from '@/models/User';
 
 export async function GET(req: NextRequest) {
   await connectDB();
@@ -17,5 +18,15 @@ export async function GET(req: NextRequest) {
     .sort({ timestamp: 1 })
     .limit(100)
     .lean();
-  return Response.json({ messages });
+
+  // Add instagram field to each message
+  const userIds = [...new Set(messages.map(m => m.userId?.toString()))];
+  const users = await User.find({ _id: { $in: userIds } }, { _id: 1, instagram: 1 }).lean();
+  const userMap = Object.fromEntries(users.map(u => [u._id.toString(), u.instagram]));
+  const messagesWithInstagram = messages.map(m => ({
+    ...m,
+    instagram: userMap[m.userId?.toString()] || undefined
+  }));
+
+  return Response.json({ messages: messagesWithInstagram });
 }
