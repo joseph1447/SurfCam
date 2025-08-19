@@ -71,6 +71,13 @@ const userSchema = new mongoose.Schema({
     maxlength: 32,
     unique: false
   },
+  instagram: {
+    type: String,
+    required: false,
+    trim: true,
+    maxlength: 128,
+    unique: false
+  },
   // Métricas del usuario
   totalViews: {
     type: Number,

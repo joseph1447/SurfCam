@@ -9,6 +9,7 @@ type User = {
   email: string;
   accessType: 'free' | 'premium';
   username?: string;
+  instagram?: string;
   loginCount?: number;
   lastLogin?: string;
 };

@@ -8,6 +8,7 @@ export default function PerfilPage() {
   const { user, setUser, logout } = useAuth();
   const [editing, setEditing] = useState(false);
   const [username, setUsername] = useState(user?.username || '');
+  const [instagram, setInstagram] = useState(user?.instagram || '');
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
   const router = useRouter();
@@ -26,11 +27,11 @@ export default function PerfilPage() {
       const res = await fetch('/api/user/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'x-user-id': user._id },
-        body: JSON.stringify({ username }),
+        body: JSON.stringify({ username, instagram }),
       });
       const data = await res.json();
       if (data.success) {
-        setUser((u) => u ? { ...u, username } : u);
+        setUser((u) => u ? { ...u, username, instagram } : u);
         setMsg('¡Guardado!');
         setEditing(false);
       } else {
@@ -81,6 +82,25 @@ export default function PerfilPage() {
                 {user.username || <span className="text-gray-400">(no definido)</span>}
               </div>
             )}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Instagram</label>
+            {editing ? (
+              <input
+                className="border rounded px-3 py-2 w-full"
+                value={instagram}
+                onChange={e => setInstagram(e.target.value)}
+                maxLength={128}
+                placeholder="https://instagram.com/tuusuario"
+              />
+            ) : (
+              <div className="bg-gray-100 px-3 py-2 rounded text-gray-700 font-semibold">
+                {user.instagram ? (
+                  <a href={user.instagram} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{user.instagram}</a>
+                ) : <span className="text-gray-400">(no definido)</span>}
+              </div>
+            )}
+            <div className="text-xs text-gray-400 mt-1">Pega el link completo de tu perfil de Instagram.</div>
           </div>
         </div>
         <div className="flex gap-2 mt-6">

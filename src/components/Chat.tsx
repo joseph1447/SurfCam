@@ -172,7 +172,7 @@ export default function Chat() {
     const msgObj = {
       group: activeTab,
       userId,
-      username: user.username || "",
+      username: user.username || user.email || "", // Use email if no username
       message: input,
     };
     console.log('[Socket] Sending message:', msgObj);
@@ -313,7 +313,20 @@ export default function Chat() {
               ) : (
                 uniqueMessages.map((msg) => (
                   <div key={msg._id} className="mb-2 flex items-center group">
-                    <span className="font-semibold text-primary">{msg.username || ""}:</span> {editingId === msg._id ? (
+                    {msg.instagram ? (
+                      <a
+                        href={msg.instagram}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-semibold text-primary hover:underline"
+                        title="Ver Instagram"
+                      >
+                        {msg.username || msg.email}
+                      </a>
+                    ) : (
+                      <span className="font-semibold text-primary">{msg.username || msg.email}</span>
+                    )}
+                    : {editingId === msg._id ? (
                       <>
                         <input
                           className="border rounded px-2 py-1 text-sm mr-2"
