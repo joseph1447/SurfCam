@@ -5,8 +5,8 @@ import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-//const SOCKET_URL = "https://socket-pbvr.onrender.com";
-const SOCKET_URL = "http://localhost:5000";
+const SOCKET_URL = "https://socket-pbvr.onrender.com";
+//const SOCKET_URL = "http://localhost:5000";
 
 type ChatMessage = {
   _id: string;
