@@ -11,15 +11,14 @@ function getIO() {
   return null;
 }
 
-export async function DELETE(req: NextRequest, paramsPromise: Promise<{ params: { id: string } }>) {
+export async function DELETE(req: NextRequest, context: { params: { id: string } }) {
   await connectDB();
   const adminEmail = process.env.ADMINUSER || 'josephquesada92@gmail.com';
   const userEmail = req.headers.get('x-user-email');
   if (userEmail !== adminEmail) {
     return NextResponse.json({ success: false, error: 'No autorizado' }, { status: 403 });
   }
-  const { params } = await paramsPromise;
-  const { id } = params;
+  const { id } = context.params;
   try {
     const deleted = await ChatMessage.findByIdAndDelete(id);
     if (!deleted) {
@@ -36,10 +35,9 @@ export async function DELETE(req: NextRequest, paramsPromise: Promise<{ params: 
   }
 }
 
-export async function PUT(req: NextRequest, paramsPromise: Promise<{ params: { id: string } }>) {
+export async function PUT(req: NextRequest, context: { params: { id: string } }) {
   await connectDB();
-  const { params } = await paramsPromise;
-  const { id } = params;
+  const { id } = context.params;
   const { message } = await req.json();
   const userId = req.headers.get('x-user-id');
   if (!userId) {

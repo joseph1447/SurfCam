@@ -7,6 +7,13 @@ import { Button } from "@/components/ui/button";
 
 const SOCKET_URL = "https://socket-pbvr.onrender.com";
 
+type ChatMessage = {
+  _id: string;
+  userId: string;
+  timestamp: string | number;
+  [key: string]: any;
+};
+
 export default function Chat() {
   const { user } = useAuth();
   const userId = user?._id;
@@ -43,8 +50,6 @@ export default function Chat() {
   // Connect to socket
   useEffect(() => {
     if (!user) return;
-    console.log('[Socket] Initializing connection to', SOCKET_URL);
-    if (!userId) return;
     const socket = io(SOCKET_URL, { path: "/socket" });
     socketRef.current = socket;
     // Join general by default
@@ -55,21 +60,17 @@ export default function Chat() {
     }
     // Listen for messages
     socket.on("message", (msg) => {
-      console.log('[Socket] Received message:', msg, '| Current userId:', userId);
       setMessagesMap((prev) => {
         if (msg._id && prev.has(msg._id)) {
-          console.log('[Chat] Duplicate message detected, not adding:', msg);
           return prev;
         }
         const newMap = new Map(prev);
         newMap.set(msg._id, msg);
-        console.log('[Chat] Updated messages map:', Array.from(newMap.values()));
         return newMap;
       });
     });
     // Listen for messageDeleted
     socket.on("messageDeleted", (data) => {
-      console.log('[Socket] Message deleted:', data);
       setMessagesMap((prev) => {
         const newMap = new Map(prev);
         newMap.delete(data._id);
@@ -78,7 +79,6 @@ export default function Chat() {
     });
     // Listen for messageEdited
     socket.on("messageEdited", (data) => {
-      console.log('[Socket] Message edited:', data);
       setMessagesMap((prev) => {
         const newMap = new Map(prev);
         newMap.set(data._id, { ...newMap.get(data._id), message: data.message, edited: true });
@@ -87,10 +87,8 @@ export default function Chat() {
     });
     // Log connection errors
     socket.on("connect_error", (err) => {
-      console.error("[Socket] connect_error:", err);
     });
     socket.on("error", (err) => {
-      console.error("[Socket] error:", err);
     });
     return () => {
       socket.disconnect();
@@ -145,7 +143,7 @@ export default function Chat() {
       .then((res) => res.json())
       .then((data) => {
         const map = new Map<string, any>();
-        (data.messages || []).forEach(m => map.set(m._id, m));
+        (data.messages || []).forEach((m: ChatMessage) => map.set(m._id, m));
         setMessagesMap(map);
       });
   }, [activeTab, user]);
@@ -155,7 +153,6 @@ export default function Chat() {
     if (!socketRef.current) return;
     const socket = socketRef.current;
     const onMessage = (msg: any) => {
-      console.log('[Socket] Received message:', msg);
       setMessagesMap((prev) => {
         const newMap = new Map(prev);
         newMap.set(msg._id, msg);
@@ -170,7 +167,6 @@ export default function Chat() {
 
   // Log messages state on every update
   useEffect(() => {
-    console.log('[Chat] Current messages state:', Array.from(messagesMap.values()));
   }, [messagesMap]);
 
   const handleSend = () => {
@@ -183,7 +179,6 @@ export default function Chat() {
       username: user.username || user.email || "", // Use email if no username
       message: input,
     };
-    console.log('[Socket] Sending message:', msgObj);
     socketRef.current?.emit('message', msgObj);
     setInput("");
     setTimeout(() => setSending(false), 500); // Prevent rapid double send
@@ -291,9 +286,15 @@ export default function Chat() {
   };
 
   // Before rendering messages
-  const uniqueMessages = Array.from(messagesMap.values());
-  console.log('[Chat] Rendering messages with keys:', uniqueMessages.map(m => m._id));
-  uniqueMessages.forEach(m => {
+  const allMessages = Array.from(messagesMap.values()) as ChatMessage[];
+  const now = new Date();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).getTime();
+  const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).getTime();
+  const uniqueMessages = allMessages.filter((m: ChatMessage) => {
+    const ts = new Date(m.timestamp).getTime();
+    return ts >= startOfDay && ts <= endOfDay;
+  });
+  uniqueMessages.forEach((m: ChatMessage) => {
     if (!m._id) console.warn('[Chat] Message missing _id:', m);
   });
 
@@ -301,7 +302,7 @@ export default function Chat() {
     <Card className="mt-8 max-w-2xl mx-auto">
       <CardContent className="p-0">
         <div className="flex border-b overflow-x-auto no-scrollbar">
-          {groups.map((g) => (
+          {groups.map((g: any) => (
             <button
               key={g.key}
               className={`flex-1 py-2 px-4 text-center font-semibold transition-colors whitespace-nowrap ${activeTab === g.key ? "bg-primary text-white" : "bg-gray-100 hover:bg-gray-200"}`}
@@ -309,6 +310,7 @@ export default function Chat() {
               disabled={g.protected && !hasGroupAccess(g.key)}
             >
               {g.name}
+              {g.protected && <span className="ml-1 text-xs text-gray-500">🔒</span>}
             </button>
           ))}
         </div>
@@ -376,7 +378,7 @@ export default function Chat() {
               {messagesMap.size === 0 ? (
                 <div className="text-gray-400 text-center mt-8">No hay mensajes aún.</div>
               ) : (
-                uniqueMessages.map((msg) => (
+                uniqueMessages.map((msg: ChatMessage) => (
                   <div key={msg._id} className="mb-2 flex items-center group">
                     {msg.instagram ? (
                       <a
