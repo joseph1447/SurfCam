@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import GroupService from '@/services/GroupService';
-import { validateJoinGroupInput } from '@/utils/validate';
+import { validateChangePasswordInput } from '@/utils/validate';
 
 export async function POST(req: NextRequest) {
   await connectDB();
   try {
-    const { group, password, userId } = await req.json();
-    validateJoinGroupInput({ group, password, userId });
-    const result = await GroupService.joinGroup({ groupName: group, password, userId });
-    return NextResponse.json({ success: true, ...result });
+    const { group, newPassword, userId } = await req.json();
+    validateChangePasswordInput({ group, newPassword, userId });
+    await GroupService.changePassword({ name: group, newPassword });
+    return NextResponse.json({ success: true });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 400 });
   }
