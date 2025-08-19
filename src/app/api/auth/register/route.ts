@@ -111,6 +111,7 @@ export async function POST(request: NextRequest) {
           email: user.email,
           accessType: user.accessType,
           username: user.username,
+          instagram: user.instagram,
           loginCount: user.loginCount,
           lastLogin: user.lastLogin
         }
@@ -149,6 +150,7 @@ export async function POST(request: NextRequest) {
           email: newUser.email,
           accessType: newUser.accessType,
           username: newUser.username,
+          instagram: newUser.instagram,
           loginCount: newUser.loginCount,
           lastLogin: newUser.lastLogin
         }
