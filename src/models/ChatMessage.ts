@@ -22,6 +22,10 @@ const chatMessageSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  reactions: [{
+    emoji: { type: String, required: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
+  }],
   timestamp: {
     type: Date,
     default: Date.now

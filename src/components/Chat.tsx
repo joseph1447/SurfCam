@@ -1,13 +1,12 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MessageBox, ChatList } from 'react-chat-elements';
-import 'react-chat-elements/dist/main.css';
 
-const SOCKET_URL = "https://socket-pbvr.onrender.com";
+//const SOCKET_URL = "https://socket-pbvr.onrender.com";
+const SOCKET_URL = "http://localhost:5000";
 
 type ChatMessage = {
   _id: string;
@@ -38,6 +37,68 @@ export default function Chat() {
   const [sending, setSending] = useState(false);
   const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMINUSER || 'josephquesada92@gmail.com';
 
+  // Reaction emojis
+  const REACTION_EMOJIS = ["👍", "😂", "❤️", "🙏", "😮", "🤙"];
+  const [openReactionFor, setOpenReactionFor] = useState<string | null>(null);
+
+  // Handle reaction click
+  const handleReact = useCallback((msgId: string, emoji: string) => {
+    if (!userId || !socketRef.current) return;
+    // Optimistically update UI
+    setMessagesMap((prev) => {
+      const newMap = new Map(prev);
+      const msg = newMap.get(msgId);
+      if (msg) {
+        const reactions = msg.reactions || [];
+        const userReacted = reactions.some((r: any) => r.emoji === emoji && String(r.userId) === String(userId));
+        if (userReacted) {
+          msg.reactions = reactions.filter((r: any) => !(r.emoji === emoji && String(r.userId) === String(userId)));
+        } else {
+          msg.reactions = [...reactions, { emoji, userId }];
+        }
+        newMap.set(msgId, { ...msg });
+      }
+      return newMap;
+    });
+    socketRef.current.emit('messageReaction', { messageId: msgId, emoji, userId });
+    setOpenReactionFor(null); // Hide bar after reacting
+  }, [userId]);
+
+  // Hide emoji bar on click outside
+  useEffect(() => {
+    if (!openReactionFor) return;
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.reaction-bar-popover')) {
+        setOpenReactionFor(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [openReactionFor]);
+
+  // Listen for reaction updates via socket
+  useEffect(() => {
+    if (!socketRef.current) return;
+    const socket = socketRef.current;
+    const onReaction = (data: any) => {
+      console.log('Received messageReaction socket event', data);
+      setMessagesMap((prev) => {
+        const newMap = new Map(prev);
+        const msg = newMap.get(data._id);
+        if (msg) {
+          msg.reactions = data.reactions;
+          newMap.set(data._id, { ...msg });
+        }
+        return newMap;
+      });
+    };
+    socket.on('messageReaction', onReaction);
+    return () => {
+      socket.off('messageReaction', onReaction);
+    };
+  }, [socketRef]);
+
   // Fetch groups from API
   useEffect(() => {
     fetch("/api/chat/groups/list")
@@ -49,54 +110,70 @@ export default function Chat() {
       });
   }, []);
 
-  // Connect to socket
+  // --- SOCKET.IO INTEGRATION ---
   useEffect(() => {
-    if (!user) return;
-    const socket = io(SOCKET_URL, { path: "/socket" });
-    socketRef.current = socket;
-    // Join general by default
-    socket.emit("join", { group: "general", userId });
-    // Join el-trillo if already joined
-    if (joinedGroups.includes("el-trillo")) {
-      socket.emit("join", { group: "el-trillo", userId });
-    }
-    // Listen for messages
-    socket.on("message", (msg) => {
+    // Connect to socket
+    socketRef.current = io(SOCKET_URL, { path: "/socket" });
+
+    // Authenticate (if you have a token)
+    // socketRef.current.emit('authenticate', token);
+    // socketRef.current.on('authenticated', () => { /* handle success */ });
+    // socketRef.current.on('unauthorized', () => { /* handle fail */ });
+
+    // Join group (default to 'general')
+    socketRef.current.emit('join', { group: activeTab });
+
+    // Listen for new messages
+    socketRef.current.on('message', (msgObj) => {
       setMessagesMap((prev) => {
-        if (msg._id && prev.has(msg._id)) {
-          return prev;
+        const newMap = new Map(prev);
+        newMap.set(msgObj._id, msgObj);
+        return newMap;
+      });
+    });
+
+    // Listen for message edits
+    socketRef.current.on('messageEdited', (msgObj) => {
+      setMessagesMap((prev) => {
+        const newMap = new Map(prev);
+        if (newMap.has(msgObj._id)) {
+          newMap.set(msgObj._id, { ...newMap.get(msgObj._id), ...msgObj });
         }
-        const newMap = new Map(prev);
-        newMap.set(msg._id, msg);
         return newMap;
       });
     });
-    // Listen for messageDeleted
-    socket.on("messageDeleted", (data) => {
+
+    // Listen for message deletions
+    socketRef.current.on('messageDeleted', ({ messageId }) => {
       setMessagesMap((prev) => {
         const newMap = new Map(prev);
-        newMap.delete(data._id);
+        newMap.delete(messageId);
         return newMap;
       });
     });
-    // Listen for messageEdited
-    socket.on("messageEdited", (data) => {
+
+    // Listen for message reactions
+    socketRef.current.on('messageReaction', ({ _id, reactions }) => {
       setMessagesMap((prev) => {
         const newMap = new Map(prev);
-        newMap.set(data._id, { ...newMap.get(data._id), message: data.message, edited: true });
+        if (newMap.has(_id)) {
+          newMap.set(_id, { ...newMap.get(_id), reactions });
+        }
         return newMap;
       });
     });
-    // Log connection errors
-    socket.on("connect_error", (err) => {
-    });
-    socket.on("error", (err) => {
-    });
+
+    // Error handling
+    socketRef.current.on('messageError', ({ error }) => { console.error('Message error:', error); });
+    socketRef.current.on('messageEditError', ({ error }) => { console.error('Edit error:', error); });
+    socketRef.current.on('messageDeleteError', ({ error }) => { console.error('Delete error:', error); });
+    socketRef.current.on('messageReactionError', ({ error }) => { console.error('Reaction error:', error); });
+
+    // Clean up on unmount
     return () => {
-      socket.disconnect();
+      socketRef.current.disconnect();
     };
-    // eslint-disable-next-line
-  }, [user]);
+  }, [activeTab]);
 
   // Helper: check if user is at bottom
   const isAtBottom = () => {
@@ -141,7 +218,7 @@ export default function Chat() {
   // Fetch chat history on tab change (replace, do not merge)
   useEffect(() => {
     if (!user) return;
-    fetch(`/api/chat/messages?group=${activeTab}`)
+    fetch(`/api/chat/history?group=${activeTab}`)
       .then((res) => res.json())
       .then((data) => {
         const map = new Map<string, any>();
@@ -227,52 +304,45 @@ export default function Chat() {
     setJoining(false);
   };
 
-  const handleDeleteMessage = async (messageId: string) => {
-    if (!user || user.email !== ADMIN_EMAIL) return;
-    try {
-      const res = await fetch(`/api/chat/messages/${messageId}`, {
-        method: 'DELETE',
-        headers: {
-          'x-user-email': user.email,
-        },
-      });
-      const data = await res.json();
-      if (data.success) {
-        setMessagesMap((prev) => {
-          const newMap = new Map(prev);
-          newMap.delete(messageId);
-          return newMap;
-        });
-      } else {
-        alert(data.error || 'No se pudo eliminar el mensaje');
-      }
-    } catch (err) {
-      alert('Error al eliminar el mensaje');
-    }
+  // Delete message (admin only, via socket)
+  const handleDeleteMessage = (messageId: string) => {
+    if (!user || user.email !== ADMIN_EMAIL || !socketRef.current) return;
+    console.log('Emitting messageDeleted', { messageId });
+    socketRef.current.emit('messageDeleted', { messageId });
   };
 
-  const handleEditMessage = async (msg: any) => {
+  // Listen for messageDeleted event from socket
+  useEffect(() => {
+    if (!socketRef.current) return;
+    const socket = socketRef.current;
+    const onMessageDeleted = ({ messageId }) => {
+      console.log('Received messageDeleted event', messageId);
+      setMessagesMap(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(messageId);
+        return newMap;
+      });
+    };
+    socket.on('messageDeleted', onMessageDeleted);
+    return () => {
+      socket.off('messageDeleted', onMessageDeleted);
+    };
+  }, []);
+
+  // Edit message (within 5 min, only author)
+  const handleEditMessage = (msg: any) => {
     setEditingId(msg._id);
     setEditInput(msg.message);
   };
 
-  const handleSaveEdit = async (msg: any) => {
-    if (!editInput.trim() || !user) return;
-    const res = await fetch(`/api/chat/messages/${msg._id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-user-id': user._id,
-      },
-      body: JSON.stringify({ message: editInput }),
+  const handleSaveEdit = (msg: any) => {
+    if (!editInput.trim() || !user || !socketRef.current) return;
+    socketRef.current.emit('messageEdited', {
+      messageId: msg._id,
+      newMessage: editInput,
     });
-    const data = await res.json();
-    if (data.success) {
-      setEditingId(null);
-      setEditInput("");
-    } else {
-      alert(data.error || 'No se pudo editar el mensaje');
-    }
+    setEditingId(null);
+    setEditInput("");
   };
 
   const canEditMessage = (msg: any) => {
@@ -399,23 +469,86 @@ export default function Chat() {
                           </div>
                         </div>
                       ) : (
-                        <MessageBox
-                          id={msg._id}
-                          position={isOwn ? 'right' : 'left'}
-                          type={'text'}
-                          title={msg.username || msg.email}
-                          titleColor={isOwn ? '#075e54' : '#128c7e'}
-                          text={`${msg.message}${msg.edited ? ' (editado)' : ''}`}
-                          date={new Date(msg.timestamp)}
-                          dateString={new Date(msg.timestamp).toLocaleTimeString()}
-                          notch={true}
-                          focus={false}
-                          forwarded={false}
-                          replyButton={false}
-                          removeButton={false}
-                          status={'waiting'}
-                          retracted={false}
-                        />
+                        <div className={`max-w-xs w-full rounded-lg px-4 py-2 shadow-md break-words relative ${isOwn ? 'bg-blue-500 text-white ml-8' : 'bg-gray-200 text-gray-900 mr-8'}`}
+                        >
+                          {/* Trash icon (top right, only for admin, inside bubble) */}
+                          {user && user.email === ADMIN_EMAIL && msg._id && !editingId && (
+                            <button
+                              onClick={() => handleDeleteMessage(msg._id!)}
+                              className="absolute top-2 right-2 p-1 rounded-full bg-white hover:bg-red-100 text-red-500 shadow"
+                              title="Eliminar mensaje"
+                            >
+                              <span role="img" aria-label="Eliminar">🗑️</span>
+                            </button>
+                          )}
+                          <div className="flex items-center mb-1">
+                            <span className={`font-semibold text-xs ${isOwn ? 'text-white' : 'text-blue-700'}`}>{msg.username || msg.email}</span>
+                            {msg.edited && <span className={`ml-2 text-xs ${isOwn ? 'text-blue-200' : 'text-gray-500'}`}>(editado)</span>}
+                          </div>
+                          <div className="text-sm">{msg.message}</div>
+                          <div className="flex justify-end mt-1">
+                            <span className={`text-xs ${isOwn ? 'text-blue-200' : 'text-gray-500'}`}>{new Date(msg.timestamp).toLocaleTimeString()}</span>
+                          </div>
+                          {/* Bottom row: badges */}
+                          <div className="flex items-center gap-2 mt-2">
+                            <div className="flex gap-1 flex-wrap">
+                              {REACTION_EMOJIS.map((emoji) => {
+                                const reactions = (msg.reactions || []).filter((r: any) => r.emoji === emoji);
+                                if (reactions.length === 0) return null;
+                                const userReacted = reactions.some((r: any) => String(r.userId) === String(userId));
+                                // If userReacted, make badge clickable to undo
+                                return userReacted ? (
+                                  <button
+                                    key={emoji}
+                                    onClick={() => handleReact(msg._id, emoji)}
+                                    className={`flex items-center px-2 py-0.5 rounded-full text-sm border text-xs transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 ${isOwn ? 'bg-blue-600 text-white border-blue-400' : 'bg-gray-300 text-blue-700 border-blue-400'} hover:opacity-80 cursor-pointer`}
+                                    title="Haz clic para quitar tu reacción"
+                                  >
+                                    <span>{emoji}</span>
+                                    <span className="ml-1">{reactions.length}</span>
+                                  </button>
+                                ) : (
+                                  <span
+                                    key={emoji}
+                                    className={`flex items-center px-2 py-0.5 rounded-full text-sm border text-xs bg-white text-gray-700 border-gray-300`}
+                                  >
+                                    <span>{emoji}</span>
+                                    <span className="ml-1">{reactions.length}</span>
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          </div>
+                          {/* Reaction icon and popover (bottom right, inside bubble) */}
+                          <div className="absolute right-2 bottom-2 flex flex-col items-center gap-2">
+                            <button
+                              className="reaction-trigger p-1 rounded-full bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-300 shadow"
+                              onClick={() => setOpenReactionFor(msg._id)}
+                              title="Reaccionar"
+                            >
+                              <span role="img" aria-label="Reaccionar">🤙➕</span>
+                            </button>
+                            {openReactionFor === msg._id && (
+                              <div className="reaction-bar-popover absolute z-10 right-12 bottom-0 bg-white border border-gray-200 rounded-lg shadow-lg p-2 flex gap-1">
+                                {REACTION_EMOJIS.map((emoji) => {
+                                  const reactions = (msg.reactions || []).filter((r: any) => r.emoji === emoji);
+                                  const userReacted = reactions.some((r: any) => String(r.userId) === String(userId));
+                                  return (
+                                    <button
+                                      key={emoji}
+                                      className={`flex items-center px-2 py-1 rounded-full text-lg border transition-colors ${userReacted ? (isOwn ? 'bg-blue-600 text-white border-blue-400' : 'bg-gray-300 text-blue-700 border-blue-400') : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'}`}
+                                      onClick={() => handleReact(msg._id, emoji)}
+                                      disabled={!userId}
+                                      title={emoji}
+                                    >
+                                      {emoji}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       )}
                       {!isEditing && canEditMessage(msg) && (
                         <button
@@ -424,15 +557,6 @@ export default function Chat() {
                           title="Editar mensaje"
                         >
                           Editar
-                        </button>
-                      )}
-                      {user && user.email === ADMIN_EMAIL && msg._id && !isEditing && (
-                        <button
-                          onClick={() => handleDeleteMessage(msg._id!)}
-                          className="ml-2 text-red-500 hover:text-red-700 text-xs opacity-80 self-end"
-                          title="Eliminar mensaje"
-                        >
-                          Eliminar
                         </button>
                       )}
                     </div>
