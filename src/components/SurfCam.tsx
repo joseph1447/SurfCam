@@ -9,14 +9,41 @@ import { Button } from "@/components/ui/button";
 import HlsPlayer from "./HlsPlayer";
 import { usePWA } from "@/hooks/usePWA";
 import Chat from "@/components/Chat";
+import { ChevronDown } from "lucide-react";
 
 export default function SurfCam() {
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }, []);
   const { user, logout, timeLeft, isTimeExpired } = useAuth();
   const { isInstallable, isInstalled, installApp } = usePWA();
   const [isInstalling, setIsInstalling] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
+  const chatRef = useRef<HTMLDivElement | null>(null);
+  const [showChatScrollButton, setShowChatScrollButton] = useState(false);
+  const prevMessagesCount = useRef(0);
 
+  // Detect if chat is in view
+  useEffect(() => {
+    const onScroll = () => {
+      if (!chatRef.current) return;
+      const rect = chatRef.current.getBoundingClientRect();
+      // If the top of the chat is below the bottom of the viewport, it's not visible
+      setShowChatScrollButton(rect.top > window.innerHeight - 80);
+    };
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
+  // Show button when new messages arrive and chat is not visible
+  useEffect(() => {
+    if (!chatRef.current) return;
+    const rect = chatRef.current.getBoundingClientRect();
+    if (rect.top > window.innerHeight - 80 && prevMessagesCount.current > 0) {
+      setShowChatScrollButton(true);
+    }
+    prevMessagesCount.current += 1;
+  }, [/* You may want to pass a prop or state from Chat to trigger this */]);
 
   // Efecto para manejar la expiración del tiempo (pantalla completa y video)
   useEffect(() => {
@@ -205,7 +232,7 @@ export default function SurfCam() {
            )}
 
           <div className="flex-grow w-full relative">
-            <div className="aspect-video w-full relative rounded-xl overflow-hidden shadow-2xl shadow-primary/20">
+            <div className="aspect-video w-full min-h-[70vh] relative rounded-xl overflow-hidden shadow-2xl shadow-primary/20">
               <HlsPlayer src="/api/hls-proxy/surfcam.m3u8" isPaused={isTimeExpired} />
               {user?.accessType === "free" && (
                 <>
@@ -255,8 +282,21 @@ export default function SurfCam() {
               )}
             </div>
           </div>
-          {/* Chat component below the video */}
-          <Chat />
+          {/* Chat component below the video, with extra margin */}
+          <div className="mt-16" ref={chatRef}>
+            <Chat />
+          </div>
+          {showChatScrollButton && (
+            <button
+              className="fixed bottom-8 right-8 z-50 bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg hover:bg-blue-700 transition-all flex items-center gap-2"
+              onClick={() => {
+                chatRef.current?.scrollIntoView({ behavior: "smooth" });
+                setShowChatScrollButton(false);
+              }}
+            >
+              <ChevronDown className="w-5 h-5" /> Ir al chat
+            </button>
+          )}
           <footer className="text-center mt-12 py-6 border-t">
             <p className="text-sm text-muted-foreground">
               Un agradecimiento especial a{' '}
