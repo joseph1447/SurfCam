@@ -76,6 +76,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (data.success) {
           setUser(data.user);
+          if (data.user.accessType === 'free') {
+            setTimeLeft(FREE_TIER_DURATION_SECONDS);
+            setIsTimeExpired(false);
+          }
         } else {
           throw new Error(data.error || "Error al iniciar sesión");
         }
