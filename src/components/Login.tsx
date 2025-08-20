@@ -339,7 +339,8 @@ export default function Login() {
             {!isPremiumMode && magicLinkSent && (
               <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-center">
                 <p className="text-green-700 font-medium mb-2">¡Enlace enviado!</p>
-                <p className="text-green-700 text-sm">Revisa tu correo electrónico y haz clic en el enlace mágico para acceder.</p>
+                <p className="text-green-700 text-sm">Revisa tu correo electrónico y haz clic en el enlace mágico para acceder.<br />
+                <span className="text-yellow-700 font-semibold">Si no lo ves, revisa tu carpeta de spam o correo no deseado.</span></p>
               </div>
             )}
 

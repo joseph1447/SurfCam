@@ -3,10 +3,18 @@
 import Login from '@/components/Login';
 import SurfCam from '@/components/SurfCam';
 import { useAuth } from '@/context/AuthContext';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function HomePage() {
-  const { user } = useAuth();
+  const { user, login } = useAuth();
+  const searchParams = useSearchParams();
+  const email = searchParams.get('email');
+  useEffect(() => {
+    if (!user && email) {
+      login(email, '');
+    }
+  }, [user, email, login]);
 
   return (
     <>
