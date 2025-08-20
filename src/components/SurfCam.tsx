@@ -22,6 +22,7 @@ export default function SurfCam() {
   const chatRef = useRef<HTMLDivElement | null>(null);
   const [showChatScrollButton, setShowChatScrollButton] = useState(false);
   const prevMessagesCount = useRef(0);
+  const [showPrivacy, setShowPrivacy] = useState(false);
 
   // Detect if chat is in view
   useEffect(() => {
@@ -331,6 +332,30 @@ export default function SurfCam() {
                 @joseph.quesada94
               </a>
             </div>
+            <div className="mt-4">
+              <button
+                className="text-xs text-gray-500 underline hover:text-primary cursor-pointer"
+                onClick={() => setShowPrivacy(true)}
+              >
+                Política de Privacidad
+              </button>
+            </div>
+            {showPrivacy && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-lg p-6 max-w-md w-full text-left shadow-xl">
+                  <h3 className="text-lg font-bold mb-2">Política de Privacidad</h3>
+                  <p className="text-sm mb-2">
+                    Esta aplicación recopila tu correo electrónico y, si usas Google para iniciar sesión, tu nombre y foto de perfil de Google. Esta información se utiliza únicamente para gestionar el acceso, el estado premium y la experiencia de chat. No compartimos tus datos con terceros.
+                  </p>
+                  <p className="text-sm mb-2">
+                    Puedes solicitar la eliminación de tus datos o hacer preguntas sobre privacidad escribiendo a <a href="mailto:info@seataya.com" className="underline text-primary">info@seataya.com</a>.
+                  </p>
+                  <Button className="mt-4 w-full" onClick={() => setShowPrivacy(false)}>
+                    Cerrar
+                  </Button>
+                </div>
+              </div>
+            )}
           </footer>
         </div>
       </main>

@@ -125,12 +125,15 @@ export async function validateEmailDomain(email: string): Promise<boolean> {
 }
 
 // Comprehensive email validation
-export async function validateEmail(email: string): Promise<{
+export async function validateEmail(email: string, skipForGoogle = false): Promise<{
   isValid: boolean;
   error?: string;
 }> {
+  if (skipForGoogle) {
+    return { isValid: true };
+  }
   // Check if email is empty
-  if (!email || email.trim() === '') {
+  if (!email || typeof email !== 'string' || email.trim() === '') {
     return {
       isValid: false,
       error: 'El email es requerido'
@@ -208,7 +211,7 @@ export function validateEmailClient(email: string): {
   error?: string;
 } {
   // Check if email is empty
-  if (!email || email.trim() === '') {
+  if (!email || typeof email !== 'string' || email.trim() === '') {
     return {
       isValid: false,
       error: 'El email es requerido'

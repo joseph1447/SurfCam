@@ -12,9 +12,67 @@ import { Contact, Crown, User } from "lucide-react";
 import Link from "next/link";
 import { usePWA } from "@/hooks/usePWA";
 import { validateEmailClient } from "@/lib/emailValidation";
+import { useGoogleLogin } from "@react-oauth/google";
+import React from "react";
+import { useRouter } from "next/navigation";
+
+function GoogleIcon() {
+  return (
+    <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
+      <path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 126 23.4 172.9 62.3l-66.5 64.6C305.5 99.6 280.5 80 248 80c-82.3 0-148.8 66.5-148.8 148.8s66.5 148.8 148.8 148.8c94.3 0 135.3-65.8 140.2-99.9H248v-85.3h236.1c2.3 12.7 3.9 26.9 3.9 41.4z"></path>
+    </svg>
+  );
+}
+
+function GoogleLoginButton({ setEmail, setUser }: { setEmail: (email: string) => void, setUser: (user: any) => void }) {
+  const [isGoogleLoading, setIsGoogleLoading] = React.useState(false);
+  const router = useRouter();
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setIsGoogleLoading(true);
+      try {
+        const backendAuthResponse = await fetch('/api/auth/google', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: tokenResponse.code }),
+        });
+        if (!backendAuthResponse.ok) {
+          const errorData = await backendAuthResponse.json();
+          throw new Error(errorData.message || 'Internal Server Error');
+        }
+        const { user } = await backendAuthResponse.json();
+        // Fill email state with Google email before validation
+        if (user && user.email) setEmail(user.email);
+        // Set user directly for consistency
+        if (user) setUser(user);
+        router.push('/');
+      } catch (error) {
+        console.error("Error during Google sign-in:", error);
+      } finally {
+        setIsGoogleLoading(false);
+      }
+    },
+    onError: (errorResponse) => {
+      console.error("Google OAuth Error:", errorResponse);
+      setIsGoogleLoading(false);
+    },
+    flow: 'auth-code',
+    scope: 'openid email profile',
+  });
+  return (
+    <button
+      className="w-full bg-black hover:bg-red-600 text-white font-semibold py-3 mb-4 flex items-center justify-center gap-2 rounded-lg transition-colors"
+      onClick={() => googleLogin()}
+      type="button"
+      disabled={isGoogleLoading}
+    >
+      {isGoogleLoading ? 'Signing In...' : <><GoogleIcon /> Continuar con Google</>}
+    </button>
+  );
+}
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, setUser } = useAuth();
   const { isInstallable, isInstalled, installApp } = usePWA();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -40,6 +98,7 @@ export default function Login() {
 
       // Guest login with just email (no password needed)
       await login(email, ""); // Empty password for guest access
+      router.push('/');
     } catch (error) {
       console.error("Guest login failed:", error);
       setError("Error al iniciar sesión como invitado. Inténtalo de nuevo.");
@@ -63,6 +122,7 @@ export default function Login() {
 
       // Premium login with email and password validation
       await login(email, password);
+      router.push('/');
     } catch (error) {
       console.error("Premium login failed:", error);
       // Check if it's a password error or general error
@@ -204,6 +264,13 @@ export default function Login() {
            </CardHeader>
 
           <CardContent>
+            {/* Google Login Button */}
+            <GoogleLoginButton setEmail={setEmail} setUser={setUser} />
+            <div className="flex items-center my-4">
+              <Separator className="flex-1" />
+              <span className="mx-2 text-gray-400 font-bold">O</span>
+              <Separator className="flex-1" />
+            </div>
                          {/* Mode Toggle */}
              <div className="flex gap-2 mb-6">
                <Button

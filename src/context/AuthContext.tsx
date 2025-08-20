@@ -36,11 +36,11 @@ export function useAuth() {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [timeLeft, setTimeLeft] = useState(60);
+  const [timeLeft, setTimeLeft] = useState(30);
   const [isTimeExpired, setIsTimeExpired] = useState(false);
   const router = useRouter();
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const FREE_TIER_DURATION_SECONDS = 60;
+  const FREE_TIER_DURATION_SECONDS = 30;
 
   const login = useCallback(
     async (email: string, pass: string) => {
