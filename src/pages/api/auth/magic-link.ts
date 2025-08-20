@@ -2,7 +2,10 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import MagicLinkToken from '@/models/MagicLinkToken';
 import nodemailer from 'nodemailer';
-import crypto from 'crypto';
+
+function generateCode() {
+  return Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit code
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).end();
@@ -12,12 +15,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   await dbConnect();
 
-  // Generar token único y fecha de expiración (15 minutos)
-  const token = crypto.randomBytes(32).toString('hex');
+  // Generar código único y fecha de expiración (15 minutos)
+  const code = generateCode();
   const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
-  // Guardar en la base de datos
-  await MagicLinkToken.create({ email, token, expiresAt });
+  // Guardar en la base de datos (puedes borrar códigos previos para el mismo email si quieres)
+  await MagicLinkToken.deleteMany({ email });
+  await MagicLinkToken.create({ email, code, expiresAt });
 
   // Configura tu transport (ejemplo con Gmail)
   const transporterConfig = {
@@ -27,24 +31,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       pass: process.env.GMAIL_PASS,
     },
   };
-  console.log('Nodemailer transporter config:', { ...transporterConfig, auth: { user: transporterConfig.auth.user, pass: '***' } });
   const transporter = nodemailer.createTransport(transporterConfig);
 
-  const magicLink = `${process.env.NEXTAUTH_URL}/api/auth/validate?token=${token}`;
+  await transporter.sendMail({
+    from: `"SurfCam" <${process.env.GMAIL_USER}>`,
+    to: email,
+    subject: 'Tu código de acceso temporal para SurfCam',
+    html: `<p>Tu código de acceso es:</p>
+           <div style="font-size:2rem;font-weight:bold;letter-spacing:0.2em;margin:16px 0;">${code}</div>
+           <p>Ingresa este código en la app. El código expirará en 15 minutos.</p>
+           <p>Si no ves este correo, revisa tu carpeta de spam o correo no deseado.</p>`,
+  });
 
-  try {
-    await transporter.sendMail({
-      from: `"SurfCam" <${process.env.GMAIL_USER}>`,
-      to: email,
-      subject: 'Tu enlace mágico para acceder a SurfCam',
-      html: `<p>Haz clic en el siguiente enlace para acceder:</p>
-             <a href="${magicLink}">${magicLink}</a>
-             <p>Este enlace expirará en 15 minutos.</p>`,
-    });
-    console.log('Magic link email sent to:', email);
-    res.status(200).json({ success: true, message: 'Enlace enviado. Revisa tu correo.' });
-  } catch (err: any) {
-    console.error('Error sending magic link email:', err);
-    res.status(500).json({ message: err.message || 'Error enviando el email' });
-  }
+  res.status(200).json({ success: true, message: 'Código enviado. Revisa tu correo.' });
 }

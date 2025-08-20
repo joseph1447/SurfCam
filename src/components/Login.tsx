@@ -76,6 +76,8 @@ export default function Login() {
   const { isInstallable, isInstalled, installApp } = usePWA();
   const [email, setEmail] = useState("");
   const [magicLinkSent, setMagicLinkSent] = useState(false);
+  const [code, setCode] = useState("");
+  const [codeError, setCodeError] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isPremiumMode, setIsPremiumMode] = useState(false);
@@ -83,6 +85,7 @@ export default function Login() {
   const [isInstalling, setIsInstalling] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
   const [emailValidation, setEmailValidation] = useState<{ isValid: boolean; error?: string }>({ isValid: true });
+  const router = useRouter();
 
   const handleGuestLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -338,9 +341,46 @@ export default function Login() {
             )}
             {!isPremiumMode && magicLinkSent && (
               <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-center">
-                <p className="text-green-700 font-medium mb-2">¡Enlace enviado!</p>
-                <p className="text-green-700 text-sm">Revisa tu correo electrónico y haz clic en el enlace mágico para acceder.<br />
+                <p className="text-green-700 font-medium mb-2">¡Código enviado!</p>
+                <p className="text-green-700 text-sm mb-4">Revisa tu correo electrónico y copia el código temporal para acceder.<br />
                 <span className="text-yellow-700 font-semibold">Si no lo ves, revisa tu carpeta de spam o correo no deseado.</span></p>
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    setCodeError("");
+                    try {
+                      const response = await fetch('/api/auth/validate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, code }),
+                      });
+                      const data = await response.json();
+                      if (data.success) {
+                        setUser(data.user);
+                        router.push('/');
+                      } else {
+                        setCodeError(data.message || 'Código inválido.');
+                      }
+                    } catch (err) {
+                      setCodeError('Error al validar el código.');
+                    }
+                  }}
+                  className="space-y-3"
+                >
+                  <input
+                    type="text"
+                    value={code}
+                    onChange={e => setCode(e.target.value)}
+                    placeholder="Ingresa el código"
+                    className="w-full border rounded px-3 py-2 text-center text-lg"
+                    maxLength={6}
+                    required
+                  />
+                  {codeError && <p className="text-red-600 text-sm">{codeError}</p>}
+                  <Button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold py-3">
+                    Validar código
+                  </Button>
+                </form>
               </div>
             )}
 
