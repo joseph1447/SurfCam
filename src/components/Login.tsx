@@ -75,6 +75,7 @@ export default function Login() {
   const { login, setUser } = useAuth();
   const { isInstallable, isInstalled, installApp } = usePWA();
   const [email, setEmail] = useState("");
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isPremiumMode, setIsPremiumMode] = useState(false);
@@ -95,13 +96,21 @@ export default function Login() {
         setError(emailValidation.error || "Email inválido");
         return;
       }
-
-      // Guest login with just email (no password needed)
-      await login(email, ""); // Empty password for guest access
-      router.push('/');
+      // Request magic link
+      const response = await fetch('/api/auth/magic-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setMagicLinkSent(true);
+      } else {
+        setError(data.message || 'No se pudo enviar el enlace.');
+      }
     } catch (error) {
-      console.error("Guest login failed:", error);
-      setError("Error al iniciar sesión como invitado. Inténtalo de nuevo.");
+      console.error("Guest login (magic link) failed:", error);
+      setError("Error al enviar el enlace mágico. Inténtalo de nuevo.");
     } finally {
       setIsLoading(false);
     }
@@ -299,34 +308,39 @@ export default function Login() {
              )}
 
             {/* Guest Mode Form */}
-            {!isPremiumMode && (
+            {!isPremiumMode && !magicLinkSent && (
               <form onSubmit={handleGuestLogin} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
-                                     <Input
-                     id="email"
-                     type="email"
-                     placeholder="tu@email.com"
-                     value={email}
-                     onChange={handleEmailChange}
-                     required
-                     className={`border-gray-300 focus:border-blue-500 focus:ring-blue-500 ${
-                       email && !emailValidation.isValid ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
-                     }`}
-                   />
-                   {email && !emailValidation.isValid && (
-                     <p className="text-red-500 text-sm mt-1">{emailValidation.error}</p>
-                   )}
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="tu@email.com"
+                    value={email}
+                    onChange={handleEmailChange}
+                    required
+                    className={`border-gray-300 focus:border-blue-500 focus:ring-blue-500 ${
+                      email && !emailValidation.isValid ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                    }`}
+                  />
+                  {email && !emailValidation.isValid && (
+                    <p className="text-red-500 text-sm mt-1">{emailValidation.error}</p>
+                  )}
                 </div>
-
                 <Button 
                   type="submit" 
                   className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3"
                   disabled={isLoading}
                 >
-                  {isLoading ? "Iniciando como invitado..." : "Iniciar como Invitado"}
+                  {isLoading ? "Enviando enlace..." : "Entrar como Invitado"}
                 </Button>
               </form>
+            )}
+            {!isPremiumMode && magicLinkSent && (
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-center">
+                <p className="text-green-700 font-medium mb-2">¡Enlace enviado!</p>
+                <p className="text-green-700 text-sm">Revisa tu correo electrónico y haz clic en el enlace mágico para acceder.</p>
+              </div>
             )}
 
             {/* Premium Mode Form */}
