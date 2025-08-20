@@ -84,7 +84,7 @@ export default function Hospedaje() {
                          <div className="text-center text-white">
                            <p className="mb-2">No se pudo cargar la página</p>
                            <Button 
-                             onClick={() => window.open('https://seataya.com/', '_blank')}
+                             onClick={() => window.open('https://surf-cam-one.vercel.app/', '_blank')}
                              className="bg-white text-blue-600 hover:bg-gray-100"
                            >
                              <ExternalLink className="h-4 w-4 mr-2" />
@@ -94,9 +94,9 @@ export default function Hospedaje() {
                        </div>
                      )}
                      <iframe 
-                       src="https://seataya.com/"
+                       src="https://surf-cam-one.vercel.app/"
                        className="w-full h-full border-0"
-                       title="Seataya Luxury Villas"
+                       title="SurfCam"
                        loading="lazy"
                        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
                        onLoad={() => handleIframeLoad('seataya')}
@@ -111,9 +111,9 @@ export default function Hospedaje() {
                      </div>
                    </div>
             <CardHeader>
-              <CardTitle className="text-xl">Seataya Luxury Villas</CardTitle>
+              <CardTitle className="text-xl">SurfCam</CardTitle>
               <CardDescription>
-                Resort exclusivo de siete villas en las colinas de Santa Teresa
+                Transmisión en vivo de las mejores olas de Costa Rica
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -163,11 +163,11 @@ export default function Hospedaje() {
 
                 <div className="pt-4">
                   <Button 
-                    onClick={() => window.open('https://seataya.com/', '_blank')}
+                    onClick={() => window.open('https://surf-cam-one.vercel.app/', '_blank')}
                     className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
-                    Ver Seataya Luxury Villas
+                    Ver SurfCam
                   </Button>
                 </div>
               </div>

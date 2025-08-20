@@ -8,8 +8,10 @@ export async function GET(request: NextRequest) {
     
     const { searchParams } = new URL(request.url);
     const accessType = searchParams.get('accessType');
+    const sortBy = searchParams.get('sortBy') || 'lastLogin';
+    const sortOrder = searchParams.get('sortOrder') || 'desc';
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
+    const limit = parseInt(searchParams.get('limit') || '15');
     const skip = (page - 1) * limit;
 
     // Construir filtro
@@ -18,16 +20,34 @@ export async function GET(request: NextRequest) {
       filter.accessType = accessType;
     }
 
+    // Construir ordenamiento
+    const sort: any = {};
+    sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
+
     // Obtener usuarios con paginación
     const users = await User.find(filter)
       .select('-password')
-      .sort({ createdAt: -1 })
+      .sort(sort)
       .skip(skip)
       .limit(limit)
       .lean(); // Usar lean() para mejor rendimiento
 
     // Contar total de usuarios
     const total = await User.countDocuments(filter);
+
+    // Obtener estadísticas adicionales
+    const stats = await User.aggregate([
+      { $match: filter },
+      {
+        $group: {
+          _id: null,
+          totalLogins: { $sum: '$loginCount' },
+          totalViews: { $sum: '$totalViews' },
+          avgSessionTime: { $avg: '$averageSessionTime' },
+          totalSessionTime: { $sum: '$totalSessionTime' }
+        }
+      }
+    ]);
 
     return NextResponse.json({
       success: true,
@@ -37,6 +57,12 @@ export async function GET(request: NextRequest) {
         limit,
         total,
         pages: Math.ceil(total / limit)
+      },
+      stats: stats[0] || {
+        totalLogins: 0,
+        totalViews: 0,
+        avgSessionTime: 0,
+        totalSessionTime: 0
       }
     });
 
@@ -105,7 +131,19 @@ export async function POST(request: NextRequest) {
       email: email.toLowerCase(),
       accessType,
       subscription,
-      lastLogin: new Date()
+      loginCount: 0,
+      totalViews: 0,
+      totalSessionTime: 0,
+      averageSessionTime: 0,
+      sessionHistory: [],
+      activityStats: {
+        firstLogin: new Date(),
+        lastActivity: new Date(),
+        totalDaysActive: 0,
+        consecutiveDaysActive: 0,
+        preferredLoginTime: '12',
+        mostActiveDay: '1'
+      }
     });
 
     await newUser.save();

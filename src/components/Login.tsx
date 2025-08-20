@@ -24,28 +24,13 @@ function GoogleIcon() {
   );
 }
 
-function GoogleLoginButton({ setEmail, setUser }: { setEmail: (email: string) => void, setUser: (user: any) => void }) {
+function GoogleLoginButton({ setEmail, loginWithGoogle }: { setEmail: (email: string) => void, loginWithGoogle: (googleCode: string) => Promise<void> }) {
   const [isGoogleLoading, setIsGoogleLoading] = React.useState(false);
-  const router = useRouter();
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       setIsGoogleLoading(true);
       try {
-        const backendAuthResponse = await fetch('/api/auth/google', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code: tokenResponse.code }),
-        });
-        if (!backendAuthResponse.ok) {
-          const errorData = await backendAuthResponse.json();
-          throw new Error(errorData.message || 'Internal Server Error');
-        }
-        const { user } = await backendAuthResponse.json();
-        // Fill email state with Google email before validation
-        if (user && user.email) setEmail(user.email);
-        // Set user directly for consistency
-        if (user) setUser(user);
-        router.push('/');
+        await loginWithGoogle(tokenResponse.code);
       } catch (error) {
         console.error("Error during Google sign-in:", error);
       } finally {
@@ -72,7 +57,7 @@ function GoogleLoginButton({ setEmail, setUser }: { setEmail: (email: string) =>
 }
 
 export default function Login() {
-  const { login, setUser } = useAuth();
+  const { login, loginWithGoogle, setUser } = useAuth();
   const { isInstallable, isInstalled, installApp } = usePWA();
   const [email, setEmail] = useState("");
   const [magicLinkSent, setMagicLinkSent] = useState(false);
@@ -253,7 +238,7 @@ export default function Login() {
         <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
                      <CardHeader className="text-center space-y-2">
              <a 
-               href="https://seataya.com/" 
+                               href="https://surf-cam-one.vercel.app/" 
                target="_blank" 
                rel="noopener noreferrer"
                className="mx-auto block w-64 h-40 hover:scale-105 transition-transform duration-200 shadow-lg hover:shadow-xl transition-shadow duration-200"
@@ -277,7 +262,7 @@ export default function Login() {
 
           <CardContent>
             {/* Google Login Button */}
-            <GoogleLoginButton setEmail={setEmail} setUser={setUser} />
+                            <GoogleLoginButton setEmail={setEmail} loginWithGoogle={loginWithGoogle} />
             <div className="flex items-center my-4">
               <Separator className="flex-1" />
               <span className="mx-2 text-gray-400 font-bold">O</span>

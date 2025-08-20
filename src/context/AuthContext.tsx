@@ -18,7 +18,7 @@ interface AuthContextType {
   user: User | null;
   setUser: Dispatch<SetStateAction<User | null>>;
   login: (email: string, pass: string) => Promise<void>;
-  loginWithGoogle: () => void;
+  loginWithGoogle: (googleCode: string) => Promise<void>;
   logout: () => void;
   timeLeft: number;
   isTimeExpired: boolean;
@@ -32,6 +32,26 @@ export function useAuth() {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
+}
+
+// Funciones helper para obtener información del navegador
+function getBrowserInfo(): string {
+  const userAgent = navigator.userAgent;
+  if (userAgent.includes('Chrome')) return 'Chrome';
+  if (userAgent.includes('Firefox')) return 'Firefox';
+  if (userAgent.includes('Safari')) return 'Safari';
+  if (userAgent.includes('Edge')) return 'Edge';
+  return 'Unknown';
+}
+
+function getOSInfo(): string {
+  const userAgent = navigator.userAgent;
+  if (userAgent.includes('Windows')) return 'Windows';
+  if (userAgent.includes('Mac')) return 'macOS';
+  if (userAgent.includes('Linux')) return 'Linux';
+  if (userAgent.includes('Android')) return 'Android';
+  if (userAgent.includes('iOS')) return 'iOS';
+  return 'Unknown';
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -80,6 +100,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setTimeLeft(FREE_TIER_DURATION_SECONDS);
             setIsTimeExpired(false);
           }
+          
+          // Registrar actividad de login
+          try {
+            await fetch('/api/auth/activity', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userId: data.user._id,
+                userAgent: navigator.userAgent,
+                ipAddress: 'Unknown', // Se puede obtener del servidor
+                deviceType: /Mobile|Android|iPhone|iPad/.test(navigator.userAgent) ? 'mobile' : 'desktop',
+                browser: getBrowserInfo(),
+                os: getOSInfo()
+              })
+            });
+          } catch (error) {
+            console.error('Error tracking login activity:', error);
+          }
         } else {
           throw new Error(data.error || "Error al iniciar sesión");
         }
@@ -91,12 +129,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     []
   );
 
-  const loginWithGoogle = useCallback(() => {
-    // In a real app, this would involve a Firebase popup or redirect.
-    // For this demo, we'll simulate a successful premium login.
-    // This is currently disabled in the UI.
-    setUser({ email: 'usuario@google.com', accessType: 'premium' });
-  }, []);
+  const loginWithGoogle = useCallback(async (googleCode: string) => {
+    try {
+      const response = await fetch('/api/auth/google', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ code: googleCode }),
+      });
+
+      const data = await response.json();
+      
+      if (data.user) {
+        setUser(data.user);
+        
+        if (data.user.accessType === 'free') {
+          setTimeLeft(FREE_TIER_DURATION_SECONDS);
+          setIsTimeExpired(false);
+        }
+        
+        // Registrar actividad de login
+        try {
+          await fetch('/api/auth/activity', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: data.user._id,
+              userAgent: navigator.userAgent,
+              ipAddress: 'Unknown',
+              deviceType: /Mobile|Android|iPhone|iPad/.test(navigator.userAgent) ? 'mobile' : 'desktop',
+              browser: getBrowserInfo(),
+              os: getOSInfo()
+            })
+          });
+        } catch (error) {
+          console.error('Error tracking Google login activity:', error);
+        }
+        
+        // Redirigir a la página principal
+        router.push('/');
+      } else {
+        throw new Error(data.message || "Error al iniciar sesión con Google");
+      }
+    } catch (error) {
+      console.error('Google login error:', error);
+      throw error;
+    }
+  }, [router]);
 
   const logout = useCallback(async () => {
     try {

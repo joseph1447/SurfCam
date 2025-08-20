@@ -36,6 +36,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         accessType: 'free',
         googleId: payload.sub,
         picture: payload.picture,
+        loginCount: 0,
+        totalViews: 0,
+        isActive: true,
+        activityStats: {
+          firstLogin: new Date(),
+          lastActivity: new Date(),
+          totalDaysActive: 1,
+          consecutiveDaysActive: 1,
+          preferredLoginTime: new Date().getHours().toString(),
+          mostActiveDay: new Date().getDay().toString()
+        },
+        sessionHistory: []
       });
       console.log('Created new user from Google:', user.email);
     } else {
@@ -46,8 +58,76 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.log('Updated existing user from Google:', user.email);
     }
 
-    // You can generate your own JWT/session here if needed
-    res.status(200).json({ user });
+    // Registrar actividad de login
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    // Actualizar métricas del usuario
+    const updates: any = {
+      lastLogin: now,
+      loginCount: (user.loginCount || 0) + 1,
+      totalViews: (user.totalViews || 0) + 1,
+      lastViewDate: now,
+      lastActivity: now,
+      'activityStats.lastActivity': now
+    };
+
+    // Actualizar firstLogin si es la primera vez
+    if (!user.activityStats?.firstLogin) {
+      updates['activityStats.firstLogin'] = now;
+    }
+
+    // Actualizar días activos
+    if (user.lastViewDate) {
+      const lastViewDay = new Date(user.lastViewDate.getFullYear(), user.lastViewDate.getMonth(), user.lastViewDate.getDate());
+      const daysDiff = Math.floor((today.getTime() - lastViewDay.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (daysDiff === 1) {
+        // Día consecutivo
+        updates['activityStats.consecutiveDaysActive'] = (user.activityStats?.consecutiveDaysActive || 0) + 1;
+        updates['activityStats.totalDaysActive'] = (user.activityStats?.totalDaysActive || 0) + 1;
+      } else if (daysDiff > 1) {
+        // Día no consecutivo
+        updates['activityStats.consecutiveDaysActive'] = 1;
+        updates['activityStats.totalDaysActive'] = (user.activityStats?.totalDaysActive || 0) + 1;
+      }
+    } else {
+      // Primera vez
+      updates['activityStats.totalDaysActive'] = 1;
+      updates['activityStats.consecutiveDaysActive'] = 1;
+    }
+
+    // Actualizar hora preferida de login
+    const hour = now.getHours().toString();
+    updates['activityStats.preferredLoginTime'] = hour;
+
+    // Actualizar día más activo
+    const dayOfWeek = now.getDay().toString();
+    updates['activityStats.mostActiveDay'] = dayOfWeek;
+
+    // Agregar nueva sesión al historial
+    const newSession = {
+      loginTime: now,
+      userAgent: 'Google OAuth',
+      ipAddress: 'Unknown',
+      deviceType: 'desktop',
+      browser: 'Google',
+      os: 'Unknown'
+    };
+
+    updates.$push = {
+      sessionHistory: {
+        $each: [newSession],
+        $slice: -50 // Mantener solo las últimas 50 sesiones
+      }
+    };
+
+    // Actualizar el usuario
+    await User.findByIdAndUpdate(user._id, updates);
+
+    // Obtener el usuario actualizado
+    const updatedUser = await User.findById(user._id);
+    res.status(200).json({ user: updatedUser });
   } catch (err: any) {
     console.error('Google login error:', err);
     res.status(500).json({ message: err.message || 'Internal server error' });
