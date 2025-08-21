@@ -4,6 +4,7 @@ import { AuthProvider } from '@/context/AuthContext';
 import { Toaster } from "@/components/ui/toaster";
 import PWAProvider from '@/components/PWAProvider';
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 export const metadata: Metadata = {
   title: 'Santa Teresa Surf Cam',
@@ -68,6 +69,7 @@ export default function RootLayout({
             </PWAProvider>
           </AuthProvider>
         </GoogleOAuthProvider>
+        <SpeedInsights />
       </body>
     </html>
   );

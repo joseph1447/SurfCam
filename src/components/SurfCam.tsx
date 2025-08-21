@@ -332,12 +332,19 @@ export default function SurfCam() {
                 @joseph.quesada94
               </a>
             </div>
-            <div className="mt-4">
+            <div className="mt-4 flex justify-center gap-4">
               <a
                 href="/politica-privacidad"
                 className="text-xs text-gray-500 underline hover:text-primary cursor-pointer"
               >
                 Política de Privacidad
+              </a>
+              <span className="text-xs text-gray-400">|</span>
+              <a
+                href="/condiciones-servicio"
+                className="text-xs text-gray-500 underline hover:text-primary cursor-pointer"
+              >
+                Condiciones del Servicio
               </a>
             </div>
           </footer>
