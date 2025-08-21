@@ -75,6 +75,12 @@ function isToday(date: Date): boolean {
          selectedDate.getDate() === today.getDate();
 }
 
+// Helper function to get day of week in Spanish
+function getDayOfWeek(date: Date): string {
+  const days = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
+  return days[date.getDay()];
+}
+
 export default function TideWidget() {
   const [tideData, setTideData] = useState<TideData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -256,6 +262,15 @@ export default function TideWidget() {
 
   const currentCostaRicaDate = getCostaRicaDate();
   const isSelectedDateToday = isToday(selectedDate);
+  
+  // Format the selected date for display
+  const selectedDateFormatted = selectedDate.toLocaleDateString('es-ES', { 
+    timeZone: 'America/Costa_Rica',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+  const selectedDayOfWeek = getDayOfWeek(selectedDate);
 
   return (
     <Card className="w-full max-w-md">
@@ -290,7 +305,7 @@ export default function TideWidget() {
           </div>
         </div>
         <div className="text-sm text-gray-500">
-          {tideData.todayData?.dayOfWeek} • {tideData.todayData?.date && new Date(tideData.todayData.date).toLocaleDateString('es-ES', { timeZone: 'America/Costa_Rica' })}
+          {selectedDayOfWeek} • {selectedDateFormatted}
         </div>
         <div className="text-xs text-gray-400">
           Costa Rica: {currentCostaRicaDate.toLocaleDateString('es-ES', { timeZone: 'America/Costa_Rica' })} {currentCostaRicaDate.toLocaleTimeString('en-US', { 
@@ -306,9 +321,6 @@ export default function TideWidget() {
         {isSelectedDateToday && tideData.currentHeight && (
           <div className="text-center p-4 bg-gradient-to-r from-blue-50 to-red-50 rounded-lg">
             <div className="text-2xl font-bold" style={{ color: getTideColor(tideData.currentHeight) }}>
-              {tideData.currentHeight.toFixed(1)} pies
-            </div>
-            <div className="text-sm text-gray-600 mt-1">
               {getDirectionText()}
             </div>
           </div>
