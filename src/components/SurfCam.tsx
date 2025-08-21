@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import HlsPlayer from "./HlsPlayer";
 import { usePWA } from "@/hooks/usePWA";
 import Chat from "@/components/Chat";
+import TideWidget from "@/components/TideWidget";
 import { ChevronDown } from "lucide-react";
 
 export default function SurfCam() {
@@ -232,55 +233,64 @@ export default function SurfCam() {
              </div>
            )}
 
-          <div className="flex-grow w-full relative">
-            <div className="aspect-video w-full min-h-[70vh] relative rounded-xl overflow-hidden shadow-2xl shadow-primary/20">
-              <HlsPlayer src="/api/hls-proxy/surfcam.m3u8" isPaused={isTimeExpired} />
-              {user?.accessType === "free" && (
-                <>
-                  <div className={`absolute top-2 right-2 text-white text-sm px-3 py-1 rounded-full z-20 transition-all duration-300 ${
-                    timeLeft <= 10 ? 'bg-red-600 animate-pulse' : 'bg-black/50'
-                  }`}>
-                    Tiempo restante: {timeLeft}s
-                  </div>
-                  {timeLeft <= 15 && !isTimeExpired && (
-                    <div className="absolute bottom-4 left-4 right-4 z-20">
-                      <Link href="/contacto">
-                        <Button className="w-full bg-primary hover:bg-primary/90 text-white shadow-lg">
-                          ⚡ ¡Actualiza a Premium! - Solo $5/mes
-                        </Button>
-                      </Link>
+          {/* Main content area with video and tide widget */}
+          <div className="flex flex-col lg:flex-row gap-6 w-full">
+            {/* Video container */}
+            <div className="flex-grow w-full lg:w-2/3 relative">
+              <div className="aspect-video w-full min-h-[70vh] relative rounded-xl overflow-hidden shadow-2xl shadow-primary/20">
+                <HlsPlayer src="/api/hls-proxy/surfcam.m3u8" isPaused={isTimeExpired} />
+                {user?.accessType === "free" && (
+                  <>
+                    <div className={`absolute top-2 right-2 text-white text-sm px-3 py-1 rounded-full z-20 transition-all duration-300 ${
+                      timeLeft <= 10 ? 'bg-red-600 animate-pulse' : 'bg-black/50'
+                    }`}>
+                      Tiempo restante: {timeLeft}s
                     </div>
-                  )}
-                  {isTimeExpired && (
-                    <div className="fixed inset-0 bg-background/95 backdrop-blur-lg flex flex-col items-center justify-center z-50 p-6 text-center">
-                      <div className="bg-red-100 border-2 border-red-400 rounded-xl p-8 max-w-md shadow-2xl">
-                        <div className="text-6xl mb-4">⏰</div>
-                        <h2 className="text-3xl font-bold text-red-800 mb-4">¡Tiempo Agotado!</h2>
-                        <p className="text-red-700 mb-6 text-lg">
-                          Tu minuto de prueba gratuita ha terminado. El video se ha detenido completamente.
-                        </p>
-                        <div className="space-y-4">
-                          <Link href="/contacto">
-                            <Button className="w-full bg-primary hover:bg-primary/90 text-white text-lg py-3">
-                              💎 ¡Actualizar a Premium por Solo $5/mes!
-                            </Button>
-                          </Link>
-                          <Button 
-                            variant="outline" 
-                            onClick={logout}
-                            className="w-full text-lg py-3"
-                          >
-                            🏠 Volver al Inicio
+                    {timeLeft <= 15 && !isTimeExpired && (
+                      <div className="absolute bottom-4 left-4 right-4 z-20">
+                        <Link href="/contacto">
+                          <Button className="w-full bg-primary hover:bg-primary/90 text-white shadow-lg">
+                            ⚡ ¡Actualiza a Premium! - Solo $5/mes
                           </Button>
-                        </div>
-                        <p className="text-sm text-red-600 mt-4 font-medium">
-                          ¡No más interrupciones con Premium!
-                        </p>
+                        </Link>
                       </div>
-                    </div>
-                  )}
-                </>
-              )}
+                    )}
+                    {isTimeExpired && (
+                      <div className="fixed inset-0 bg-background/95 backdrop-blur-lg flex flex-col items-center justify-center z-50 p-6 text-center">
+                        <div className="bg-red-100 border-2 border-red-400 rounded-xl p-8 max-w-md shadow-2xl">
+                          <div className="text-6xl mb-4">⏰</div>
+                          <h2 className="text-3xl font-bold text-red-800 mb-4">¡Tiempo Agotado!</h2>
+                          <p className="text-red-700 mb-6 text-lg">
+                            Tu minuto de prueba gratuita ha terminado. El video se ha detenido completamente.
+                          </p>
+                          <div className="space-y-4">
+                            <Link href="/contacto">
+                              <Button className="w-full bg-primary hover:bg-primary/90 text-white text-lg py-3">
+                                💎 ¡Actualizar a Premium por Solo $5/mes!
+                              </Button>
+                            </Link>
+                            <Button 
+                              variant="outline" 
+                              onClick={logout}
+                              className="w-full text-lg py-3"
+                            >
+                              🏠 Volver al Inicio
+                            </Button>
+                          </div>
+                          <p className="text-sm text-red-600 mt-4 font-medium">
+                            ¡No más interrupciones con Premium!
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+            
+            {/* Tide Widget - sidebar on desktop, below on mobile */}
+            <div className="w-full lg:w-1/3">
+              <TideWidget />
             </div>
           </div>
           {/* Chat component below the video, with extra margin */}
