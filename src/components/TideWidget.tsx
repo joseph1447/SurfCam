@@ -27,28 +27,52 @@ interface TideData {
   };
 }
 
-// Helper function to get Costa Rica date
+// Helper function to get Costa Rica date - Fixed for Vercel deployment
 function getCostaRicaDate(date?: Date): Date {
   const targetDate = date || new Date();
-  return new Date(targetDate.toLocaleString("en-US", {
-    timeZone: "America/Costa_Rica"
-  }));
+  
+  // Create a date string in Costa Rica timezone
+  const costaRicaString = targetDate.toLocaleString("en-US", {
+    timeZone: "America/Costa_Rica",
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+  
+  // Parse the Costa Rica date string to create a proper Date object
+  const [datePart, timePart] = costaRicaString.split(', ');
+  const [month, day, year] = datePart.split('/');
+  const [hour, minute, second] = timePart.split(':');
+  
+  // Create date in local timezone but with Costa Rica values
+  return new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute), parseInt(second));
 }
 
-// Helper function to format date for API
+// Helper function to format date for API - Fixed for Vercel deployment
 function formatDateForAPI(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  // Get the date in Costa Rica timezone
+  const costaRicaDate = new Date(date.toLocaleString("en-US", {
+    timeZone: "America/Costa_Rica"
+  }));
+  
+  const year = costaRicaDate.getFullYear();
+  const month = String(costaRicaDate.getMonth() + 1).padStart(2, '0');
+  const day = String(costaRicaDate.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 
-// Helper function to check if a date is today
+// Helper function to check if a date is today - Fixed for Vercel deployment
 function isToday(date: Date): boolean {
   const today = getCostaRicaDate();
-  return date.getFullYear() === today.getFullYear() &&
-         date.getMonth() === today.getMonth() &&
-         date.getDate() === today.getDate();
+  const selectedDate = getCostaRicaDate(date);
+  
+  return selectedDate.getFullYear() === today.getFullYear() &&
+         selectedDate.getMonth() === today.getMonth() &&
+         selectedDate.getDate() === today.getDate();
 }
 
 export default function TideWidget() {
@@ -87,10 +111,12 @@ export default function TideWidget() {
 
   const formatTime = (timeStr: string) => {
     const date = new Date(timeStr);
+    // Format time in Costa Rica timezone
     return date.toLocaleTimeString('en-US', { 
       hour: '2-digit', 
       minute: '2-digit',
-      hour12: true
+      hour12: true,
+      timeZone: 'America/Costa_Rica'
     });
   };
 
@@ -264,13 +290,14 @@ export default function TideWidget() {
           </div>
         </div>
         <div className="text-sm text-gray-500">
-          {tideData.todayData?.dayOfWeek} • {tideData.todayData?.date && new Date(tideData.todayData.date).toLocaleDateString('es-ES')}
+          {tideData.todayData?.dayOfWeek} • {tideData.todayData?.date && new Date(tideData.todayData.date).toLocaleDateString('es-ES', { timeZone: 'America/Costa_Rica' })}
         </div>
         <div className="text-xs text-gray-400">
-          Costa Rica: {currentCostaRicaDate.toLocaleDateString('es-ES')} {currentCostaRicaDate.toLocaleTimeString('en-US', { 
+          Costa Rica: {currentCostaRicaDate.toLocaleDateString('es-ES', { timeZone: 'America/Costa_Rica' })} {currentCostaRicaDate.toLocaleTimeString('en-US', { 
             hour: '2-digit', 
             minute: '2-digit',
-            hour12: true
+            hour12: true,
+            timeZone: 'America/Costa_Rica'
           })}
         </div>
       </CardHeader>

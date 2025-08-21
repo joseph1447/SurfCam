@@ -38,6 +38,31 @@ let cachedTideData: DailyTideData[] | null = null;
 let lastCacheTime: number = 0;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
+// Helper function to get Costa Rica date - Fixed for Vercel deployment
+function getCostaRicaDate(date?: Date): Date {
+  const targetDate = date || new Date();
+  
+  // Create a date string in Costa Rica timezone
+  const costaRicaString = targetDate.toLocaleString("en-US", {
+    timeZone: "America/Costa_Rica",
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+  
+  // Parse the Costa Rica date string to create a proper Date object
+  const [datePart, timePart] = costaRicaString.split(', ');
+  const [month, day, year] = datePart.split('/');
+  const [hour, minute, second] = timePart.split(':');
+  
+  // Create date in local timezone but with Costa Rica values
+  return new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute), parseInt(second));
+}
+
 export async function GET(req: NextRequest) {
   try {
     // Get requested date from query parameter or use today
@@ -46,16 +71,14 @@ export async function GET(req: NextRequest) {
     
     let targetDate: Date;
     if (requestedDate) {
-      // Parse the date string and create a date in local timezone
+      // Parse the date string and create a date in Costa Rica timezone
       const [year, month, day] = requestedDate.split('-').map(Number);
-      targetDate = new Date(year, month - 1, day); // month is 0-indexed
+      // Create date in Costa Rica timezone
+      const costaRicaDate = new Date(year, month - 1, day);
+      targetDate = getCostaRicaDate(costaRicaDate);
     } else {
       // Get today's date in Costa Rica timezone
-      const now = new Date();
-      // Adjust for Costa Rica timezone (UTC-6)
-      const costaRicaOffset = -6 * 60 * 60 * 1000; // -6 hours in milliseconds
-      const costaRicaNow = new Date(now.getTime() + costaRicaOffset);
-      targetDate = new Date(costaRicaNow.getFullYear(), costaRicaNow.getMonth(), costaRicaNow.getDate());
+      targetDate = getCostaRicaDate();
     }
     
     // Check cache first
