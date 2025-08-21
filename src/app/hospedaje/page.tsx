@@ -84,7 +84,7 @@ export default function Hospedaje() {
                          <div className="text-center text-white">
                            <p className="mb-2">No se pudo cargar la página</p>
                            <Button 
-                             onClick={() => window.open('https://surf-cam-one.vercel.app/', '_blank')}
+                             onClick={() => window.open('https://seataya.com/', '_blank')}
                              className="bg-white text-blue-600 hover:bg-gray-100"
                            >
                              <ExternalLink className="h-4 w-4 mr-2" />

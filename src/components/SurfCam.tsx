@@ -251,34 +251,34 @@ export default function SurfCam() {
                       </Link>
                     </div>
                   )}
-                                      {isTimeExpired && (
-                      <div className="fixed inset-0 bg-background/95 backdrop-blur-lg flex flex-col items-center justify-center z-50 p-6 text-center">
-                        <div className="bg-red-100 border-2 border-red-400 rounded-xl p-8 max-w-md shadow-2xl">
-                          <div className="text-6xl mb-4">⏰</div>
-                          <h2 className="text-3xl font-bold text-red-800 mb-4">¡Tiempo Agotado!</h2>
-                          <p className="text-red-700 mb-6 text-lg">
-                            Tu minuto de prueba gratuita ha terminado. El video se ha detenido completamente.
-                          </p>
-                          <div className="space-y-4">
-                            <Link href="/contacto">
-                              <Button className="w-full bg-primary hover:bg-primary/90 text-white text-lg py-3">
-                                💎 ¡Actualizar a Premium por Solo $5/mes!
-                              </Button>
-                            </Link>
-                            <Button 
-                              variant="outline" 
-                              onClick={logout}
-                              className="w-full text-lg py-3"
-                            >
-                              🏠 Volver al Inicio
+                  {isTimeExpired && (
+                    <div className="fixed inset-0 bg-background/95 backdrop-blur-lg flex flex-col items-center justify-center z-50 p-6 text-center">
+                      <div className="bg-red-100 border-2 border-red-400 rounded-xl p-8 max-w-md shadow-2xl">
+                        <div className="text-6xl mb-4">⏰</div>
+                        <h2 className="text-3xl font-bold text-red-800 mb-4">¡Tiempo Agotado!</h2>
+                        <p className="text-red-700 mb-6 text-lg">
+                          Tu minuto de prueba gratuita ha terminado. El video se ha detenido completamente.
+                        </p>
+                        <div className="space-y-4">
+                          <Link href="/contacto">
+                            <Button className="w-full bg-primary hover:bg-primary/90 text-white text-lg py-3">
+                              💎 ¡Actualizar a Premium por Solo $5/mes!
                             </Button>
-                          </div>
-                          <p className="text-sm text-red-600 mt-4 font-medium">
-                            ¡No más interrupciones con Premium!
-                          </p>
+                          </Link>
+                          <Button 
+                            variant="outline" 
+                            onClick={logout}
+                            className="w-full text-lg py-3"
+                          >
+                            🏠 Volver al Inicio
+                          </Button>
                         </div>
+                        <p className="text-sm text-red-600 mt-4 font-medium">
+                          ¡No más interrupciones con Premium!
+                        </p>
                       </div>
-                    )}
+                    </div>
+                  )}
                 </>
               )}
             </div>
