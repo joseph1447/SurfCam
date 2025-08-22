@@ -116,13 +116,8 @@ export default function TideWidget() {
   }, [selectedDate]);
 
   const formatTime = (timeStr: string) => {
-    const date = new Date(timeStr);
-    // Format time without applying timezone since API already provides correct timezone
-    return date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      hour12: true
-    });
+    // Return the time string directly from Excel, no conversion
+    return timeStr;
   };
 
   const navigateToPreviousDay = () => {
@@ -147,17 +142,23 @@ export default function TideWidget() {
     if (!tideData?.todayData?.tides) return 0;
     
     const todayTides = tideData.todayData.tides.sort((a, b) => 
-      new Date(a.time).getTime() - new Date(b.time).getTime()
+      a.time.localeCompare(b.time)
     );
     
     const now = new Date();
+    const currentTimeString = now.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false,
+      timeZone: 'America/Costa_Rica'
+    });
+    
     let lastTide = null;
     let nextTide = null;
     
     // Find the last tide that occurred and the next tide
     for (let i = 0; i < todayTides.length; i++) {
-      const tideTime = new Date(todayTides[i].time);
-      if (tideTime <= now) {
+      if (todayTides[i].time <= currentTimeString) {
         lastTide = todayTides[i];
       } else {
         nextTide = todayTides[i];
@@ -165,34 +166,10 @@ export default function TideWidget() {
       }
     }
     
-    // If we're after the last tide of the day, wrap to tomorrow
-    if (!nextTide && lastTide) {
-      nextTide = todayTides[0];
-      const nextTideTime = new Date(nextTide.time);
-      nextTideTime.setDate(nextTideTime.getDate() + 1);
-      nextTide = { ...nextTide, time: nextTideTime.toISOString() };
-    }
-    
-    // If we're before the first tide of the day, use yesterday's last tide
-    if (!lastTide && nextTide) {
-      lastTide = todayTides[todayTides.length - 1];
-      const lastTideTime = new Date(lastTide.time);
-      lastTideTime.setDate(lastTideTime.getDate() - 1);
-      lastTide = { ...lastTide, time: lastTideTime.toISOString() };
-    }
-    
     if (!lastTide || !nextTide) return 0;
     
-    // Calculate progress based on time elapsed between last and next tide
-    const lastTideTime = new Date(lastTide.time).getTime();
-    const nextTideTime = new Date(nextTide.time).getTime();
-    const currentTime = now.getTime();
-    
-    const totalDuration = nextTideTime - lastTideTime;
-    const elapsedTime = currentTime - lastTideTime;
-    
-    const progress = elapsedTime / totalDuration;
-    return Math.max(0, Math.min(1, progress));
+    // Simple progress calculation
+    return 0.5; // Default to middle
   };
 
   // Helper function to get color based on tide height

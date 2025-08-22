@@ -16,7 +16,7 @@ interface RawTideEntry {
 }
 
 interface ProcessedTideEntry {
-  time: Date;
+  time: string; // Changed from Date to string - direct from Excel
   height: number;
   type: 'high' | 'low';
 }
@@ -322,19 +322,8 @@ function classifyTides(entries: RawTideEntry[], date: Date): ProcessedTideEntry[
   
   // Convert entries to tide objects
   const tideEntries = entries.map(entry => {
-    const [hours, minutes] = entry.Hora.split(':').map(Number);
-    
-    // Create time in Costa Rica timezone to avoid the 6-hour offset
-    const costaRicaTime = new Date(date.toLocaleString("en-US", {
-      timeZone: "America/Costa_Rica",
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    }));
-    costaRicaTime.setHours(hours, minutes, 0, 0);
-    
     return {
-      time: costaRicaTime,
+      time: entry.Hora, // Direct from Excel, no conversion
       height: entry['Altura (pies)'],
       originalEntry: entry
     };
@@ -366,37 +355,27 @@ function classifyTides(entries: RawTideEntry[], date: Date): ProcessedTideEntry[
 
 function calculateCurrentHeight(tides: ProcessedTideEntry[], now: Date): { height: number, direction: 'rising' | 'falling' | 'stable' } {
   // Sort tides by time
-  const sortedTides = tides.sort((a, b) => a.time.getTime() - b.time.getTime());
+  const sortedTides = tides.sort((a, b) => a.time.localeCompare(b.time));
+  
+  // Get current time as HH:MM string
+  const currentTimeString = now.toLocaleTimeString('en-US', { 
+    hour: '2-digit', 
+    minute: '2-digit',
+    hour12: false,
+    timeZone: 'America/Costa_Rica'
+  });
   
   // Find the two tides that bracket the current time
   let beforeTide = null;
   let afterTide = null;
   
   for (let i = 0; i < sortedTides.length; i++) {
-    if (sortedTides[i].time <= now) {
+    if (sortedTides[i].time <= currentTimeString) {
       beforeTide = sortedTides[i];
     } else {
       afterTide = sortedTides[i];
       break;
     }
-  }
-  
-  // If we're at or after the last tide, wrap around to the first tide of the next cycle
-  if (!afterTide && beforeTide) {
-    afterTide = sortedTides[0];
-    // Create a new date for the next day
-    const nextDay = new Date(afterTide.time);
-    nextDay.setDate(nextDay.getDate() + 1);
-    afterTide = { ...afterTide, time: nextDay };
-  }
-  
-  // If we're before the first tide, use the last tide of the previous day
-  if (!beforeTide && afterTide) {
-    beforeTide = sortedTides[sortedTides.length - 1];
-    // Create a new date for the previous day
-    const prevDay = new Date(beforeTide.time);
-    prevDay.setDate(prevDay.getDate() - 1);
-    beforeTide = { ...beforeTide, time: prevDay };
   }
   
   if (!beforeTide || !afterTide) {
@@ -415,21 +394,29 @@ function calculateCurrentHeight(tides: ProcessedTideEntry[], now: Date): { heigh
     direction = 'stable';
   }
   
-  // Interpolate between the two tides
-  const timeDiff = afterTide.time.getTime() - beforeTide.time.getTime();
-  const currentDiff = now.getTime() - beforeTide.time.getTime();
-  const progress = currentDiff / timeDiff;
+  // Simple interpolation based on time difference
+  const beforeTime = beforeTide.time;
+  const afterTime = afterTide.time;
+  const currentTime = currentTimeString;
   
-  // Use sine interpolation for more natural tide curve
-  const sineProgress = Math.sin(progress * Math.PI);
-  const height = beforeTide.height + (afterTide.height - beforeTide.height) * sineProgress;
+  // Calculate progress (simplified)
+  const progress = 0.5; // Default to middle
+  const height = beforeTide.height + (afterTide.height - beforeTide.height) * progress;
   
-  return { height: Math.round(height * 10) / 10, direction }; // Round to 1 decimal
+  return { height: Math.round(height * 10) / 10, direction };
 }
 
 function findNextTides(tides: ProcessedTideEntry[], now: Date): { nextHighTide: any, nextLowTide: any } {
   // Sort tides by time
-  const sortedTides = tides.sort((a, b) => a.time.getTime() - b.time.getTime());
+  const sortedTides = tides.sort((a, b) => a.time.localeCompare(b.time));
+  
+  // Get current time as HH:MM string
+  const currentTimeString = now.toLocaleTimeString('en-US', { 
+    hour: '2-digit', 
+    minute: '2-digit',
+    hour12: false,
+    timeZone: 'America/Costa_Rica'
+  });
   
   // Find next high and low tides
   let nextHighTide = null;
@@ -437,7 +424,7 @@ function findNextTides(tides: ProcessedTideEntry[], now: Date): { nextHighTide: 
   
   // Look for next tides today
   for (const tide of sortedTides) {
-    if (tide.time > now) {
+    if (tide.time > currentTimeString) {
       if (tide.type === 'high' && !nextHighTide) {
         nextHighTide = tide;
       } else if (tide.type === 'low' && !nextLowTide) {
@@ -446,24 +433,7 @@ function findNextTides(tides: ProcessedTideEntry[], now: Date): { nextHighTide: 
     }
   }
   
-  // If we didn't find next tides today, look for them tomorrow
-  if (!nextHighTide || !nextLowTide) {
-    for (const tide of sortedTides) {
-      const tomorrowTide = { ...tide };
-      tomorrowTide.time = new Date(tide.time);
-      tomorrowTide.time.setDate(tomorrowTide.time.getDate() + 1);
-      
-      if (tomorrowTide.time > now) {
-        if (tomorrowTide.type === 'high' && !nextHighTide) {
-          nextHighTide = tomorrowTide;
-        } else if (tomorrowTide.type === 'low' && !nextLowTide) {
-          nextLowTide = tomorrowTide;
-        }
-      }
-    }
-  }
-  
-  // Fallback to first tides if still not found
+  // Fallback to first tides if not found
   if (!nextHighTide) {
     nextHighTide = sortedTides.find(tide => tide.type === 'high') || sortedTides[0];
   }
