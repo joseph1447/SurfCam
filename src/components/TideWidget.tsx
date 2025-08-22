@@ -117,12 +117,11 @@ export default function TideWidget() {
 
   const formatTime = (timeStr: string) => {
     const date = new Date(timeStr);
-    // Format time in Costa Rica timezone
+    // Format time without applying timezone since API already provides correct timezone
     return date.toLocaleTimeString('en-US', { 
       hour: '2-digit', 
       minute: '2-digit',
-      hour12: true,
-      timeZone: 'America/Costa_Rica'
+      hour12: true
     });
   };
 
