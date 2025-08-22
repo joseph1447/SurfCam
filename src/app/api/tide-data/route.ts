@@ -361,12 +361,19 @@ function calculateCurrentHeight(tides: ProcessedTideEntry[], now: Date): { heigh
     timeZone: 'America/Costa_Rica'
   });
   
+  // Convert current time to minutes for comparison
+  const [currentHours, currentMinutes] = currentTimeString.split(':').map(Number);
+  const currentTimeInMinutes = currentHours * 60 + currentMinutes;
+  
   // Find the two tides that bracket the current time
   let beforeTide = null;
   let afterTide = null;
   
   for (let i = 0; i < sortedTides.length; i++) {
-    if (sortedTides[i].time <= currentTimeString) {
+    const [tideHours, tideMinutes] = sortedTides[i].time.split(':').map(Number);
+    const tideTimeInMinutes = tideHours * 60 + tideMinutes;
+    
+    if (tideTimeInMinutes <= currentTimeInMinutes) {
       beforeTide = sortedTides[i];
     } else {
       afterTide = sortedTides[i];
@@ -391,12 +398,16 @@ function calculateCurrentHeight(tides: ProcessedTideEntry[], now: Date): { heigh
   }
   
   // Simple interpolation based on time difference
-  const beforeTime = beforeTide.time;
-  const afterTime = afterTide.time;
-  const currentTime = currentTimeString;
+  const [beforeHours, beforeMinutes] = beforeTide.time.split(':').map(Number);
+  const [afterHours, afterMinutes] = afterTide.time.split(':').map(Number);
   
-  // Calculate progress (simplified)
-  const progress = 0.5; // Default to middle
+  const beforeTimeInMinutes = beforeHours * 60 + beforeMinutes;
+  const afterTimeInMinutes = afterHours * 60 + afterMinutes;
+  
+  const totalDuration = afterTimeInMinutes - beforeTimeInMinutes;
+  const elapsedTime = currentTimeInMinutes - beforeTimeInMinutes;
+  
+  const progress = elapsedTime / totalDuration;
   const height = beforeTide.height + (afterTide.height - beforeTide.height) * progress;
   
   return { height: Math.round(height * 10) / 10, direction };
@@ -414,13 +425,20 @@ function findNextTides(tides: ProcessedTideEntry[], now: Date): { nextHighTide: 
     timeZone: 'America/Costa_Rica'
   });
   
+  // Convert current time to minutes for comparison
+  const [currentHours, currentMinutes] = currentTimeString.split(':').map(Number);
+  const currentTimeInMinutes = currentHours * 60 + currentMinutes;
+  
   // Find next high and low tides
   let nextHighTide = null;
   let nextLowTide = null;
   
   // Look for next tides today
   for (const tide of sortedTides) {
-    if (tide.time > currentTimeString) {
+    const [tideHours, tideMinutes] = tide.time.split(':').map(Number);
+    const tideTimeInMinutes = tideHours * 60 + tideMinutes;
+    
+    if (tideTimeInMinutes > currentTimeInMinutes) {
       if (tide.type === 'high' && !nextHighTide) {
         nextHighTide = tide;
       } else if (tide.type === 'low' && !nextLowTide) {
