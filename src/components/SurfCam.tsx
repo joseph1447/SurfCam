@@ -63,14 +63,6 @@ const ChatSkeleton = () => (
 );
 
 export default function SurfCam() {
-  useEffect(() => {
-    // Ensure we're at the top when component mounts
-    const timer = setTimeout(() => {
-      window.scrollTo({ top: 0, behavior: "auto" });
-    }, 100); // Small delay to ensure everything is rendered
-    
-    return () => clearTimeout(timer);
-  }, []);
   const { user, logout, timeLeft, isTimeExpired } = useAuth();
   const { isInstallable, isInstalled, installApp } = usePWA();
   const [isInstalling, setIsInstalling] = useState(false);
@@ -80,33 +72,35 @@ export default function SurfCam() {
   const prevMessagesCount = useRef(0);
   const { loadTideWidget, loadChat } = useProgressiveLoading();
 
-
-  // Detect if chat is in view
+  // Detect if chat is in view - only after components are loaded
   useEffect(() => {
+    // Wait for chat to be loaded before setting up scroll detection
+    if (!loadChat) return;
+    
+    console.log('🔍 Setting up chat scroll detection - no automatic scroll should occur');
+    
     const onScroll = () => {
       if (!chatRef.current) return;
       const rect = chatRef.current.getBoundingClientRect();
       // If the top of the chat is below the bottom of the viewport, it's not visible
       setShowChatScrollButton(rect.top > window.innerHeight - 80);
     };
-    window.addEventListener('scroll', onScroll);
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
-  // Show button when new messages arrive and chat is not visible
-  useEffect(() => {
-    // Only run this effect once after initial render
+    
+    // Add a small delay to ensure chat is fully rendered
     const timer = setTimeout(() => {
-      if (!chatRef.current) return;
-      const rect = chatRef.current.getBoundingClientRect();
-      if (rect.top > window.innerHeight - 80 && prevMessagesCount.current > 0) {
-        setShowChatScrollButton(true);
-      }
-      prevMessagesCount.current += 1;
-    }, 1000); // Delay to ensure chat is loaded
+      window.addEventListener('scroll', onScroll);
+      // Initial check
+      onScroll();
+    }, 500);
+    
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('scroll', onScroll);
+    };
+  }, [loadChat]); // Only run when chat is loaded
 
-    return () => clearTimeout(timer);
-  }, []); // Empty dependency array - only run once
+  // Remove the problematic useEffect that was causing initial scroll
+  // The button will show/hide based on the scroll detection above
 
   // Efecto para manejar la expiración del tiempo (pantalla completa y video)
   useEffect(() => {

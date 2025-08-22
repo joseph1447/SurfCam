@@ -205,10 +205,11 @@ export default function Chat() {
   // Scroll to bottom only when sending a message (not on every new message)
   const prevMessagesLength = useRef(messagesMap.size);
   const isInitialLoad = useRef(true);
+  const isHistoryLoading = useRef(false);
   
   useEffect(() => {
-    // Skip scroll on initial load
-    if (isInitialLoad.current) {
+    // Skip scroll on initial load and history loading
+    if (isInitialLoad.current || isHistoryLoading.current) {
       isInitialLoad.current = false;
       return;
     }
@@ -226,12 +227,21 @@ export default function Chat() {
   // Fetch chat history on tab change (replace, do not merge)
   useEffect(() => {
     if (!user) return;
+    
+    isHistoryLoading.current = true;
     fetch(`/api/chat/history?group=${activeTab}`)
       .then((res) => res.json())
       .then((data) => {
         const map = new Map<string, any>();
         (data.messages || []).forEach((m: ChatMessage) => map.set(m._id, m));
         setMessagesMap(map);
+        // Reset the loading flag after a short delay to prevent scroll
+        setTimeout(() => {
+          isHistoryLoading.current = false;
+        }, 100);
+      })
+      .catch(() => {
+        isHistoryLoading.current = false;
       });
   }, [activeTab, user]);
 
@@ -477,28 +487,46 @@ export default function Chat() {
                           </div>
                         </div>
                       ) : (
-                        <div className={`max-w-xs w-full rounded-lg px-4 py-2 shadow-md break-words relative ${isOwn ? 'bg-blue-500 text-white ml-8' : 'bg-gray-200 text-gray-900 mr-8'}`}
+                        <div className={`max-w-xs w-full rounded-2xl px-4 py-3 shadow-lg break-words relative transition-all duration-200 hover:shadow-xl ${
+                          isOwn 
+                            ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white ml-8' 
+                            : 'bg-gradient-to-br from-gray-100 to-gray-200 text-gray-900 mr-8 border border-gray-200'
+                        }`}
                         >
                           {/* Trash icon (top right, only for admin, inside bubble) */}
                           {user && user.email === ADMIN_EMAIL && msg._id && !editingId && (
                             <button
                               onClick={() => handleDeleteMessage(msg._id!)}
-                              className="absolute top-2 right-2 p-1 rounded-full bg-white hover:bg-red-100 text-red-500 shadow"
+                              className="absolute -top-2 -right-2 p-1.5 rounded-full hover:bg-red-100 text-red-500 transition-all duration-200 hover:scale-110"
                               title="Eliminar mensaje"
                             >
-                              <span role="img" aria-label="Eliminar">🗑️</span>
+                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                              </svg>
                             </button>
                           )}
-                          <div className="flex items-center mb-1">
-                            <span className={`font-semibold text-xs ${isOwn ? 'text-white' : 'text-blue-700'}`}>{msg.username || msg.email}</span>
-                            {msg.edited && <span className={`ml-2 text-xs ${isOwn ? 'text-blue-200' : 'text-gray-500'}`}>(editado)</span>}
+                          <div className="flex items-center mb-2">
+                            <span className={`font-semibold text-sm ${isOwn ? 'text-white' : 'text-blue-700'}`}>
+                              {msg.username || msg.email}
+                            </span>
+                            {msg.edited && (
+                              <span className={`ml-2 text-xs px-2 py-0.5 rounded-full ${
+                                isOwn 
+                                  ? 'bg-blue-400/30 text-blue-100' 
+                                  : 'bg-gray-300 text-gray-600'
+                              }`}>
+                                editado
+                              </span>
+                            )}
                           </div>
-                          <div className="text-sm">{msg.message}</div>
-                          <div className="flex justify-end mt-1">
-                            <span className={`text-xs ${isOwn ? 'text-blue-200' : 'text-gray-500'}`}>{new Date(msg.timestamp).toLocaleTimeString()}</span>
+                          <div className="text-sm leading-relaxed mb-2">{msg.message}</div>
+                          <div className="flex justify-between items-center">
+                            <span className={`text-xs ${isOwn ? 'text-blue-200' : 'text-gray-500'}`}>
+                              {new Date(msg.timestamp).toLocaleTimeString()}
+                            </span>
                           </div>
                           {/* Bottom row: badges */}
-                          <div className="flex items-center gap-2 mt-2">
+                          <div className="flex items-center gap-2 mt-3">
                             <div className="flex gap-1 flex-wrap">
                               {REACTION_EMOJIS.map((emoji) => {
                                 const reactions = (msg.reactions || []).filter((r: any) => r.emoji === emoji);
@@ -509,42 +537,54 @@ export default function Chat() {
                                   <button
                                     key={emoji}
                                     onClick={() => handleReact(msg._id, emoji)}
-                                    className={`flex items-center px-2 py-0.5 rounded-full text-sm border text-xs transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 ${isOwn ? 'bg-blue-600 text-white border-blue-400' : 'bg-gray-300 text-blue-700 border-blue-400'} hover:opacity-80 cursor-pointer`}
+                                    className={`flex items-center px-2 py-1 rounded-full text-sm border transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300 ${
+                                      isOwn 
+                                        ? 'bg-blue-400/30 text-white border-blue-300' 
+                                        : 'bg-white text-gray-700 border-gray-300 shadow-sm'
+                                    }`}
                                     title="Haz clic para quitar tu reacción"
                                   >
-                                    <span>{emoji}</span>
-                                    <span className="ml-1">{reactions.length}</span>
+                                    <span className="text-sm">{emoji}</span>
+                                    <span className="ml-1 text-xs font-medium">{reactions.length}</span>
                                   </button>
                                 ) : (
                                   <span
                                     key={emoji}
-                                    className={`flex items-center px-2 py-0.5 rounded-full text-sm border text-xs bg-white text-gray-700 border-gray-300`}
+                                    className={`flex items-center px-2 py-1 rounded-full text-sm border ${
+                                      isOwn 
+                                        ? 'bg-blue-400/20 text-white border-blue-300' 
+                                        : 'bg-white text-gray-700 border-gray-300 shadow-sm'
+                                    }`}
                                   >
-                                    <span>{emoji}</span>
-                                    <span className="ml-1">{reactions.length}</span>
+                                    <span className="text-sm">{emoji}</span>
+                                    <span className="ml-1 text-xs font-medium">{reactions.length}</span>
                                   </span>
                                 );
                               })}
                             </div>
                           </div>
                           {/* Reaction icon and popover (bottom right, inside bubble) */}
-                          <div className="absolute right-2 bottom-2 flex flex-col items-center gap-2">
+                          <div className="absolute -bottom-2 -right-2 flex flex-col items-center gap-2">
                             <button
-                              className="reaction-trigger p-1 rounded-full bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-300 shadow"
+                              className="reaction-trigger p-1.5 rounded-full hover:bg-gray-100 text-gray-600 transition-all duration-200 hover:scale-110"
                               onClick={() => setOpenReactionFor(msg._id)}
                               title="Reaccionar"
                             >
-                              <span role="img" aria-label="Reaccionar">🤙➕</span>
+                              <span role="img" aria-label="Reaccionar" className="text-lg">🤙</span>
                             </button>
                             {openReactionFor === msg._id && (
-                              <div className="reaction-bar-popover absolute z-10 right-12 bottom-0 bg-white border border-gray-200 rounded-lg shadow-lg p-2 flex gap-1">
+                              <div className="reaction-bar-popover absolute z-10 right-12 bottom-0 bg-white border border-gray-200 rounded-xl shadow-xl p-3 flex gap-2">
                                 {REACTION_EMOJIS.map((emoji) => {
                                   const reactions = (msg.reactions || []).filter((r: any) => r.emoji === emoji);
                                   const userReacted = reactions.some((r: any) => String(r.userId) === String(userId));
                                   return (
                                     <button
                                       key={emoji}
-                                      className={`flex items-center px-2 py-1 rounded-full text-lg border transition-colors ${userReacted ? (isOwn ? 'bg-blue-600 text-white border-blue-400' : 'bg-gray-300 text-blue-700 border-blue-400') : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'}`}
+                                      className={`flex items-center px-3 py-2 rounded-full text-lg border transition-all duration-200 hover:scale-110 ${
+                                        userReacted 
+                                          ? (isOwn ? 'bg-blue-500 text-white border-blue-400' : 'bg-gray-300 text-blue-700 border-blue-400') 
+                                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+                                      }`}
                                       onClick={() => handleReact(msg._id, emoji)}
                                       disabled={!userId}
                                       title={emoji}
@@ -561,10 +601,10 @@ export default function Chat() {
                       {!isEditing && canEditMessage(msg) && (
                         <button
                           onClick={() => handleEditMessage(msg)}
-                          className="ml-2 text-blue-500 hover:text-blue-700 text-xs opacity-80 self-end"
+                          className="ml-3 text-blue-500 hover:text-blue-700 text-xs opacity-80 self-end transition-all duration-200 hover:opacity-100 font-medium"
                           title="Editar mensaje"
                         >
-                          Editar
+                          ✏️ Editar
                         </button>
                       )}
                     </div>
