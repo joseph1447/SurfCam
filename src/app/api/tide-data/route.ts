@@ -323,11 +323,18 @@ function classifyTides(entries: RawTideEntry[], date: Date): ProcessedTideEntry[
   // Convert entries to tide objects
   const tideEntries = entries.map(entry => {
     const [hours, minutes] = entry.Hora.split(':').map(Number);
-    const time = new Date(date);
-    time.setHours(hours, minutes, 0, 0);
+    
+    // Create time in Costa Rica timezone to avoid the 6-hour offset
+    const costaRicaTime = new Date(date.toLocaleString("en-US", {
+      timeZone: "America/Costa_Rica",
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }));
+    costaRicaTime.setHours(hours, minutes, 0, 0);
     
     return {
-      time: time,
+      time: costaRicaTime,
       height: entry['Altura (pies)'],
       originalEntry: entry
     };
