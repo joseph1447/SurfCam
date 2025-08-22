@@ -116,8 +116,16 @@ export default function TideWidget() {
   }, [selectedDate]);
 
   const formatTime = (timeStr: string) => {
-    // Return the time string directly from Excel, no conversion
-    return timeStr;
+    // Convert Excel time (HH:MM) to AM/PM format
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    const date = new Date();
+    date.setHours(hours, minutes, 0, 0);
+    
+    return date.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: true
+    });
   };
 
   const navigateToPreviousDay = () => {
@@ -168,8 +176,20 @@ export default function TideWidget() {
     
     if (!lastTide || !nextTide) return 0;
     
-    // Simple progress calculation
-    return 0.5; // Default to middle
+    // Calculate progress based on time elapsed between last and next tide
+    const [lastHours, lastMinutes] = lastTide.time.split(':').map(Number);
+    const [nextHours, nextMinutes] = nextTide.time.split(':').map(Number);
+    const [currentHours, currentMinutes] = currentTimeString.split(':').map(Number);
+    
+    const lastTimeMinutes = lastHours * 60 + lastMinutes;
+    const nextTimeMinutes = nextHours * 60 + nextMinutes;
+    const currentTimeMinutes = currentHours * 60 + currentMinutes;
+    
+    const totalDuration = nextTimeMinutes - lastTimeMinutes;
+    const elapsedTime = currentTimeMinutes - lastTimeMinutes;
+    
+    const progress = elapsedTime / totalDuration;
+    return Math.max(0, Math.min(1, progress));
   };
 
   // Helper function to get color based on tide height
@@ -311,10 +331,9 @@ export default function TideWidget() {
             </div>
             <div className="w-full bg-gray-200 rounded-full h-3 relative overflow-hidden">
               <div 
-                className="h-full rounded-full transition-all duration-500"
+                className="h-full rounded-full transition-all duration-500 bg-green-500"
                 style={{
-                  width: `${getTideProgress() * 100}%`,
-                  background: `linear-gradient(to right, ${getTideColor(tideData.currentHeight)}, ${getTideColor(tideData.currentHeight + 1)})`
+                  width: `${getTideProgress() * 100}%`
                 }}
               />
             </div>
@@ -354,17 +373,25 @@ export default function TideWidget() {
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {tideData.todayData.tides
                 .sort((a, b) => {
-                  const timeA = new Date(a.time);
-                  const timeB = new Date(b.time);
+                  // Sort by AM/PM first, then chronologically
+                  const timeA = new Date();
+                  const timeB = new Date();
                   
-                  // Normalize times to the same day for proper comparison
-                  const dayStart = new Date(tideData.todayData.date);
-                  dayStart.setHours(0, 0, 0, 0);
+                  const [hoursA, minutesA] = a.time.split(':').map(Number);
+                  const [hoursB, minutesB] = b.time.split(':').map(Number);
                   
-                  const normalizedTimeA = timeA.getTime() - dayStart.getTime();
-                  const normalizedTimeB = timeB.getTime() - dayStart.getTime();
+                  timeA.setHours(hoursA, minutesA, 0, 0);
+                  timeB.setHours(hoursB, minutesB, 0, 0);
                   
-                  return normalizedTimeA - normalizedTimeB;
+                  // AM comes before PM
+                  const isAM_A = hoursA < 12;
+                  const isAM_B = hoursB < 12;
+                  
+                  if (isAM_A && !isAM_B) return -1; // A is AM, B is PM
+                  if (!isAM_A && isAM_B) return 1;  // A is PM, B is AM
+                  
+                  // If both are AM or both are PM, sort chronologically
+                  return timeA.getTime() - timeB.getTime();
                 })
                 .map((tide, index) => (
                 <div key={index} className="flex items-center justify-between text-sm p-2 bg-gray-50 rounded">
