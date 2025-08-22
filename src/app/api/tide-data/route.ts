@@ -333,20 +333,16 @@ function classifyTides(entries: RawTideEntry[], date: Date): ProcessedTideEntry[
     return tides;
   }
   
-  // Improved classification: use statistical approach
-  // Sort by height to find natural clusters
-  const sortedByHeight = [...tideEntries].sort((a, b) => a.height - b.height);
+  // Use a fixed threshold for tide classification
+  // High tide: >= 5.0 feet
+  // Low tide: < 5.0 feet
+  const HIGH_TIDE_THRESHOLD = 5.0;
   
-  // Find the median height to separate high and low tides
-  const medianHeight = sortedByHeight[Math.floor(sortedByHeight.length / 2)].height;
-  
-  // Classify tides based on whether they're above or below median
-  // CORRECTED: higher = high tide, lower = low tide
   tideEntries.forEach(entry => {
     tides.push({
       time: entry.time,
       height: entry.height,
-      type: entry.height >= medianHeight ? 'high' : 'low' // CORRECTED: higher = high tide, lower = low tide
+      type: entry.height >= HIGH_TIDE_THRESHOLD ? 'high' : 'low'
     });
   });
   

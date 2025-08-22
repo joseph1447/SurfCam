@@ -164,9 +164,16 @@ export default function TideWidget() {
     let lastTide = null;
     let nextTide = null;
     
+    // Convert current time to minutes for comparison
+    const [currentHours, currentMinutes] = currentTimeString.split(':').map(Number);
+    const currentTimeInMinutes = currentHours * 60 + currentMinutes;
+    
     // Find the last tide that occurred and the next tide
     for (let i = 0; i < todayTides.length; i++) {
-      if (todayTides[i].time <= currentTimeString) {
+      const [tideHours, tideMinutes] = todayTides[i].time.split(':').map(Number);
+      const tideTimeInMinutes = tideHours * 60 + tideMinutes;
+      
+      if (tideTimeInMinutes <= currentTimeInMinutes) {
         lastTide = todayTides[i];
       } else {
         nextTide = todayTides[i];
@@ -179,14 +186,12 @@ export default function TideWidget() {
     // Calculate progress based on time elapsed between last and next tide
     const [lastHours, lastMinutes] = lastTide.time.split(':').map(Number);
     const [nextHours, nextMinutes] = nextTide.time.split(':').map(Number);
-    const [currentHours, currentMinutes] = currentTimeString.split(':').map(Number);
     
-    const lastTimeMinutes = lastHours * 60 + lastMinutes;
-    const nextTimeMinutes = nextHours * 60 + nextMinutes;
-    const currentTimeMinutes = currentHours * 60 + currentMinutes;
+    const lastTimeInMinutes = lastHours * 60 + lastMinutes;
+    const nextTimeInMinutes = nextHours * 60 + nextMinutes;
     
-    const totalDuration = nextTimeMinutes - lastTimeMinutes;
-    const elapsedTime = currentTimeMinutes - lastTimeMinutes;
+    const totalDuration = nextTimeInMinutes - lastTimeInMinutes;
+    const elapsedTime = currentTimeInMinutes - lastTimeInMinutes;
     
     const progress = elapsedTime / totalDuration;
     return Math.max(0, Math.min(1, progress));
