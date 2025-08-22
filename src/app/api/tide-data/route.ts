@@ -301,7 +301,7 @@ function convertExcelDateToDate(excelDateNumber: number): Date {
   // Excel date number - convert to actual date
   // Excel epoch is January 1, 1900 (but Excel treats 1900 as leap year incorrectly)
   const excelEpoch = new Date(1900, 0, 1);
-  const daysSinceEpoch = excelDateNumber - 2; // Excel has a bug where 1900 is treated as leap year
+  const daysSinceEpoch = excelDateNumber - 1; // Fixed: Excel has a bug where 1900 is treated as leap year, but we only need to subtract 1
   
   // Create date in local timezone to avoid UTC conversion issues
   const date = new Date(excelEpoch.getFullYear(), excelEpoch.getMonth(), excelEpoch.getDate() + daysSinceEpoch);
