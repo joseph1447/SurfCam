@@ -447,22 +447,16 @@ function findNextTides(tides: ProcessedTideEntry[], now: Date): { nextHighTide: 
     }
   }
   
-  // Fallback to first tides if not found
-  if (!nextHighTide) {
-    nextHighTide = sortedTides.find(tide => tide.type === 'high') || sortedTides[0];
-  }
-  if (!nextLowTide) {
-    nextLowTide = sortedTides.find(tide => tide.type === 'low') || sortedTides[0];
-  }
-  
+  // Only return tides that are actually in the future
+  // If no future tides found, return null for those types
   return {
-    nextHighTide: {
+    nextHighTide: nextHighTide ? {
       time: nextHighTide.time,
       height: nextHighTide.height
-    },
-    nextLowTide: {
+    } : null,
+    nextLowTide: nextLowTide ? {
       time: nextLowTide.time,
       height: nextLowTide.height
-    }
+    } : null
   };
 }

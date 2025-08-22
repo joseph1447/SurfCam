@@ -20,11 +20,11 @@ interface TideData {
   nextHighTide: {
     time: string;
     height: number;
-  };
+  } | null;
   nextLowTide: {
     time: string;
     height: number;
-  };
+  } | null;
 }
 
 // Helper function to get Costa Rica date - Fixed for Vercel deployment
@@ -339,22 +339,36 @@ export default function TideWidget() {
         )}
 
         {/* Next Tides - Only show for today */}
-        {isSelectedDateToday && tideData.nextHighTide && tideData.nextLowTide && (
+        {isSelectedDateToday && (tideData.nextHighTide || tideData.nextLowTide) && (
           <div className="space-y-3">
             <h4 className="text-sm font-medium text-gray-700">Próximas Mareas</h4>
             <div className="grid grid-cols-2 gap-3">
-              <div className="text-center p-3 bg-red-50 rounded-lg">
-                <div className="text-xs text-gray-500">Próxima Alta</div>
-                <div className="text-lg font-semibold text-red-700">
-                  {formatTime(tideData.nextHighTide.time)}
+              {tideData.nextHighTide ? (
+                <div className="text-center p-3 bg-red-50 rounded-lg">
+                  <div className="text-xs text-gray-500">Próxima Alta</div>
+                  <div className="text-lg font-semibold text-red-700">
+                    {formatTime(tideData.nextHighTide.time)}
+                  </div>
                 </div>
-              </div>
-              <div className="text-center p-3 bg-blue-50 rounded-lg">
-                <div className="text-xs text-gray-500">Próxima Baja</div>
-                <div className="text-lg font-semibold text-blue-700">
-                  {formatTime(tideData.nextLowTide.time)}
+              ) : (
+                <div className="text-center p-3 bg-gray-50 rounded-lg">
+                  <div className="text-xs text-gray-500">Próxima Alta</div>
+                  <div className="text-sm text-gray-500">No hay más hoy</div>
                 </div>
-              </div>
+              )}
+              {tideData.nextLowTide ? (
+                <div className="text-center p-3 bg-blue-50 rounded-lg">
+                  <div className="text-xs text-gray-500">Próxima Baja</div>
+                  <div className="text-lg font-semibold text-blue-700">
+                    {formatTime(tideData.nextLowTide.time)}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center p-3 bg-gray-50 rounded-lg">
+                  <div className="text-xs text-gray-500">Próxima Baja</div>
+                  <div className="text-sm text-gray-500">No hay más hoy</div>
+                </div>
+              )}
             </div>
           </div>
         )}
