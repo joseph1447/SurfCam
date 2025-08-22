@@ -310,8 +310,8 @@ export default function TideWidget() {
           Costa Rica: {currentCostaRicaDate.toLocaleDateString('es-ES', { timeZone: 'America/Costa_Rica' })} {currentCostaRicaDate.toLocaleTimeString('en-US', { 
             hour: '2-digit', 
             minute: '2-digit',
-            hour12: true,
-            timeZone: 'America/Costa_Rica'
+            hour12: true
+           
           })}
         </div>
       </CardHeader>
