@@ -308,14 +308,7 @@ export default function TideWidget() {
         <div className="text-sm text-gray-500">
           {selectedDayOfWeek} • {selectedDateFormatted}
         </div>
-        <div className="text-xs text-gray-400">
-          Costa Rica: {currentCostaRicaDate.toLocaleDateString('es-ES', { timeZone: 'America/Costa_Rica' })} {currentCostaRicaDate.toLocaleTimeString('en-US', { 
-            hour: '2-digit', 
-            minute: '2-digit',
-            hour12: true
-           
-          })}
-        </div>
+
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Current Height and Direction - Only show for today */}
