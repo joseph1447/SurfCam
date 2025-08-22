@@ -355,17 +355,11 @@ export default function TideWidget() {
                 <div className="text-lg font-semibold text-red-700">
                   {formatTime(tideData.nextHighTide.time)}
                 </div>
-                <div className="text-xs text-gray-600">
-                  {tideData.nextHighTide.height.toFixed(1)} pies
-                </div>
               </div>
               <div className="text-center p-3 bg-blue-50 rounded-lg">
                 <div className="text-xs text-gray-500">Próxima Baja</div>
                 <div className="text-lg font-semibold text-blue-700">
                   {formatTime(tideData.nextLowTide.time)}
-                </div>
-                <div className="text-xs text-gray-600">
-                  {tideData.nextLowTide.height.toFixed(1)} pies
                 </div>
               </div>
             </div>
@@ -405,9 +399,6 @@ export default function TideWidget() {
                     <span className="font-medium">{formatTime(tide.time)}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-600 font-mono bg-white px-2 py-1 rounded">
-                      {tide.height.toFixed(2)} pies
-                    </span>
                     <span className={`text-xs px-2 py-1 rounded ${
                       tide.type === 'high' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
                     }`}>
