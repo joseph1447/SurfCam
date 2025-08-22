@@ -94,9 +94,9 @@ export default function Hospedaje() {
                        </div>
                      )}
                      <iframe 
-                       src="https://surf-cam-one.vercel.app/"
+                       src="https://seataya.com/"
                        className="w-full h-full border-0"
-                       title="SurfCam"
+                       title="Seataya Luxury Villas"
                        loading="lazy"
                        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
                        onLoad={() => handleIframeLoad('seataya')}
@@ -111,9 +111,9 @@ export default function Hospedaje() {
                      </div>
                    </div>
             <CardHeader>
-              <CardTitle className="text-xl">SurfCam</CardTitle>
+              <CardTitle className="text-xl">Seataya Luxury Villas</CardTitle>
               <CardDescription>
-                Transmisión en vivo de las mejores olas de Costa Rica
+                Villas de lujo con vista al océano en las colinas de Santa Teresa
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -163,11 +163,11 @@ export default function Hospedaje() {
 
                 <div className="pt-4">
                   <Button 
-                    onClick={() => window.open('https://surf-cam-one.vercel.app/', '_blank')}
+                    onClick={() => window.open('https://seataya.com/', '_blank')}
                     className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
-                    Ver SurfCam
+                    Ver Seataya Luxury Villas
                   </Button>
                 </div>
               </div>
