@@ -204,7 +204,15 @@ export default function Chat() {
 
   // Scroll to bottom only when sending a message (not on every new message)
   const prevMessagesLength = useRef(messagesMap.size);
+  const isInitialLoad = useRef(true);
+  
   useEffect(() => {
+    // Skip scroll on initial load
+    if (isInitialLoad.current) {
+      isInitialLoad.current = false;
+      return;
+    }
+    
     if (messagesMap.size > prevMessagesLength.current) {
       // Only scroll if the last message is from the current user
       const lastMsg = Array.from(messagesMap.values())[messagesMap.size - 1];

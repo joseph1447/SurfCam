@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense, lazy } from "react";
 import Link from "next/link";
 import AppHeader from "@/components/AppHeader";
 import { useAuth } from "@/context/AuthContext";
@@ -8,13 +8,68 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import HlsPlayer from "./HlsPlayer";
 import { usePWA } from "@/hooks/usePWA";
-import Chat from "@/components/Chat";
-import TideWidget from "@/components/TideWidget";
 import { ChevronDown } from "lucide-react";
+
+// Lazy load components with different priorities
+const TideWidget = lazy(() => import("./TideWidget"));
+const Chat = lazy(() => import("./Chat"));
+
+// Custom hook for progressive loading
+const useProgressiveLoading = () => {
+  const [loadTideWidget, setLoadTideWidget] = useState(false);
+  const [loadChat, setLoadChat] = useState(false);
+
+  useEffect(() => {
+    // Load TideWidget after a short delay (second priority)
+    const tideTimer = setTimeout(() => {
+      setLoadTideWidget(true);
+    }, 100);
+
+    // Load Chat after TideWidget (third priority)
+    const chatTimer = setTimeout(() => {
+      setLoadChat(true);
+    }, 500);
+
+    return () => {
+      clearTimeout(tideTimer);
+      clearTimeout(chatTimer);
+    };
+  }, []);
+
+  return { loadTideWidget, loadChat };
+};
+
+// Loading components
+const TideWidgetSkeleton = () => (
+  <div className="w-full lg:w-1/3">
+    <div className="bg-white rounded-lg shadow-md p-4 animate-pulse">
+      <div className="h-6 bg-gray-200 rounded mb-4"></div>
+      <div className="h-4 bg-gray-200 rounded mb-2"></div>
+      <div className="h-4 bg-gray-200 rounded mb-2"></div>
+      <div className="h-4 bg-gray-200 rounded mb-4"></div>
+      <div className="h-32 bg-gray-200 rounded"></div>
+    </div>
+  </div>
+);
+
+const ChatSkeleton = () => (
+  <div className="mt-16">
+    <div className="bg-white rounded-lg shadow-md p-4 animate-pulse">
+      <div className="h-6 bg-gray-200 rounded mb-4"></div>
+      <div className="h-64 bg-gray-200 rounded mb-4"></div>
+      <div className="h-10 bg-gray-200 rounded"></div>
+    </div>
+  </div>
+);
 
 export default function SurfCam() {
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "auto" });
+    // Ensure we're at the top when component mounts
+    const timer = setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: "auto" });
+    }, 100); // Small delay to ensure everything is rendered
+    
+    return () => clearTimeout(timer);
   }, []);
   const { user, logout, timeLeft, isTimeExpired } = useAuth();
   const { isInstallable, isInstalled, installApp } = usePWA();
@@ -23,6 +78,7 @@ export default function SurfCam() {
   const chatRef = useRef<HTMLDivElement | null>(null);
   const [showChatScrollButton, setShowChatScrollButton] = useState(false);
   const prevMessagesCount = useRef(0);
+  const { loadTideWidget, loadChat } = useProgressiveLoading();
 
 
   // Detect if chat is in view
@@ -39,13 +95,18 @@ export default function SurfCam() {
 
   // Show button when new messages arrive and chat is not visible
   useEffect(() => {
-    if (!chatRef.current) return;
-    const rect = chatRef.current.getBoundingClientRect();
-    if (rect.top > window.innerHeight - 80 && prevMessagesCount.current > 0) {
-      setShowChatScrollButton(true);
-    }
-    prevMessagesCount.current += 1;
-  }, [/* You may want to pass a prop or state from Chat to trigger this */]);
+    // Only run this effect once after initial render
+    const timer = setTimeout(() => {
+      if (!chatRef.current) return;
+      const rect = chatRef.current.getBoundingClientRect();
+      if (rect.top > window.innerHeight - 80 && prevMessagesCount.current > 0) {
+        setShowChatScrollButton(true);
+      }
+      prevMessagesCount.current += 1;
+    }, 1000); // Delay to ensure chat is loaded
+
+    return () => clearTimeout(timer);
+  }, []); // Empty dependency array - only run once
 
   // Efecto para manejar la expiración del tiempo (pantalla completa y video)
   useEffect(() => {
@@ -53,8 +114,8 @@ export default function SurfCam() {
       // Forzar salida de pantalla completa inmediatamente
       if (document.fullscreenElement) {
         document.exitFullscreen().catch(() => {
-          if (document.webkitExitFullscreen) {
-            document.webkitExitFullscreen();
+          if ((document as any).webkitExitFullscreen) {
+            (document as any).webkitExitFullscreen();
           }
         });
       }
@@ -75,8 +136,8 @@ export default function SurfCam() {
       const checkFullscreen = () => {
         if (document.fullscreenElement) {
           document.exitFullscreen().catch(() => {
-            if (document.webkitExitFullscreen) {
-              document.webkitExitFullscreen();
+            if ((document as any).webkitExitFullscreen) {
+              (document as any).webkitExitFullscreen();
             }
           });
         }
@@ -290,12 +351,24 @@ export default function SurfCam() {
             
             {/* Tide Widget - sidebar on desktop, below on mobile */}
             <div className="w-full lg:w-1/3">
-              <TideWidget />
+              {loadTideWidget ? (
+                <Suspense fallback={<TideWidgetSkeleton />}>
+                  <TideWidget />
+                </Suspense>
+              ) : (
+                <TideWidgetSkeleton />
+              )}
             </div>
           </div>
           {/* Chat component below the video, with extra margin */}
           <div className="mt-16" ref={chatRef}>
-            <Chat />
+            {loadChat ? (
+              <Suspense fallback={<ChatSkeleton />}>
+                <Chat />
+              </Suspense>
+            ) : (
+              <ChatSkeleton />
+            )}
           </div>
           {showChatScrollButton && (
             <button
