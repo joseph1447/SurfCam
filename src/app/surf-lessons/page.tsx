@@ -211,14 +211,13 @@ export default function SurfLessons() {
             <div className="grid md:grid-cols-2 gap-6">
               <div>
                 <h4 className="font-semibold mb-3">✅ Incluido</h4>
-                <ul className="space-y-2 text-sm">
-                  <li>• Tabla de surf profesional</li>
-                  <li>• Leash de seguridad</li>
-                  <li>• Instructor certificado</li>
-                  <li>• Seguro de responsabilidad civil</li>
-                  <li>• Fotos de tu sesión</li>
-                  <li>• Agua y frutas</li>
-                </ul>
+                                 <ul className="space-y-2 text-sm">
+                   <li>• Tabla de surf profesional</li>
+                   <li>• Leash de seguridad</li>
+                   <li>• Instructor certificado</li>
+                   <li>• Fotos de tu sesión</li>
+                   <li>• Agua y frutas</li>
+                 </ul>
               </div>
               <div>
                 <h4 className="font-semibold mb-3">🎒 Traer Contigo</h4>
