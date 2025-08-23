@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAuth } from "@/context/AuthContext";
+import { useTheme } from "@/context/ThemeContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -17,6 +18,7 @@ type ChatMessage = {
 
 export default function Chat() {
   const { user } = useAuth();
+  const { resolvedTheme } = useTheme();
   const userId = user?._id;
   const [groups, setGroups] = useState<any[]>([{ key: "general", name: "General", protected: false }]);
   const [activeTab, setActiveTab] = useState("general");
@@ -245,22 +247,22 @@ export default function Chat() {
       });
   }, [activeTab, user]);
 
-  // Listen for messages
-  useEffect(() => {
-    if (!socketRef.current) return;
-    const socket = socketRef.current;
-    const onMessage = (msg: any) => {
-      setMessagesMap((prev) => {
-        const newMap = new Map(prev);
-        newMap.set(msg._id, msg);
-        return newMap;
-      });
-    };
-    socket.on('message', onMessage);
-    return () => {
-      socket.off('message', onMessage);
-    };
-  }, [socketRef.current]);
+      // Listen for messages
+    useEffect(() => {
+      const socket = socketRef.current;
+      if (!socket) return;
+      const onMessage = (msg: any) => {
+        setMessagesMap((prev) => {
+          const newMap = new Map(prev);
+          newMap.set(msg._id, msg);
+          return newMap;
+        });
+      };
+      socket.on('message', onMessage);
+      return () => {
+        socket.off('message', onMessage);
+      };
+    }, []);
 
   // Log messages state on every update
   useEffect(() => {
@@ -329,23 +331,23 @@ export default function Chat() {
     socketRef.current.emit('messageDeleted', { messageId });
   };
 
-  // Listen for messageDeleted event from socket
-  useEffect(() => {
-    if (!socketRef.current) return;
-    const socket = socketRef.current;
-    const onMessageDeleted = ({ messageId }) => {
-      console.log('Received messageDeleted event', messageId);
-      setMessagesMap(prev => {
-        const newMap = new Map(prev);
-        newMap.delete(messageId);
-        return newMap;
-      });
-    };
-    socket.on('messageDeleted', onMessageDeleted);
-    return () => {
-      socket.off('messageDeleted', onMessageDeleted);
-    };
-  }, []);
+      // Listen for messageDeleted event from socket
+    useEffect(() => {
+      if (!socketRef.current) return;
+      const socket = socketRef.current;
+      const onMessageDeleted = ({ messageId }: { messageId: string }) => {
+        console.log('Received messageDeleted event', messageId);
+        setMessagesMap(prev => {
+          const newMap = new Map(prev);
+          newMap.delete(messageId);
+          return newMap;
+        });
+      };
+      socket.on('messageDeleted', onMessageDeleted);
+      return () => {
+        socket.off('messageDeleted', onMessageDeleted);
+      };
+    }, []);
 
   // Edit message (within 5 min, only author)
   const handleEditMessage = (msg: any) => {
@@ -391,31 +393,35 @@ export default function Chat() {
   return (
     <Card className="mt-8 max-w-2xl mx-auto">
       <CardContent className="p-0">
-        <div className="flex border-b overflow-x-auto no-scrollbar">
+        <div className="flex border-b border-border overflow-x-auto no-scrollbar">
           {groups.map((g: any) => (
             <button
               key={g.key}
-              className={`flex-1 py-2 px-4 text-center font-semibold transition-colors whitespace-nowrap ${activeTab === g.key ? "bg-primary text-white" : "bg-gray-100 hover:bg-gray-200"}`}
+              className={`flex-1 py-2 px-4 text-center font-semibold transition-colors whitespace-nowrap ${
+                activeTab === g.key 
+                  ? "bg-primary text-white" 
+                  : "bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"
+              }`}
               onClick={() => handleTabClick(g)}
               disabled={g.protected && !hasGroupAccess(g.key)}
             >
               {g.name}
-              {g.protected && <span className="ml-1 text-xs text-gray-500">🔒</span>}
+              {g.protected && <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">🔒</span>}
             </button>
           ))}
         </div>
         {/* Password modal */}
         {showPasswordModal && (
           <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg p-6 max-w-sm w-full shadow-xl">
-              <h3 className="text-lg font-bold mb-2">Acceso a grupo protegido</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-sm w-full shadow-xl">
+              <h3 className="text-lg font-bold mb-2 dark:text-gray-100">Acceso a grupo protegido</h3>
               <div className="mb-2">
-                <label className="block mb-1 font-medium">Contraseña</label>
+                <label className="block mb-1 font-medium dark:text-gray-300">Contraseña</label>
                 <input
                   type="password"
                   value={joinPassword}
                   onChange={e => setJoinPassword(e.target.value)}
-                  className="border rounded px-3 py-2 w-full"
+                  className="border border-gray-300 dark:border-gray-600 rounded px-3 py-2 w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   placeholder="Contraseña del grupo"
                   disabled={joining}
                 />
@@ -428,16 +434,16 @@ export default function Chat() {
             </div>
           </div>
         )}
-        <div className="h-80 overflow-y-auto p-4 bg-white relative" ref={chatBoxRef}>
+        <div className="h-80 overflow-y-auto p-4 bg-white dark:bg-gray-900 relative" ref={chatBoxRef}>
           {groups.find(g => g.key === activeTab)?.protected && !canAccessTab(activeTab) ? (
             <div className="flex flex-col items-center justify-center h-full">
-              <h3 className="text-lg font-bold mb-2">Unirse a {groups.find(g => g.key === activeTab)?.name}</h3>
+              <h3 className="text-lg font-bold mb-2 dark:text-gray-100">Unirse a {groups.find(g => g.key === activeTab)?.name}</h3>
               <input
                 type="password"
                 placeholder="Contraseña del grupo"
                 value={joinPassword}
                 onChange={(e) => setJoinPassword(e.target.value)}
-                className="border rounded px-3 py-2 mb-2 w-full max-w-xs"
+                className="border border-gray-300 dark:border-gray-600 rounded px-3 py-2 mb-2 w-full max-w-xs bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 disabled={joining}
               />
               <Button onClick={async () => {
@@ -466,7 +472,7 @@ export default function Chat() {
           ) : (
             <>
               {messagesMap.size === 0 ? (
-                <div className="text-gray-400 text-center mt-8">No hay mensajes aún.</div>
+                <div className="text-gray-400 dark:text-gray-500 text-center mt-8">No hay mensajes aún.</div>
               ) : (
                 uniqueMessages.map((msg: ChatMessage) => {
                   const isOwn = user && msg.userId === user._id;
@@ -490,7 +496,7 @@ export default function Chat() {
                         <div className={`max-w-xs w-full rounded-2xl px-4 py-3 shadow-lg break-words relative transition-all duration-200 hover:shadow-xl ${
                           isOwn 
                             ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white ml-8' 
-                            : 'bg-gradient-to-br from-gray-100 to-gray-200 text-gray-900 mr-8 border border-gray-200'
+                            : 'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 text-gray-900 dark:text-gray-100 mr-8 border border-gray-200 dark:border-gray-600'
                         }`}
                         >
                           {/* Trash icon (top right, only for admin, inside bubble) */}
@@ -506,14 +512,14 @@ export default function Chat() {
                             </button>
                           )}
                           <div className="flex items-center mb-2">
-                            <span className={`font-semibold text-sm ${isOwn ? 'text-white' : 'text-blue-700'}`}>
+                            <span className={`font-semibold text-sm ${isOwn ? 'text-white' : 'text-blue-700 dark:text-blue-400'}`}>
                               {msg.username || msg.email}
                             </span>
                             {msg.edited && (
                               <span className={`ml-2 text-xs px-2 py-0.5 rounded-full ${
                                 isOwn 
                                   ? 'bg-blue-400/30 text-blue-100' 
-                                  : 'bg-gray-300 text-gray-600'
+                                  : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-300'
                               }`}>
                                 editado
                               </span>
@@ -521,7 +527,7 @@ export default function Chat() {
                           </div>
                           <div className="text-sm leading-relaxed mb-2">{msg.message}</div>
                           <div className="flex justify-between items-center">
-                            <span className={`text-xs ${isOwn ? 'text-blue-200' : 'text-gray-500'}`}>
+                            <span className={`text-xs ${isOwn ? 'text-blue-200' : 'text-gray-500 dark:text-gray-400'}`}>
                               {new Date(msg.timestamp).toLocaleTimeString()}
                             </span>
                           </div>
@@ -540,7 +546,7 @@ export default function Chat() {
                                     className={`flex items-center px-2 py-1 rounded-full text-sm border transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300 ${
                                       isOwn 
                                         ? 'bg-blue-400/30 text-white border-blue-300' 
-                                        : 'bg-white text-gray-700 border-gray-300 shadow-sm'
+                                        : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 shadow-sm'
                                     }`}
                                     title="Haz clic para quitar tu reacción"
                                   >
@@ -553,7 +559,7 @@ export default function Chat() {
                                     className={`flex items-center px-2 py-1 rounded-full text-sm border ${
                                       isOwn 
                                         ? 'bg-blue-400/20 text-white border-blue-300' 
-                                        : 'bg-white text-gray-700 border-gray-300 shadow-sm'
+                                        : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 shadow-sm'
                                     }`}
                                   >
                                     <span className="text-sm">{emoji}</span>
@@ -573,7 +579,7 @@ export default function Chat() {
                               <span role="img" aria-label="Reaccionar" className="text-lg">🤙</span>
                             </button>
                             {openReactionFor === msg._id && (
-                              <div className="reaction-bar-popover absolute z-10 right-12 bottom-0 bg-white border border-gray-200 rounded-xl shadow-xl p-3 flex gap-2">
+                              <div className="reaction-bar-popover absolute z-10 right-12 bottom-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-xl p-3 flex gap-2">
                                 {REACTION_EMOJIS.map((emoji) => {
                                   const reactions = (msg.reactions || []).filter((r: any) => r.emoji === emoji);
                                   const userReacted = reactions.some((r: any) => String(r.userId) === String(userId));
@@ -582,8 +588,8 @@ export default function Chat() {
                                       key={emoji}
                                       className={`flex items-center px-3 py-2 rounded-full text-lg border transition-all duration-200 hover:scale-110 ${
                                         userReacted 
-                                          ? (isOwn ? 'bg-blue-500 text-white border-blue-400' : 'bg-gray-300 text-blue-700 border-blue-400') 
-                                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+                                          ? (isOwn ? 'bg-blue-500 text-white border-blue-400' : 'bg-gray-300 dark:bg-gray-600 text-blue-700 dark:text-blue-400 border-blue-400') 
+                                          : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600'
                                       }`}
                                       onClick={() => handleReact(msg._id, emoji)}
                                       disabled={!userId}
@@ -627,13 +633,13 @@ export default function Chat() {
           )}
         </div>
         {canAccessTab(activeTab) && (
-          <div className="flex border-t p-2 bg-gray-50">
+          <div className="flex border-t border-border p-2 bg-gray-50 dark:bg-gray-800">
             {!userId && (
               <div className="text-red-500 text-sm flex-1">No se encontró el ID de usuario. No puedes enviar mensajes.</div>
             )}
             <input
               type="text"
-              className="flex-1 border rounded px-3 py-2 mr-2"
+              className="flex-1 border border-gray-300 dark:border-gray-600 rounded px-3 py-2 mr-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               placeholder="Escribe un mensaje..."
               value={input}
               onChange={(e) => setInput(e.target.value)}

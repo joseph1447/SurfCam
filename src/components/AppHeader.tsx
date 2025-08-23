@@ -3,11 +3,14 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
+import { useTheme } from "@/context/ThemeContext";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export default function AppHeader() {
   const { logout, user } = useAuth();
+  const { resolvedTheme } = useTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const toggleMobileMenu = () => {
@@ -15,7 +18,7 @@ export default function AppHeader() {
   };
 
   return (
-    <header className="bg-white/95 backdrop-blur-sm border-b border-border/50 sticky top-0 z-40">
+    <header className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-b border-border/50 sticky top-0 z-40">
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           {/* Logo - Clickable for mobile menu */}
@@ -58,6 +61,7 @@ export default function AppHeader() {
                 Perfil
               </Button>
             </Link>
+            <ThemeToggle />
             <Button onClick={logout} variant="outline" size="sm">
               Cerrar Sesión
             </Button>
@@ -105,6 +109,12 @@ export default function AppHeader() {
                   Perfil
                 </Button>
               </Link>
+              <div className="pt-2 border-t border-border/50">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Tema:</span>
+                  <ThemeToggle />
+                </div>
+              </div>
               <div className="pt-2 border-t border-border/50">
                 <Button onClick={logout} variant="outline" className="w-full">
                   Cerrar Sesión

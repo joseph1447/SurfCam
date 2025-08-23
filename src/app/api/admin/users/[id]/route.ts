@@ -59,6 +59,7 @@ export async function PUT(
       user: {
         _id: updatedUser._id,
         email: updatedUser.email,
+        username: updatedUser.username,
         accessType: updatedUser.accessType,
         role: updatedUser.role,
         isActive: updatedUser.isActive,

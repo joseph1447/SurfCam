@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Waves, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from '@/context/ThemeContext';
 
 interface TideData {
   todayData: {
@@ -92,6 +93,7 @@ function getDayOfWeek(date: Date): string {
 
 export default function TideWidget() {
   const { user: authUser } = useAuth();
+  const { resolvedTheme } = useTheme();
   const [tideData, setTideData] = useState<TideData | null>(null);
   const [waveReport, setWaveReport] = useState<WaveReport | null>(null);
   const [loading, setLoading] = useState(true);
@@ -221,40 +223,34 @@ export default function TideWidget() {
     const size = getWaveSize(height);
     const baseClasses = "transition-all duration-300";
     
-    switch (size) {
-      case 'flat':
-        return (
-          <div className={`${baseClasses} w-8 h-2 bg-blue-400 rounded-full`}>
-            <div className="w-full h-full bg-gradient-to-r from-blue-300 to-blue-500 rounded-full"></div>
-          </div>
-        );
-      case 'small':
-        return (
-          <div className={`${baseClasses} w-8 h-4 bg-blue-400 rounded-full`}>
-            <div className="w-full h-full bg-gradient-to-r from-blue-300 to-blue-500 rounded-full"></div>
-          </div>
-        );
-      case 'medium':
-        return (
-          <div className={`${baseClasses} w-10 h-6 bg-blue-500 rounded-full`}>
-            <div className="w-full h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full"></div>
-          </div>
-        );
-      case 'large':
-        return (
-          <div className={`${baseClasses} w-12 h-8 bg-blue-600 rounded-full`}>
-            <div className="w-full h-full bg-gradient-to-r from-blue-500 to-blue-700 rounded-full"></div>
-          </div>
-        );
-      case 'xlarge':
-        return (
-          <div className={`${baseClasses} w-14 h-10 bg-blue-700 rounded-full`}>
-            <div className="w-full h-full bg-gradient-to-r from-blue-600 to-blue-800 rounded-full"></div>
-          </div>
-        );
-      default:
-        return null;
-    }
+    // Get icon size and source based on wave size
+    const getIconConfig = () => {
+      switch (size) {
+        case 'flat': return { src: '/wave-16.png', size: 16 };
+        case 'small': return { src: '/wave-16.png', size: 20 };
+        case 'medium': return { src: '/wave-32.png', size: 32 };
+        case 'large': return { src: '/wave-128.png', size: 48 };
+        case 'xlarge': return { src: '/wave-128.png', size: 64 };
+        default: return { src: '/wave-16.png', size: 20 };
+      }
+    };
+    
+    const { src, size: iconSize } = getIconConfig();
+    
+    return (
+      <div className={`${baseClasses} relative`} style={{ width: `${iconSize}px`, height: `${iconSize}px` }}>
+        <img
+          src={src}
+          alt={`Ola ${size}`}
+          width={iconSize}
+          height={iconSize}
+          className="drop-shadow-sm"
+          style={{
+            filter: resolvedTheme === 'dark' ? 'brightness(0.8) contrast(1.2)' : 'none'
+          }}
+        />
+      </div>
+    );
   };
 
   if (loading) {
@@ -316,38 +312,38 @@ export default function TideWidget() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Waves className="w-5 h-5" />
-            Mareas Puntarenas
-          </CardTitle>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={navigateToPreviousDay}
-              className="p-1 hover:bg-gray-100 rounded transition-colors"
-              title="Día anterior"
-            >
-              <ChevronLeft className="w-4 h-4 text-gray-600" />
-            </button>
-            <button
-              onClick={goToToday}
-              className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-              title="Ir a hoy"
-            >
-              Hoy
-            </button>
-            <button
-              onClick={navigateToNextDay}
-              className="p-1 hover:bg-gray-100 rounded transition-colors"
-              title="Día siguiente"
-            >
-              <ChevronRight className="w-4 h-4 text-gray-600" />
-            </button>
-          </div>
+                 <div className="flex items-center justify-between">
+           <CardTitle className="flex items-center gap-2">
+             <Waves className="w-5 h-5" />
+             Mareas Puntarenas
+           </CardTitle>
+                       <div className="flex items-center gap-2">
+              <button
+                onClick={navigateToPreviousDay}
+                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+                title="Día anterior"
+              >
+                <ChevronLeft className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+              </button>
+              <button
+                onClick={goToToday}
+                className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                title="Ir a hoy"
+              >
+                Hoy
+              </button>
+              <button
+                onClick={navigateToNextDay}
+                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+                title="Día siguiente"
+              >
+                <ChevronRight className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+              </button>
+            </div>
         </div>
-        <div className="text-sm text-gray-500">
-          {selectedDayOfWeek} • {selectedDateFormatted}
-        </div>
+                 <div className="text-sm text-gray-500 dark:text-gray-400">
+           {selectedDayOfWeek} • {selectedDateFormatted}
+         </div>
 
       </CardHeader>
       <CardContent className="space-y-4">
@@ -356,91 +352,91 @@ export default function TideWidget() {
         {/* Wave Report Section */}
         {isSelectedDateToday && (
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-medium text-gray-700">Reporte de Olas</h4>
-                             {authUser && (authUser.role === 'moderator' || authUser.role === 'admin') && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowWaveReportDialog(true)}
-                  className="text-xs"
-                >
-                  Reportar
-                </Button>
-              )}
-            </div>
+                         <div className="flex items-center justify-between">
+               <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Reporte de Olas</h4>
+                              {authUser && (authUser.role === 'moderator' || authUser.role === 'admin') && (
+                 <Button
+                   variant="outline"
+                   size="sm"
+                   onClick={() => setShowWaveReportDialog(true)}
+                   className="text-xs"
+                 >
+                   Reportar
+                 </Button>
+               )}
+             </div>
             
-            {waveReport ? (
-              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  {getWaveIcon(waveReport.waveHeight)}
-                  <div>
-                    <div className="text-lg font-semibold text-blue-700">
-                      {waveReport.waveHeight} pies
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      Reportado por {waveReport.reporterName}
-                    </div>
-                    <div className="text-xs text-gray-400">
-                      {new Date(waveReport.createdAt).toLocaleTimeString('es-CR', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        timeZone: 'America/Costa_Rica'
-                      })}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center p-3 bg-gray-50 rounded-lg">
-                <div className="text-sm text-gray-500">No hay reporte de olas</div>
-              </div>
-            )}
-          </div>
-        )}
-
-
-
-        {/* Next Tides - Only show for today */}
-        {isSelectedDateToday && (tideData.nextHighTide || tideData.nextLowTide) && (
-          <div className="space-y-3">
-            <h4 className="text-sm font-medium text-gray-700">Próximas Mareas</h4>
-            <div className="grid grid-cols-2 gap-3">
-              {tideData.nextHighTide ? (
-                <div className="text-center p-3 bg-red-50 rounded-lg">
-                  <div className="text-xs text-gray-500">Próxima Alta</div>
-                  <div className="text-lg font-semibold text-red-700">
-                    {formatTime(tideData.nextHighTide.time)}
-                  </div>
-                  <div className="text-xs text-red-600">
-                    {tideData.nextHighTide.height} pies
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <div className="text-xs text-gray-500">Próxima Alta</div>
-                  <div className="text-sm text-gray-500">No hay más hoy</div>
-                </div>
-              )}
-              {tideData.nextLowTide ? (
-                <div className="text-center p-3 bg-blue-50 rounded-lg">
-                  <div className="text-xs text-gray-500">Próxima Baja</div>
-                  <div className="text-lg font-semibold text-blue-700">
-                    {formatTime(tideData.nextLowTide.time)}
-                  </div>
-                                     <div className="text-xs text-blue-600">
-                     {tideData.nextLowTide.height} pies
+                         {waveReport ? (
+               <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+                 <div className="flex items-center gap-3">
+                   {getWaveIcon(waveReport.waveHeight)}
+                   <div>
+                     <div className="text-lg font-semibold text-blue-700 dark:text-blue-300">
+                       {waveReport.waveHeight} pies
+                     </div>
+                     <div className="text-xs text-gray-500 dark:text-gray-400">
+                       Reportado por {waveReport.reporterName}
+                     </div>
+                     <div className="text-xs text-gray-400 dark:text-gray-500">
+                       {new Date(waveReport.createdAt).toLocaleTimeString('es-CR', {
+                         hour: '2-digit',
+                         minute: '2-digit',
+                         timeZone: 'America/Costa_Rica'
+                       })}
+                     </div>
                    </div>
-                </div>
-              ) : (
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <div className="text-xs text-gray-500">Próxima Baja</div>
-                  <div className="text-sm text-gray-500">No hay más hoy</div>
-                </div>
-              )}
-            </div>
+                 </div>
+               </div>
+             ) : (
+               <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                 <div className="text-sm text-gray-500 dark:text-gray-400">No hay reporte de olas</div>
+               </div>
+             )}
           </div>
         )}
+
+
+
+                 {/* Next Tides - Only show for today */}
+         {isSelectedDateToday && (tideData.nextHighTide || tideData.nextLowTide) && (
+           <div className="space-y-3">
+             <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Próximas Mareas</h4>
+             <div className="grid grid-cols-2 gap-3">
+               {tideData.nextHighTide ? (
+                 <div className="text-center p-3 bg-red-50 dark:bg-red-950/30 rounded-lg">
+                   <div className="text-xs text-gray-500 dark:text-gray-400">Próxima Alta</div>
+                   <div className="text-lg font-semibold text-red-700 dark:text-red-300">
+                     {formatTime(tideData.nextHighTide.time)}
+                   </div>
+                   <div className="text-xs text-red-600 dark:text-red-400">
+                     {tideData.nextHighTide.height} pies
+                   </div>
+                 </div>
+               ) : (
+                 <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                   <div className="text-xs text-gray-500 dark:text-gray-400">Próxima Alta</div>
+                   <div className="text-sm text-gray-500 dark:text-gray-400">No hay más hoy</div>
+                 </div>
+               )}
+               {tideData.nextLowTide ? (
+                 <div className="text-center p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+                   <div className="text-xs text-gray-500 dark:text-gray-400">Próxima Baja</div>
+                   <div className="text-lg font-semibold text-blue-700 dark:text-blue-300">
+                     {formatTime(tideData.nextLowTide.time)}
+                   </div>
+                                      <div className="text-xs text-blue-600 dark:text-blue-400">
+                      {tideData.nextLowTide.height} pies
+                    </div>
+                 </div>
+               ) : (
+                 <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                   <div className="text-xs text-gray-500 dark:text-gray-400">Próxima Baja</div>
+                   <div className="text-sm text-gray-500 dark:text-gray-400">No hay más hoy</div>
+                 </div>
+               )}
+             </div>
+           </div>
+         )}
 
         {/* Raw Excel Data */}
         {tideData.todayData && tideData.todayData.tides && (
@@ -468,70 +464,72 @@ export default function TideWidget() {
                   // If both are AM or both are PM, sort chronologically
                   return timeA.getTime() - timeB.getTime();
                 })
-                .map((tide, index) => (
-                                 <div key={index} className="flex items-center justify-between text-sm p-2 bg-gray-50 rounded">
-                   <div className="flex items-center gap-2">
-                     <Clock className="w-3 h-3 text-gray-400" />
-                     <span className="font-medium">{formatTime(tide.time)}</span>
-                   </div>
-                   <div className="flex items-center gap-2">
-                     <span className={`text-xs px-2 py-1 rounded ${
-                       tide.type === 'high' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
-                     }`}>
-                       {tide.type === 'high' ? 'Alta' : 'Baja'}
-                     </span>
-                     <span className="text-xs text-gray-600">
-                       {tide.height} pies
-                     </span>
-                   </div>
-                 </div>
-              ))}
+                                 .map((tide, index) => (
+                                  <div key={index} className="flex items-center justify-between text-sm p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-3 h-3 text-gray-400 dark:text-gray-500" />
+                      <span className="font-medium dark:text-gray-200">{formatTime(tide.time)}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs px-2 py-1 rounded ${
+                        tide.type === 'high' 
+                          ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' 
+                          : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                      }`}>
+                        {tide.type === 'high' ? 'Alta' : 'Baja'}
+                      </span>
+                      <span className="text-xs text-gray-600 dark:text-gray-400">
+                        {tide.height} pies
+                      </span>
+                    </div>
+                  </div>
+               ))}
             </div>
           </div>
         )}
 
-        {/* Footer */}
-        <div className="border-t pt-3">
-          <div className="flex items-center justify-between text-xs text-gray-500">
-            <span>Fuente: IMN Costa Rica</span>
-          </div>
-        </div>
+                 {/* Footer */}
+         <div className="border-t pt-3">
+           <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+             <span>Fuente: IMN Costa Rica</span>
+           </div>
+         </div>
       </CardContent>
 
-      {/* Wave Report Dialog */}
-      {showWaveReportDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-96 max-w-[90vw]">
-            <h3 className="text-lg font-semibold mb-4">Reportar Tamaño de Olas</h3>
+             {/* Wave Report Dialog */}
+       {showWaveReportDialog && (
+         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-96 max-w-[90vw]">
+             <h3 className="text-lg font-semibold mb-4 dark:text-gray-100">Reportar Tamaño de Olas</h3>
             
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Altura de las olas (pies)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="20"
-                  step="0.5"
-                  value={waveHeight}
-                  onChange={(e) => setWaveHeight(parseFloat(e.target.value) || 0)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Notas (opcional)
-                </label>
-                <textarea
-                  value={waveNotes}
-                  onChange={(e) => setWaveNotes(e.target.value)}
-                  placeholder="Condiciones especiales, observaciones..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  rows={3}
-                />
-              </div>
+                             <div>
+                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                   Altura de las olas (pies)
+                 </label>
+                 <input
+                   type="number"
+                   min="0"
+                   max="20"
+                   step="0.5"
+                   value={waveHeight}
+                   onChange={(e) => setWaveHeight(parseFloat(e.target.value) || 0)}
+                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                 />
+               </div>
+               
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                   Notas (opcional)
+                 </label>
+                 <textarea
+                   value={waveNotes}
+                   onChange={(e) => setWaveNotes(e.target.value)}
+                   placeholder="Condiciones especiales, observaciones..."
+                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                   rows={3}
+                 />
+               </div>
               
               <div className="flex justify-end space-x-2">
                 <Button

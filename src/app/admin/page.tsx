@@ -37,6 +37,7 @@ interface User {
   createdAt: string;
   lastLogin?: string;
   loginCount: number;
+  accessType?: 'free' | 'premium';
 }
 
 interface Moderator {
@@ -55,6 +56,7 @@ export default function AdminPage() {
   const [moderators, setModerators] = useState<Moderator[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [accessTypeFilter, setAccessTypeFilter] = useState<'all' | 'free' | 'premium'>('all');
   const [sortField, setSortField] = useState<string>('createdAt');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -108,7 +110,8 @@ export default function AdminPage() {
   const filteredUsers = users.filter(user => {
     const matchesSearch = (user.username?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
                          (user.email?.toLowerCase().includes(searchTerm.toLowerCase()) || false);
-    return matchesSearch;
+    const matchesAccessType = accessTypeFilter === 'all' || user.accessType === accessTypeFilter;
+    return matchesSearch && matchesAccessType;
   }).sort((a, b) => {
     let aValue: any;
     let bValue: any;
@@ -242,13 +245,15 @@ export default function AdminPage() {
   const getMetrics = () => {
     const totalUsers = users.length;
     const activeUsers = users.filter(u => u.isActive).length;
+    const premiumUsers = users.filter(u => u.accessType === 'premium').length;
+    const freeUsers = users.filter(u => u.accessType === 'free' || !u.accessType).length;
     const totalLogins = users.reduce((sum, u) => sum + (u.loginCount || 0), 0);
     const today = new Date().toDateString();
     const todayLogins = users.filter(u => 
       u.lastLogin && new Date(u.lastLogin).toDateString() === today
     ).length;
 
-    return { totalUsers, activeUsers, totalLogins, todayLogins };
+    return { totalUsers, activeUsers, premiumUsers, freeUsers, totalLogins, todayLogins };
   };
 
   const metrics = getMetrics();
@@ -273,7 +278,7 @@ export default function AdminPage() {
       <h1 className="text-3xl font-bold mb-6">Panel de Administración</h1>
 
       {/* Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -294,6 +299,30 @@ export default function AdminPage() {
                 <p className="text-2xl font-bold">{metrics.activeUsers}</p>
               </div>
               <Eye className="h-8 w-8 text-green-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Usuarios Premium</p>
+                <p className="text-2xl font-bold">{metrics.premiumUsers}</p>
+              </div>
+              <Users className="h-8 w-8 text-yellow-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Usuarios Gratuitos</p>
+                <p className="text-2xl font-bold">{metrics.freeUsers}</p>
+              </div>
+              <Users className="h-8 w-8 text-gray-600" />
             </div>
           </CardContent>
         </Card>
@@ -349,6 +378,16 @@ export default function AdminPage() {
                     className="pl-10"
                   />
                 </div>
+                <Select value={accessTypeFilter} onValueChange={(value: 'all' | 'free' | 'premium') => setAccessTypeFilter(value)}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="Tipo de acceso" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los usuarios</SelectItem>
+                    <SelectItem value="premium">Solo Premium</SelectItem>
+                    <SelectItem value="free">Solo Gratuitos</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Select value={sortField} onValueChange={handleSort}>
                   <SelectTrigger className="w-48">
                     <SelectValue placeholder="Ordenar por" />
@@ -370,6 +409,7 @@ export default function AdminPage() {
                     <TableHead>Usuario</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Rol</TableHead>
+                    <TableHead>Tipo de Acceso</TableHead>
                     <TableHead>Estado</TableHead>
                     <TableHead>Logins</TableHead>
                     <TableHead>Último Login</TableHead>
@@ -385,6 +425,11 @@ export default function AdminPage() {
                       <TableCell>
                         <Badge variant={user.role === 'admin' ? 'destructive' : 'secondary'}>
                           {user.role}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={user.accessType === 'premium' ? 'default' : 'secondary'}>
+                          {user.accessType === 'premium' ? 'Premium' : 'Gratuito'}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -522,6 +567,18 @@ export default function AdminPage() {
                     <SelectItem value="user">Usuario</SelectItem>
                     <SelectItem value="moderator">Moderador</SelectItem>
                     <SelectItem value="admin">Administrador</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="accessType">Tipo de Acceso</Label>
+                <Select value={selectedUser.accessType || 'free'} onValueChange={(value: 'free' | 'premium') => setSelectedUser({ ...selectedUser, accessType: value })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="free">Gratuito</SelectItem>
+                    <SelectItem value="premium">Premium</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     // Construir filtro
-    const filter: any = { isActive: true };
+    const filter: any = {};
     if (accessType) {
       filter.accessType = accessType;
     }
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
 
     // Obtener usuarios con paginación
     const users = await User.find(filter)
-      .select('-password')
+      .select('email username accessType role isActive loginCount lastLogin createdAt')
       .sort(sort)
       .skip(skip)
       .limit(limit)

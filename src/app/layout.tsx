@@ -1,8 +1,10 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
+import { ThemeProvider } from '@/context/ThemeContext';
 import { Toaster } from "@/components/ui/toaster";
 import PWAProvider from '@/components/PWAProvider';
+import ThemeScript from '@/components/ThemeScript';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { SpeedInsights } from "@vercel/speed-insights/next"
 
@@ -61,13 +63,16 @@ export default function RootLayout({
         <meta name="msapplication-tap-highlight" content="no" />
       </head>
       <body className="font-body antialiased">
+        <ThemeScript />
         <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}>
-          <AuthProvider>
-            <PWAProvider>
-              {children}
-              <Toaster />
-            </PWAProvider>
-          </AuthProvider>
+          <ThemeProvider>
+            <AuthProvider>
+              <PWAProvider>
+                {children}
+                <Toaster />
+              </PWAProvider>
+            </AuthProvider>
+          </ThemeProvider>
         </GoogleOAuthProvider>
         <SpeedInsights />
       </body>
