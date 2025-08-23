@@ -218,77 +218,7 @@ export default function TideWidget() {
     setSelectedDate(today);
   };
 
-  // Helper function to calculate tide progress
-  const getTideProgress = () => {
-    if (!tideData?.todayData?.tides) return 0;
-    
-    const todayTides = tideData.todayData.tides.sort((a, b) => 
-      a.time.localeCompare(b.time)
-    );
-    
-    const now = new Date();
-    const currentTimeString = now.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      hour12: false,
-      timeZone: 'America/Costa_Rica'
-    });
-    
-    let lastTide = null;
-    let nextTide = null;
-    
-    // Convert current time to minutes for comparison
-    const [currentHours, currentMinutes] = currentTimeString.split(':').map(Number);
-    const currentTimeInMinutes = currentHours * 60 + currentMinutes;
-    
-    // Find the last tide that occurred and the next tide
-    for (let i = 0; i < todayTides.length; i++) {
-      const [tideHours, tideMinutes] = todayTides[i].time.split(':').map(Number);
-      const tideTimeInMinutes = tideHours * 60 + tideMinutes;
-      
-      if (tideTimeInMinutes <= currentTimeInMinutes) {
-        lastTide = todayTides[i];
-      } else {
-        nextTide = todayTides[i];
-        break;
-      }
-    }
-    
-    if (!lastTide || !nextTide) return 0;
-    
-    // Calculate progress based on time elapsed between last and next tide
-    const [lastHours, lastMinutes] = lastTide.time.split(':').map(Number);
-    const [nextHours, nextMinutes] = nextTide.time.split(':').map(Number);
-    
-    const lastTimeInMinutes = lastHours * 60 + lastMinutes;
-    const nextTimeInMinutes = nextHours * 60 + nextMinutes;
-    
-    const totalDuration = nextTimeInMinutes - lastTimeInMinutes;
-    const elapsedTime = currentTimeInMinutes - lastTimeInMinutes;
-    
-    const progress = elapsedTime / totalDuration;
-    return Math.max(0, Math.min(1, progress));
-  };
 
-  // Helper function to get color based on tide height
-  const getTideColor = (height: number) => {
-    const normalizedHeight = Math.max(0, Math.min(1, height / 10));
-    const blue = Math.round(255 * (1 - normalizedHeight));
-    const red = Math.round(255 * normalizedHeight);
-    return `rgb(${red}, 100, ${blue})`;
-  };
-
-  // Helper function to get direction text
-  const getDirectionText = () => {
-    switch (tideData?.currentDirection) {
-      case 'rising':
-        return 'Subiendo';
-      case 'falling':
-        return 'Bajando';
-      default:
-        return 'Estable';
-    }
-  };
 
   // Helper function to get wave size based on height
   const getWaveSize = (height: number) => {
@@ -434,14 +364,7 @@ export default function TideWidget() {
 
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Current Height and Direction - Only show for today */}
-        {isSelectedDateToday && tideData.currentHeight && (
-          <div className="text-center p-4 bg-gradient-to-r from-blue-50 to-red-50 rounded-lg">
-            <div className="text-2xl font-bold" style={{ color: getTideColor(tideData.currentHeight) }}>
-              {getDirectionText()}
-            </div>
-          </div>
-        )}
+
 
         {/* Wave Report Section */}
         {isSelectedDateToday && (
@@ -489,23 +412,7 @@ export default function TideWidget() {
           </div>
         )}
 
-        {/* Tide Progress Bar - Only show for today */}
-        {isSelectedDateToday && tideData.currentHeight && (
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs text-gray-500">
-              <span>Progreso de Marea</span>
-              <span>{Math.round(getTideProgress() * 100)}%</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-3 relative overflow-hidden">
-              <div 
-                className="h-full rounded-full transition-all duration-500 bg-green-500"
-                style={{
-                  width: `${getTideProgress() * 100}%`
-                }}
-              />
-            </div>
-          </div>
-        )}
+
 
         {/* Next Tides - Only show for today */}
         {isSelectedDateToday && (tideData.nextHighTide || tideData.nextLowTide) && (
@@ -517,6 +424,9 @@ export default function TideWidget() {
                   <div className="text-xs text-gray-500">Próxima Alta</div>
                   <div className="text-lg font-semibold text-red-700">
                     {formatTime(tideData.nextHighTide.time)}
+                  </div>
+                  <div className="text-xs text-red-600">
+                    {tideData.nextHighTide.height} pies
                   </div>
                 </div>
               ) : (
@@ -531,6 +441,9 @@ export default function TideWidget() {
                   <div className="text-lg font-semibold text-blue-700">
                     {formatTime(tideData.nextLowTide.time)}
                   </div>
+                                     <div className="text-xs text-blue-600">
+                     {tideData.nextLowTide.height} pies
+                   </div>
                 </div>
               ) : (
                 <div className="text-center p-3 bg-gray-50 rounded-lg">
@@ -569,19 +482,22 @@ export default function TideWidget() {
                   return timeA.getTime() - timeB.getTime();
                 })
                 .map((tide, index) => (
-                <div key={index} className="flex items-center justify-between text-sm p-2 bg-gray-50 rounded">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-3 h-3 text-gray-400" />
-                    <span className="font-medium">{formatTime(tide.time)}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-xs px-2 py-1 rounded ${
-                      tide.type === 'high' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
-                    }`}>
-                      {tide.type === 'high' ? 'Alta' : 'Baja'}
-                    </span>
-                  </div>
-                </div>
+                                 <div key={index} className="flex items-center justify-between text-sm p-2 bg-gray-50 rounded">
+                   <div className="flex items-center gap-2">
+                     <Clock className="w-3 h-3 text-gray-400" />
+                     <span className="font-medium">{formatTime(tide.time)}</span>
+                   </div>
+                   <div className="flex items-center gap-2">
+                     <span className={`text-xs px-2 py-1 rounded ${
+                       tide.type === 'high' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
+                     }`}>
+                       {tide.type === 'high' ? 'Alta' : 'Baja'}
+                     </span>
+                     <span className="text-xs text-gray-600">
+                       {tide.height} pies
+                     </span>
+                   </div>
+                 </div>
               ))}
             </div>
           </div>
