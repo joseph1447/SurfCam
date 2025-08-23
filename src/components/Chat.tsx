@@ -38,6 +38,8 @@ export default function Chat() {
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [sending, setSending] = useState(false);
   const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMINUSER || 'josephquesada92@gmail.com';
+  
+
 
   // Reaction emojis
   const REACTION_EMOJIS = ["👍", "😂", "❤️", "🙏", "😮", "🤙"];
@@ -173,7 +175,7 @@ export default function Chat() {
 
     // Clean up on unmount
     return () => {
-      socketRef.current.disconnect();
+      socketRef.current?.disconnect();
     };
   }, [activeTab]);
 
@@ -247,22 +249,22 @@ export default function Chat() {
       });
   }, [activeTab, user]);
 
-      // Listen for messages
-    useEffect(() => {
-      const socket = socketRef.current;
-      if (!socket) return;
-      const onMessage = (msg: any) => {
-        setMessagesMap((prev) => {
-          const newMap = new Map(prev);
-          newMap.set(msg._id, msg);
-          return newMap;
-        });
-      };
-      socket.on('message', onMessage);
-      return () => {
-        socket.off('message', onMessage);
-      };
-    }, []);
+      // Listen for messages (duplicate listener - removing this one)
+    // useEffect(() => {
+    //   const socket = socketRef.current;
+    //   if (!socket) return;
+    //   const onMessage = (msg: any) => {
+    //     setMessagesMap((prev) => {
+    //       const newMap = new Map(prev);
+    //       newMap.set(msg._id, msg);
+    //       return newMap;
+    //     });
+    //   };
+    //   socket.on('message', onMessage);
+    //   return () => {
+    //     socket.off('message', onMessage);
+    //   };
+    // }, []);
 
   // Log messages state on every update
   useEffect(() => {
@@ -515,6 +517,7 @@ export default function Chat() {
                             <span className={`font-semibold text-sm ${isOwn ? 'text-white' : 'text-blue-700 dark:text-blue-400'}`}>
                               {msg.username || msg.email}
                             </span>
+
                             {msg.edited && (
                               <span className={`ml-2 text-xs px-2 py-0.5 rounded-full ${
                                 isOwn 
