@@ -92,7 +92,6 @@ function getDayOfWeek(date: Date): string {
 
 export default function TideWidget() {
   const { user: authUser } = useAuth();
-  const [currentUser, setCurrentUser] = useState<any>(null);
   const [tideData, setTideData] = useState<TideData | null>(null);
   const [waveReport, setWaveReport] = useState<WaveReport | null>(null);
   const [loading, setLoading] = useState(true);
@@ -139,21 +138,10 @@ export default function TideWidget() {
     }
   };
 
-  const fetchCurrentUser = async () => {
-    try {
-      const response = await fetch('/api/auth/me');
-      const result = await response.json();
-      
-      if (result.success && result.user) {
-        setCurrentUser(result.user);
-      }
-    } catch (err) {
-      console.error('Error fetching current user:', err);
-    }
-  };
+
 
   const submitWaveReport = async () => {
-    if (!currentUser?._id) {
+    if (!authUser?._id) {
       console.error('Usuario no autenticado');
       return;
     }
@@ -165,7 +153,7 @@ export default function TideWidget() {
         body: JSON.stringify({
           waveHeight,
           notes: waveNotes,
-          userId: currentUser._id
+          userId: authUser._id
         })
       });
       
@@ -185,7 +173,6 @@ export default function TideWidget() {
   useEffect(() => {
     fetchTideData();
     fetchWaveReport();
-    fetchCurrentUser();
   }, [selectedDate]);
 
   const formatTime = (timeStr: string) => {
@@ -371,7 +358,7 @@ export default function TideWidget() {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h4 className="text-sm font-medium text-gray-700">Reporte de Olas</h4>
-              {currentUser && (currentUser.role === 'moderator' || currentUser.role === 'admin') && (
+                             {authUser && (authUser.role === 'moderator' || authUser.role === 'admin') && (
                 <Button
                   variant="outline"
                   size="sm"
