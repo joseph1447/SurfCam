@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Waves, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 interface TideData {
   todayData: {
@@ -25,6 +27,13 @@ interface TideData {
     time: string;
     height: number;
   } | null;
+}
+
+interface WaveReport {
+  waveHeight: number;
+  reporterName: string;
+  createdAt: string;
+  notes?: string;
 }
 
 // Helper function to get Costa Rica date - Fixed for Vercel deployment
@@ -82,10 +91,16 @@ function getDayOfWeek(date: Date): string {
 }
 
 export default function TideWidget() {
+  const { user: authUser } = useAuth();
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [tideData, setTideData] = useState<TideData | null>(null);
+  const [waveReport, setWaveReport] = useState<WaveReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(() => getCostaRicaDate());
+  const [showWaveReportDialog, setShowWaveReportDialog] = useState(false);
+  const [waveHeight, setWaveHeight] = useState<number>(3);
+  const [waveNotes, setWaveNotes] = useState<string>('');
 
   const fetchTideData = async (date?: Date) => {
     try {
@@ -111,8 +126,66 @@ export default function TideWidget() {
     }
   };
 
+  const fetchWaveReport = async () => {
+    try {
+      const response = await fetch('/api/wave-report');
+      const result = await response.json();
+      
+      if (result.success && result.report) {
+        setWaveReport(result.report);
+      }
+    } catch (err) {
+      console.error('Error fetching wave report:', err);
+    }
+  };
+
+  const fetchCurrentUser = async () => {
+    try {
+      const response = await fetch('/api/auth/me');
+      const result = await response.json();
+      
+      if (result.success && result.user) {
+        setCurrentUser(result.user);
+      }
+    } catch (err) {
+      console.error('Error fetching current user:', err);
+    }
+  };
+
+  const submitWaveReport = async () => {
+    if (!currentUser?._id) {
+      console.error('Usuario no autenticado');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/wave-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          waveHeight,
+          notes: waveNotes,
+          userId: currentUser._id
+        })
+      });
+      
+      if (response.ok) {
+        setShowWaveReportDialog(false);
+        setWaveNotes('');
+        fetchWaveReport();
+      } else {
+        const errorData = await response.json();
+        console.error('Error submitting wave report:', errorData.error);
+      }
+    } catch (err) {
+      console.error('Error submitting wave report:', err);
+    }
+  };
+
   useEffect(() => {
     fetchTideData();
+    fetchWaveReport();
+    fetchCurrentUser();
   }, [selectedDate]);
 
   const formatTime = (timeStr: string) => {
@@ -217,6 +290,56 @@ export default function TideWidget() {
     }
   };
 
+  // Helper function to get wave size based on height
+  const getWaveSize = (height: number) => {
+    if (height < 1) return 'flat';
+    if (height <= 3) return 'small';
+    if (height <= 5) return 'medium';
+    if (height <= 8) return 'large';
+    return 'xlarge';
+  };
+
+  // Helper function to get wave icon
+  const getWaveIcon = (height: number) => {
+    const size = getWaveSize(height);
+    const baseClasses = "transition-all duration-300";
+    
+    switch (size) {
+      case 'flat':
+        return (
+          <div className={`${baseClasses} w-8 h-2 bg-blue-400 rounded-full`}>
+            <div className="w-full h-full bg-gradient-to-r from-blue-300 to-blue-500 rounded-full"></div>
+          </div>
+        );
+      case 'small':
+        return (
+          <div className={`${baseClasses} w-8 h-4 bg-blue-400 rounded-full`}>
+            <div className="w-full h-full bg-gradient-to-r from-blue-300 to-blue-500 rounded-full"></div>
+          </div>
+        );
+      case 'medium':
+        return (
+          <div className={`${baseClasses} w-10 h-6 bg-blue-500 rounded-full`}>
+            <div className="w-full h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full"></div>
+          </div>
+        );
+      case 'large':
+        return (
+          <div className={`${baseClasses} w-12 h-8 bg-blue-600 rounded-full`}>
+            <div className="w-full h-full bg-gradient-to-r from-blue-500 to-blue-700 rounded-full"></div>
+          </div>
+        );
+      case 'xlarge':
+        return (
+          <div className={`${baseClasses} w-14 h-10 bg-blue-700 rounded-full`}>
+            <div className="w-full h-full bg-gradient-to-r from-blue-600 to-blue-800 rounded-full"></div>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
   if (loading) {
     return (
       <Card className="w-full max-w-md">
@@ -317,6 +440,52 @@ export default function TideWidget() {
             <div className="text-2xl font-bold" style={{ color: getTideColor(tideData.currentHeight) }}>
               {getDirectionText()}
             </div>
+          </div>
+        )}
+
+        {/* Wave Report Section */}
+        {isSelectedDateToday && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-medium text-gray-700">Reporte de Olas</h4>
+              {currentUser && (currentUser.role === 'moderator' || currentUser.role === 'admin') && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowWaveReportDialog(true)}
+                  className="text-xs"
+                >
+                  Reportar
+                </Button>
+              )}
+            </div>
+            
+            {waveReport ? (
+              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  {getWaveIcon(waveReport.waveHeight)}
+                  <div>
+                    <div className="text-lg font-semibold text-blue-700">
+                      {waveReport.waveHeight} pies
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      Reportado por {waveReport.reporterName}
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      {new Date(waveReport.createdAt).toLocaleTimeString('es-CR', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        timeZone: 'America/Costa_Rica'
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center p-3 bg-gray-50 rounded-lg">
+                <div className="text-sm text-gray-500">No hay reporte de olas</div>
+              </div>
+            )}
           </div>
         )}
 
@@ -425,6 +594,60 @@ export default function TideWidget() {
           </div>
         </div>
       </CardContent>
+
+      {/* Wave Report Dialog */}
+      {showWaveReportDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-96 max-w-[90vw]">
+            <h3 className="text-lg font-semibold mb-4">Reportar Tamaño de Olas</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Altura de las olas (pies)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="20"
+                  step="0.5"
+                  value={waveHeight}
+                  onChange={(e) => setWaveHeight(parseFloat(e.target.value) || 0)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Notas (opcional)
+                </label>
+                <textarea
+                  value={waveNotes}
+                  onChange={(e) => setWaveNotes(e.target.value)}
+                  placeholder="Condiciones especiales, observaciones..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows={3}
+                />
+              </div>
+              
+              <div className="flex justify-end space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowWaveReportDialog(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={submitWaveReport}
+                  disabled={waveHeight <= 0}
+                >
+                  Reportar
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </Card>
   );
 }

@@ -127,7 +127,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Obtener el usuario actualizado
     const updatedUser = await User.findById(user._id);
-    res.status(200).json({ user: updatedUser });
+    res.status(200).json({ 
+      user: {
+        _id: updatedUser._id,
+        email: updatedUser.email,
+        accessType: updatedUser.accessType,
+        role: updatedUser.role,
+        username: updatedUser.username,
+        instagram: updatedUser.instagram,
+        loginCount: updatedUser.loginCount,
+        lastLogin: updatedUser.lastLogin
+      }
+    });
   } catch (err: any) {
     console.error('Google login error:', err);
     res.status(500).json({ message: err.message || 'Internal server error' });

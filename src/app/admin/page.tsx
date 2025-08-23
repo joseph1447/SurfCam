@@ -39,28 +39,29 @@ interface User {
   loginCount: number;
 }
 
-interface ChatGroup {
+interface Moderator {
   _id: string;
-  name: string;
-  description?: string;
-  isPrivate: boolean;
-  memberCount: number;
+  email: string;
+  username?: string;
+  role: string;
   createdAt: string;
-  createdBy: string;
+  lastLogin?: string;
+  isActive: boolean;
 }
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState('users');
   const [users, setUsers] = useState<User[]>([]);
-  const [chatGroups, setChatGroups] = useState<ChatGroup[]>([]);
+  const [moderators, setModerators] = useState<Moderator[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<string>('createdAt');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [showCreateGroupDialog, setShowCreateGroupDialog] = useState(false);
-  const [newGroup, setNewGroup] = useState({ name: '', description: '', isPrivate: false });
+  const [showPromoteDialog, setShowPromoteDialog] = useState(false);
+  const [promoteEmail, setPromoteEmail] = useState('');
+  const [promoteAction, setPromoteAction] = useState<'promote' | 'demote'>('promote');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -77,11 +78,11 @@ export default function AdminPage() {
         setUsers(usersData.users || []);
       }
 
-      // Fetch chat groups
-      const groupsResponse = await fetch('/api/chat/groups/list');
-      if (groupsResponse.ok) {
-        const groupsData = await groupsResponse.json();
-        setChatGroups(groupsData.groups || []);
+      // Fetch moderators
+      const moderatorsResponse = await fetch('/api/admin/moderators');
+      if (moderatorsResponse.ok) {
+        const moderatorsData = await moderatorsResponse.json();
+        setModerators(moderatorsData.moderators || []);
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -144,8 +145,8 @@ export default function AdminPage() {
     }
   });
 
-  const filteredChatGroups = chatGroups.filter(group =>
-    group.name?.toLowerCase().includes(searchTerm.toLowerCase()) || false
+  const filteredModerators = moderators.filter(moderator =>
+    moderator.email?.toLowerCase().includes(searchTerm.toLowerCase()) || false
   );
 
   const handleEditUser = (user: User) => {
@@ -182,29 +183,30 @@ export default function AdminPage() {
     }
   };
 
-  const handleCreateGroup = async () => {
+  const handlePromoteUser = async () => {
     try {
-      const response = await fetch('/api/chat/groups/create', {
+      const response = await fetch('/api/admin/moderators', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newGroup),
+        body: JSON.stringify({ email: promoteEmail, action: promoteAction }),
       });
 
       if (response.ok) {
         toast({
           title: "Éxito",
-          description: "Grupo creado correctamente",
+          description: `Usuario ${promoteAction === 'promote' ? 'promovido a' : 'degradado de'} moderador correctamente`,
         });
-        setShowCreateGroupDialog(false);
-        setNewGroup({ name: '', description: '', isPrivate: false });
+        setShowPromoteDialog(false);
+        setPromoteEmail('');
         fetchData();
       } else {
-        throw new Error('Error al crear grupo');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al gestionar moderador');
       }
     } catch (error) {
       toast({
         title: "Error",
-        description: "Error al crear grupo",
+        description: error instanceof Error ? error.message : "Error al gestionar moderador",
         variant: "destructive",
       });
     }
@@ -322,14 +324,14 @@ export default function AdminPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="users" className="flex items-center gap-2">
             <Users className="w-4 h-4" />
             Usuarios
           </TabsTrigger>
-          <TabsTrigger value="groups" className="flex items-center gap-2">
+          <TabsTrigger value="moderators" className="flex items-center gap-2">
             <MessageCircle className="w-4 h-4" />
-            Grupos
+            Moderadores
           </TabsTrigger>
         </TabsList>
 
@@ -412,21 +414,21 @@ export default function AdminPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="groups" className="space-y-4">
+        <TabsContent value="moderators" className="space-y-4">
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>Gestión de Grupos de Chat</CardTitle>
-                <Button onClick={() => setShowCreateGroupDialog(true)}>
+                <CardTitle>Gestión de Moderadores</CardTitle>
+                <Button onClick={() => setShowPromoteDialog(true)}>
                   <Plus className="w-4 h-4 mr-2" />
-                  Crear Grupo
+                  Gestionar Moderador
                 </Button>
               </div>
               <div className="flex items-center gap-4">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <Input
-                    placeholder="Buscar grupos..."
+                    placeholder="Buscar moderadores..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10"
@@ -435,37 +437,37 @@ export default function AdminPage() {
               </div>
             </CardHeader>
             <CardContent>
-              {filteredChatGroups.length > 0 ? (
+              {filteredModerators.length > 0 ? (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Nombre</TableHead>
-                      <TableHead>Descripción</TableHead>
-                      <TableHead>Privado</TableHead>
-                      <TableHead>Miembros</TableHead>
-                      <TableHead>Creado por</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Nombre de Usuario</TableHead>
+                      <TableHead>Rol</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead>Último Login</TableHead>
                       <TableHead>Fecha Creación</TableHead>
-                      <TableHead>Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredChatGroups.map((group) => (
-                      <TableRow key={group._id}>
-                        <TableCell className="font-medium">{group.name}</TableCell>
-                        <TableCell>{group.description || '-'}</TableCell>
+                    {filteredModerators.map((moderator) => (
+                      <TableRow key={moderator._id}>
+                        <TableCell className="font-medium">{moderator.email}</TableCell>
+                        <TableCell>{moderator.username || '-'}</TableCell>
                         <TableCell>
-                          <Badge variant={group.isPrivate ? 'destructive' : 'secondary'}>
-                            {group.isPrivate ? 'Privado' : 'Público'}
+                          <Badge variant="destructive">
+                            {moderator.role}
                           </Badge>
                         </TableCell>
-                        <TableCell>{group.memberCount}</TableCell>
-                        <TableCell>{group.createdBy}</TableCell>
-                        <TableCell>{formatDate(group.createdAt)}</TableCell>
                         <TableCell>
-                          <Button variant="ghost" size="sm">
-                            <Edit className="w-4 h-4" />
-                          </Button>
+                          <Badge variant={moderator.isActive ? 'default' : 'secondary'}>
+                            {moderator.isActive ? 'Activo' : 'Inactivo'}
+                          </Badge>
                         </TableCell>
+                        <TableCell>
+                          {moderator.lastLogin ? formatDate(moderator.lastLogin) : 'Nunca'}
+                        </TableCell>
+                        <TableCell>{formatDate(moderator.createdAt)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -473,11 +475,11 @@ export default function AdminPage() {
               ) : (
                 <div className="text-center py-8">
                   <MessageCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No hay grupos de chat</h3>
-                  <p className="text-gray-500 mb-4">Crea el primer grupo de chat para comenzar</p>
-                  <Button onClick={() => setShowCreateGroupDialog(true)}>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No hay moderadores</h3>
+                  <p className="text-gray-500 mb-4">Promueve usuarios a moderadores para comenzar</p>
+                  <Button onClick={() => setShowPromoteDialog(true)}>
                     <Plus className="w-4 h-4 mr-2" />
-                    Crear Primer Grupo
+                    Promover Primer Moderador
                   </Button>
                 </div>
               )}
@@ -518,6 +520,7 @@ export default function AdminPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="user">Usuario</SelectItem>
+                    <SelectItem value="moderator">Moderador</SelectItem>
                     <SelectItem value="admin">Administrador</SelectItem>
                   </SelectContent>
                 </Select>
@@ -543,45 +546,41 @@ export default function AdminPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Create Group Dialog */}
-      <Dialog open={showCreateGroupDialog} onOpenChange={setShowCreateGroupDialog}>
+      {/* Promote/Demote Moderator Dialog */}
+      <Dialog open={showPromoteDialog} onOpenChange={setShowPromoteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Crear Nuevo Grupo</DialogTitle>
+            <DialogTitle>Gestionar Moderador</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="groupName">Nombre del grupo</Label>
+              <Label htmlFor="email">Email del usuario</Label>
               <Input
-                id="groupName"
-                value={newGroup.name}
-                onChange={(e) => setNewGroup({ ...newGroup, name: e.target.value })}
-                placeholder="Ingresa el nombre del grupo"
+                id="email"
+                type="email"
+                value={promoteEmail}
+                onChange={(e) => setPromoteEmail(e.target.value)}
+                placeholder="Ingresa el email del usuario"
               />
             </div>
             <div>
-              <Label htmlFor="groupDescription">Descripción</Label>
-              <Textarea
-                id="groupDescription"
-                value={newGroup.description}
-                onChange={(e) => setNewGroup({ ...newGroup, description: e.target.value })}
-                placeholder="Descripción opcional del grupo"
-              />
-            </div>
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="isPrivate"
-                checked={newGroup.isPrivate}
-                onCheckedChange={(checked) => setNewGroup({ ...newGroup, isPrivate: checked })}
-              />
-              <Label htmlFor="isPrivate">Grupo privado</Label>
+              <Label htmlFor="action">Acción</Label>
+              <Select value={promoteAction} onValueChange={(value: 'promote' | 'demote') => setPromoteAction(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="promote">Promover a Moderador</SelectItem>
+                  <SelectItem value="demote">Degradar de Moderador</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setShowCreateGroupDialog(false)}>
+              <Button variant="outline" onClick={() => setShowPromoteDialog(false)}>
                 Cancelar
               </Button>
-              <Button onClick={handleCreateGroup} disabled={!newGroup.name.trim()}>
-                Crear Grupo
+              <Button onClick={handlePromoteUser} disabled={!promoteEmail.trim()}>
+                {promoteAction === 'promote' ? 'Promover' : 'Degradar'}
               </Button>
             </div>
           </div>

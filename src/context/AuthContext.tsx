@@ -8,6 +8,7 @@ type User = {
   _id: string;
   email: string;
   accessType: 'free' | 'premium';
+  role?: 'user' | 'moderator' | 'admin';
   username?: string;
   instagram?: string;
   loginCount?: number;
