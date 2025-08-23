@@ -7,6 +7,7 @@ import PWAProvider from '@/components/PWAProvider';
 import ThemeScript from '@/components/ThemeScript';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { SpeedInsights } from "@vercel/speed-insights/next"
+import { Analytics } from '@vercel/analytics/next';
 
 export const metadata: Metadata = {
   title: 'Santa Teresa Surf Cam',
@@ -75,6 +76,7 @@ export default function RootLayout({
           </ThemeProvider>
         </GoogleOAuthProvider>
         <SpeedInsights />
+        <Analytics />
       </body>
     </html>
   );
