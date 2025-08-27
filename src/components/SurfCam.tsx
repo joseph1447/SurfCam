@@ -379,18 +379,18 @@ export default function SurfCam() {
             <p className="text-sm text-muted-foreground">
               Un agradecimiento especial a{' '}
               <a
-                href="https://surf-cam-one.vercel.app/"
+                href="https://seataya.com/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-semibold text-primary hover:underline"
               >
-                SurfCam
+                Seataya
               </a>
               {' '}por brindarnos esta increíble vista a las olas.
             </p>
             <p className="text-xs text-muted-foreground mt-1">¿Buscas más contenido de surf?{' '}
-              <a href="https://surf-cam-one.vercel.app/" target="_blank" rel="noopener noreferrer" className="font-semibold text-primary hover:underline">
-                ¡Visita SurfCam!
+              <a href="https://seataya.com/" target="_blank" rel="noopener noreferrer" className="font-semibold text-primary hover:underline">
+                ¡Visita Seataya!
               </a>
             </p>
             <div className="mt-4 pt-4 border-t border-border/50">
