@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
+import { checkAdminAuth } from '@/lib/adminAuth';
 
 export async function GET(req: NextRequest) {
+  // Check admin authentication
+  const authCheck = await checkAdminAuth(req);
+  if (!authCheck.authenticated) {
+    return NextResponse.json(
+      { error: 'Unauthorized access' },
+      { status: 401 }
+    );
+  }
   try {
     await connectDB();
     
@@ -22,6 +31,15 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  // Check admin authentication
+  const authCheck = await checkAdminAuth(req);
+  if (!authCheck.authenticated) {
+    return NextResponse.json(
+      { error: 'Unauthorized access' },
+      { status: 401 }
+    );
+  }
+
   try {
     await connectDB();
     const { email, action } = await req.json();

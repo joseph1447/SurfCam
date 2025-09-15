@@ -24,20 +24,24 @@ import {
   EyeOff,
   Download,
   Upload,
-  RefreshCw
+  RefreshCw,
+  LogOut
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import AdminLogin from '@/components/AdminLogin';
 
 interface User {
   _id: string;
-  username: string;
+  username?: string;
   email: string;
-  role: string;
+  role?: string;
   isActive: boolean;
   createdAt: string;
   lastLogin?: string;
-  loginCount: number;
+  loginCount?: number;
   accessType?: 'free' | 'premium';
+  totalViews?: number;
+  averageSessionTime?: number;
 }
 
 interface Moderator {
@@ -51,33 +55,143 @@ interface Moderator {
 }
 
 export default function AdminPage() {
+  // Authentication state
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [adminInfo, setAdminInfo] = useState<{ email: string; role: string } | null>(null);
+  
   const [activeTab, setActiveTab] = useState('users');
   const [users, setUsers] = useState<User[]>([]);
   const [moderators, setModerators] = useState<Moderator[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Enhanced filtering and pagination state
   const [searchTerm, setSearchTerm] = useState('');
   const [accessTypeFilter, setAccessTypeFilter] = useState<'all' | 'free' | 'premium'>('all');
-  const [sortField, setSortField] = useState<string>('createdAt');
+  const [roleFilter, setRoleFilter] = useState<'all' | 'user' | 'moderator' | 'admin'>('all');
+  const [isActiveFilter, setIsActiveFilter] = useState<'all' | 'true' | 'false'>('all');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [loginCountMin, setLoginCountMin] = useState('');
+  const [loginCountMax, setLoginCountMax] = useState('');
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [pageSize, setPageSize] = useState(15);
+  
+  // Sorting state
+  const [sortField, setSortField] = useState<string>('lastLogin');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  
+  // Dialog state
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [showPromoteDialog, setShowPromoteDialog] = useState(false);
   const [promoteEmail, setPromoteEmail] = useState('');
   const [promoteAction, setPromoteAction] = useState<'promote' | 'demote'>('promote');
+  
+  // Filter options from API
+  const [filterOptions, setFilterOptions] = useState<{
+    accessTypes: string[];
+    roles: string[];
+  }>({ accessTypes: [], roles: [] });
+  
   const { toast } = useToast();
 
+  // Check authentication on component mount
   useEffect(() => {
-    fetchData();
+    checkAuth();
   }, []);
+
+  // Fetch data only when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchData();
+    }
+  }, [isAuthenticated, currentPage, pageSize, sortField, sortDirection, searchTerm, accessTypeFilter, roleFilter, isActiveFilter, dateFrom, dateTo, loginCountMin, loginCountMax]);
+
+  const checkAuth = async () => {
+    try {
+      const response = await fetch('/api/admin/auth', {
+        method: 'GET',
+        credentials: 'include',
+        cache: 'no-store' // Ensure fresh auth check
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.authenticated) {
+          setIsAuthenticated(true);
+          setAdminInfo(data.admin);
+        } else {
+          setIsAuthenticated(false);
+          setAdminInfo(null);
+        }
+      } else {
+        setIsAuthenticated(false);
+        setAdminInfo(null);
+      }
+    } catch (error) {
+      console.error('Auth check error:', error);
+      setIsAuthenticated(false);
+      setAdminInfo(null);
+    } finally {
+      setIsCheckingAuth(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/admin/auth', {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      
+      setIsAuthenticated(false);
+      setAdminInfo(null);
+      toast({
+        title: "Sesión cerrada",
+        description: "Has cerrado sesión exitosamente",
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast({
+        title: "Error",
+        description: "Error al cerrar sesión",
+        variant: "destructive",
+      });
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch users
-      const usersResponse = await fetch('/api/admin/users');
+      // Build query parameters
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: pageSize.toString(),
+        sortBy: sortField,
+        sortOrder: sortDirection,
+        ...(searchTerm && { search: searchTerm }),
+        ...(accessTypeFilter !== 'all' && { accessType: accessTypeFilter }),
+        ...(roleFilter !== 'all' && { role: roleFilter }),
+        ...(isActiveFilter !== 'all' && { isActive: isActiveFilter }),
+        ...(dateFrom && { dateFrom }),
+        ...(dateTo && { dateTo }),
+        ...(loginCountMin && { loginCountMin }),
+        ...(loginCountMax && { loginCountMax }),
+      });
+
+      // Fetch users with enhanced filtering and pagination
+      const usersResponse = await fetch(`/api/admin/users?${params}`);
       if (usersResponse.ok) {
         const usersData = await usersResponse.json();
         setUsers(usersData.users || []);
+        setTotalPages(usersData.pagination?.pages || 1);
+        setTotalUsers(usersData.pagination?.total || 0);
+        setFilterOptions(usersData.filterOptions || { accessTypes: [], roles: [] });
       }
 
       // Fetch moderators
@@ -103,50 +217,31 @@ export default function AdminPage() {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
       setSortField(field);
-      setSortDirection('asc');
+      setSortDirection('desc');
     }
+    setCurrentPage(1); // Reset to first page when sorting
   };
 
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = (user.username?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
-                         (user.email?.toLowerCase().includes(searchTerm.toLowerCase()) || false);
-    const matchesAccessType = accessTypeFilter === 'all' || user.accessType === accessTypeFilter;
-    return matchesSearch && matchesAccessType;
-  }).sort((a, b) => {
-    let aValue: any;
-    let bValue: any;
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
-    switch (sortField) {
-      case 'username':
-        aValue = a.username?.toLowerCase() || '';
-        bValue = b.username?.toLowerCase() || '';
-        break;
-      case 'email':
-        aValue = a.email?.toLowerCase() || '';
-        bValue = b.email?.toLowerCase() || '';
-        break;
-      case 'role':
-        aValue = a.role?.toLowerCase() || '';
-        bValue = b.role?.toLowerCase() || '';
-        break;
-      case 'loginCount':
-        aValue = a.loginCount || 0;
-        bValue = b.loginCount || 0;
-        break;
-      case 'createdAt':
-        aValue = new Date(a.createdAt).getTime();
-        bValue = new Date(b.createdAt).getTime();
-        break;
-      default:
-        return 0;
-    }
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    setCurrentPage(1); // Reset to first page when changing page size
+  };
 
-    if (sortDirection === 'asc') {
-      return aValue > bValue ? 1 : -1;
-    } else {
-      return aValue < bValue ? 1 : -1;
-    }
-  });
+  const clearFilters = () => {
+    setSearchTerm('');
+    setAccessTypeFilter('all');
+    setRoleFilter('all');
+    setIsActiveFilter('all');
+    setDateFrom('');
+    setDateTo('');
+    setLoginCountMin('');
+    setLoginCountMax('');
+    setCurrentPage(1);
+  };
 
   const filteredModerators = moderators.filter(moderator =>
     moderator.email?.toLowerCase().includes(searchTerm.toLowerCase()) || false
@@ -243,21 +338,42 @@ export default function AdminPage() {
   };
 
   const getMetrics = () => {
-    const totalUsers = users.length;
-    const activeUsers = users.filter(u => u.isActive).length;
-    const premiumUsers = users.filter(u => u.accessType === 'premium').length;
-    const freeUsers = users.filter(u => u.accessType === 'free' || !u.accessType).length;
-    const totalLogins = users.reduce((sum, u) => sum + (u.loginCount || 0), 0);
-    const today = new Date().toDateString();
-    const todayLogins = users.filter(u => 
-      u.lastLogin && new Date(u.lastLogin).toDateString() === today
-    ).length;
-
-    return { totalUsers, activeUsers, premiumUsers, freeUsers, totalLogins, todayLogins };
+    // These metrics now come from the API and represent filtered data
+    return {
+      totalUsers: totalUsers,
+      activeUsers: users.filter(u => u.isActive).length,
+      premiumUsers: users.filter(u => u.accessType === 'premium').length,
+      freeUsers: users.filter(u => u.accessType === 'free' || !u.accessType).length,
+      totalLogins: users.reduce((sum, u) => sum + (u.loginCount || 0), 0),
+      todayLogins: users.filter(u => {
+        if (!u.lastLogin) return false;
+        const today = new Date().toDateString();
+        return new Date(u.lastLogin).toDateString() === today;
+      }).length
+    };
   };
 
   const metrics = getMetrics();
 
+  // Show loading while checking authentication
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <div className="text-lg font-medium text-gray-700">Verificando acceso...</div>
+          <div className="text-sm text-gray-500">Comprobando credenciales de administrador</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login form if not authenticated
+  if (!isAuthenticated) {
+    return <AdminLogin />;
+  }
+
+  // Show loading while fetching data
   if (loading) {
     return (
       <div className="container mx-auto p-6">
@@ -275,7 +391,23 @@ export default function AdminPage() {
 
   return (
     <div className="container mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6">Panel de Administración</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold">Panel de Administración</h1>
+        <div className="flex items-center gap-4">
+          <div className="text-sm text-gray-600">
+            Conectado como: <span className="font-medium">{adminInfo?.email}</span>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleLogout}
+            className="flex items-center gap-2"
+          >
+            <LogOut className="w-4 h-4" />
+            Cerrar Sesión
+          </Button>
+        </div>
+      </div>
 
       {/* Metrics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
@@ -367,94 +499,379 @@ export default function AdminPage() {
         <TabsContent value="users" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Gestión de Usuarios</CardTitle>
-              <div className="flex items-center gap-4">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <Input
-                    placeholder="Buscar usuarios..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
+              <CardTitle className="flex items-center justify-between">
+                <span>Gestión de Usuarios</span>
+                <div className="text-sm text-gray-500">
+                  Total: {totalUsers.toLocaleString()} usuarios
                 </div>
-                <Select value={accessTypeFilter} onValueChange={(value: 'all' | 'free' | 'premium') => setAccessTypeFilter(value)}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Tipo de acceso" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos los usuarios</SelectItem>
-                    <SelectItem value="premium">Solo Premium</SelectItem>
-                    <SelectItem value="free">Solo Gratuitos</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={sortField} onValueChange={handleSort}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Ordenar por" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="createdAt">Fecha de creación</SelectItem>
-                    <SelectItem value="username">Nombre de usuario</SelectItem>
-                    <SelectItem value="email">Email</SelectItem>
-                    <SelectItem value="role">Rol</SelectItem>
-                    <SelectItem value="loginCount">Número de logins</SelectItem>
-                  </SelectContent>
-                </Select>
+              </CardTitle>
+              
+              {/* Enhanced Filter Section */}
+              <div className="space-y-4">
+                {/* First Row - Search and Basic Filters */}
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="relative flex-1 min-w-[200px]">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <Input
+                      placeholder="Buscar por email o nombre..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                  
+                  <Select value={accessTypeFilter} onValueChange={(value: 'all' | 'free' | 'premium') => setAccessTypeFilter(value)}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="Tipo de acceso" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="premium">Premium</SelectItem>
+                      <SelectItem value="free">Gratuitos</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  <Select value={roleFilter} onValueChange={(value: 'all' | 'user' | 'moderator' | 'admin') => setRoleFilter(value)}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="Rol" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos los roles</SelectItem>
+                      <SelectItem value="user">Usuario</SelectItem>
+                      <SelectItem value="moderator">Moderador</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  <Select value={isActiveFilter} onValueChange={(value: 'all' | 'true' | 'false') => setIsActiveFilter(value)}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="Estado" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="true">Activos</SelectItem>
+                      <SelectItem value="false">Inactivos</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  <Button variant="outline" onClick={clearFilters} className="whitespace-nowrap">
+                    <Filter className="w-4 h-4 mr-2" />
+                    Limpiar
+                  </Button>
+                </div>
+                
+                {/* Second Row - Advanced Filters */}
+                <div className="flex flex-wrap items-center gap-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="text-sm font-medium text-gray-700">Filtros Avanzados:</div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="dateFrom" className="text-sm whitespace-nowrap">Desde:</Label>
+                    <Input
+                      id="dateFrom"
+                      type="date"
+                      value={dateFrom}
+                      onChange={(e) => setDateFrom(e.target.value)}
+                      className="w-40"
+                    />
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="dateTo" className="text-sm whitespace-nowrap">Hasta:</Label>
+                    <Input
+                      id="dateTo"
+                      type="date"
+                      value={dateTo}
+                      onChange={(e) => setDateTo(e.target.value)}
+                      className="w-40"
+                    />
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="loginMin" className="text-sm whitespace-nowrap">Logins min:</Label>
+                    <Input
+                      id="loginMin"
+                      type="number"
+                      placeholder="0"
+                      value={loginCountMin}
+                      onChange={(e) => setLoginCountMin(e.target.value)}
+                      className="w-20"
+                    />
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="loginMax" className="text-sm whitespace-nowrap">Logins max:</Label>
+                    <Input
+                      id="loginMax"
+                      type="number"
+                      placeholder="∞"
+                      value={loginCountMax}
+                      onChange={(e) => setLoginCountMax(e.target.value)}
+                      className="w-20"
+                    />
+                  </div>
+                </div>
+                
+                {/* Third Row - Sorting and Page Size */}
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <Select value={sortField} onValueChange={handleSort}>
+                      <SelectTrigger className="w-48">
+                        <SelectValue placeholder="Ordenar por" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="lastLogin">Último login</SelectItem>
+                        <SelectItem value="createdAt">Fecha de creación</SelectItem>
+                        <SelectItem value="username">Nombre de usuario</SelectItem>
+                        <SelectItem value="email">Email</SelectItem>
+                        <SelectItem value="role">Rol</SelectItem>
+                        <SelectItem value="loginCount">Número de logins</SelectItem>
+                        <SelectItem value="totalViews">Total vistas</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleSort(sortField)}
+                      className="whitespace-nowrap"
+                    >
+                      {sortDirection === 'asc' ? '↑' : '↓'} {sortDirection === 'asc' ? 'Asc' : 'Desc'}
+                    </Button>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="pageSize" className="text-sm">Mostrar:</Label>
+                    <Select value={pageSize.toString()} onValueChange={(value) => handlePageSizeChange(parseInt(value))}>
+                      <SelectTrigger className="w-20">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="15">15</SelectItem>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <span className="text-sm text-gray-500">por página</span>
+                  </div>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Usuario</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Rol</TableHead>
-                    <TableHead>Tipo de Acceso</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead>Logins</TableHead>
-                    <TableHead>Último Login</TableHead>
-                    <TableHead>Fecha Creación</TableHead>
-                    <TableHead>Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredUsers.map((user) => (
-                    <TableRow key={user._id}>
-                      <TableCell className="font-medium">{user.username}</TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>
-                        <Badge variant={user.role === 'admin' ? 'destructive' : 'secondary'}>
-                          {user.role}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={user.accessType === 'premium' ? 'default' : 'secondary'}>
-                          {user.accessType === 'premium' ? 'Premium' : 'Gratuito'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={user.isActive ? 'default' : 'secondary'}>
-                          {user.isActive ? 'Activo' : 'Inactivo'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{user.loginCount || 0}</TableCell>
-                      <TableCell>
-                        {user.lastLogin ? formatDate(user.lastLogin) : 'Nunca'}
-                      </TableCell>
-                      <TableCell>{formatDate(user.createdAt)}</TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditUser(user)}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <div className="space-y-4">
+                {/* Results Summary */}
+                <div className="flex items-center justify-between text-sm text-gray-600">
+                  <div>
+                    Mostrando {((currentPage - 1) * pageSize) + 1} - {Math.min(currentPage * pageSize, totalUsers)} de {totalUsers.toLocaleString()} usuarios
+                  </div>
+                  {loading && (
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                      <span>Cargando...</span>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Users Table */}
+                <div className="border rounded-lg overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="cursor-pointer hover:bg-gray-50" onClick={() => handleSort('username')}>
+                          <div className="flex items-center gap-2">
+                            Usuario
+                            {sortField === 'username' && (
+                              <span className="text-blue-600">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                            )}
+                          </div>
+                        </TableHead>
+                        <TableHead className="cursor-pointer hover:bg-gray-50" onClick={() => handleSort('email')}>
+                          <div className="flex items-center gap-2">
+                            Email
+                            {sortField === 'email' && (
+                              <span className="text-blue-600">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                            )}
+                          </div>
+                        </TableHead>
+                        <TableHead className="cursor-pointer hover:bg-gray-50" onClick={() => handleSort('role')}>
+                          <div className="flex items-center gap-2">
+                            Rol
+                            {sortField === 'role' && (
+                              <span className="text-blue-600">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                            )}
+                          </div>
+                        </TableHead>
+                        <TableHead className="cursor-pointer hover:bg-gray-50" onClick={() => handleSort('accessType')}>
+                          <div className="flex items-center gap-2">
+                            Tipo de Acceso
+                            {sortField === 'accessType' && (
+                              <span className="text-blue-600">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                            )}
+                          </div>
+                        </TableHead>
+                        <TableHead className="cursor-pointer hover:bg-gray-50" onClick={() => handleSort('isActive')}>
+                          <div className="flex items-center gap-2">
+                            Estado
+                            {sortField === 'isActive' && (
+                              <span className="text-blue-600">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                            )}
+                          </div>
+                        </TableHead>
+                        <TableHead className="cursor-pointer hover:bg-gray-50" onClick={() => handleSort('loginCount')}>
+                          <div className="flex items-center gap-2">
+                            Logins
+                            {sortField === 'loginCount' && (
+                              <span className="text-blue-600">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                            )}
+                          </div>
+                        </TableHead>
+                        <TableHead className="cursor-pointer hover:bg-gray-50" onClick={() => handleSort('lastLogin')}>
+                          <div className="flex items-center gap-2">
+                            Último Login
+                            {sortField === 'lastLogin' && (
+                              <span className="text-blue-600">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                            )}
+                          </div>
+                        </TableHead>
+                        <TableHead className="cursor-pointer hover:bg-gray-50" onClick={() => handleSort('createdAt')}>
+                          <div className="flex items-center gap-2">
+                            Fecha Creación
+                            {sortField === 'createdAt' && (
+                              <span className="text-blue-600">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                            )}
+                          </div>
+                        </TableHead>
+                        <TableHead>Acciones</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {users.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={9} className="text-center py-8 text-gray-500">
+                            {loading ? 'Cargando usuarios...' : 'No se encontraron usuarios con los filtros aplicados'}
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        users.map((user) => (
+                          <TableRow key={user._id}>
+                            <TableCell className="font-medium">
+                              {user.username || <span className="text-gray-400 italic">Sin nombre</span>}
+                            </TableCell>
+                            <TableCell className="font-mono text-sm">{user.email}</TableCell>
+                            <TableCell>
+                              <Badge variant={user.role === 'admin' ? 'destructive' : user.role === 'moderator' ? 'default' : 'secondary'}>
+                                {user.role || 'user'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={user.accessType === 'premium' ? 'default' : 'secondary'}>
+                                {user.accessType === 'premium' ? 'Premium' : 'Gratuito'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={user.isActive ? 'default' : 'secondary'}>
+                                {user.isActive ? 'Activo' : 'Inactivo'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-center">{user.loginCount || 0}</TableCell>
+                            <TableCell className="text-sm">
+                              {user.lastLogin ? formatDate(user.lastLogin) : <span className="text-gray-400">Nunca</span>}
+                            </TableCell>
+                            <TableCell className="text-sm">{formatDate(user.createdAt)}</TableCell>
+                            <TableCell>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditUser(user)}
+                                title="Editar usuario"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+                
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-gray-600">
+                      Página {currentPage} de {totalPages}
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(1)}
+                        disabled={currentPage === 1 || loading}
+                      >
+                        Primera
+                      </Button>
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1 || loading}
+                      >
+                        Anterior
+                      </Button>
+                      
+                      {/* Page Numbers */}
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                          let pageNum;
+                          if (totalPages <= 5) {
+                            pageNum = i + 1;
+                          } else if (currentPage <= 3) {
+                            pageNum = i + 1;
+                          } else if (currentPage >= totalPages - 2) {
+                            pageNum = totalPages - 4 + i;
+                          } else {
+                            pageNum = currentPage - 2 + i;
+                          }
+                          
+                          return (
+                            <Button
+                              key={pageNum}
+                              variant={currentPage === pageNum ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => handlePageChange(pageNum)}
+                              disabled={loading}
+                              className="w-8 h-8 p-0"
+                            >
+                              {pageNum}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages || loading}
+                      >
+                        Siguiente
+                      </Button>
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(totalPages)}
+                        disabled={currentPage === totalPages || loading}
+                      >
+                        Última
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
