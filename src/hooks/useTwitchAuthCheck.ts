@@ -44,7 +44,7 @@ export function useTwitchAuthCheck() {
           const response = await fetch('https://api.twitch.tv/helix/users', {
             headers: {
               'Authorization': `Bearer ${storedToken}`,
-              'Client-Id': process.env.TWITCH_CLIENT_ID || ''
+              'Client-Id': process.env.NEXT_PUBLIC_TWITCH_CLIENT_ID || ''
             }
           });
 
@@ -61,7 +61,6 @@ export function useTwitchAuthCheck() {
             }
           }
         } catch (error) {
-          console.log('🔧 useTwitchAuthCheck: Token validation failed:', error);
           // Clear invalid tokens
           localStorage.removeItem('twitch_access_token');
           localStorage.removeItem('twitch_refresh_token');
@@ -78,7 +77,6 @@ export function useTwitchAuthCheck() {
       });
 
     } catch (error) {
-      console.log('🔧 useTwitchAuthCheck: User not authenticated or error:', error);
       setAuthState({
         isAuthenticated: false,
         user: null,
@@ -89,9 +87,19 @@ export function useTwitchAuthCheck() {
   }, []);
 
   const loginWithTwitch = useCallback(() => {
-    const clientId = process.env.TWITCH_CLIENT_ID;
+    const clientId = process.env.NEXT_PUBLIC_TWITCH_CLIENT_ID;
     const redirectUri = `${window.location.origin}/api/twitch/auth/callback`;
     const scope = 'user:read:email';
+    
+    console.log('🔧 Twitch Auth: Starting login process');
+    console.log('🔧 Twitch Auth: Client ID =', clientId ? 'SET' : 'NOT SET');
+    console.log('🔧 Twitch Auth: Redirect URI =', redirectUri);
+    
+    if (!clientId) {
+      console.error('🔧 Twitch Auth: NEXT_PUBLIC_TWITCH_CLIENT_ID is not defined!');
+      alert('Error: NEXT_PUBLIC_TWITCH_CLIENT_ID no está configurado. Por favor, verifica las variables de entorno.');
+      return;
+    }
     
     const authUrl = `https://id.twitch.tv/oauth2/authorize?` +
       `client_id=${clientId}&` +
@@ -99,6 +107,7 @@ export function useTwitchAuthCheck() {
       `response_type=code&` +
       `scope=${scope}`;
     
+    console.log('🔧 Twitch Auth: Redirecting to:', authUrl);
     window.location.href = authUrl;
   }, []);
 

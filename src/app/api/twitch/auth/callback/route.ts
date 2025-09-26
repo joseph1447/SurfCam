@@ -5,12 +5,19 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get('code');
   const error = searchParams.get('error');
 
+  console.log('🔧 Twitch Callback: Processing authentication');
+  console.log('🔧 Twitch Callback: Environment check:', {
+    NEXT_PUBLIC_TWITCH_CLIENT_ID: process.env.NEXT_PUBLIC_TWITCH_CLIENT_ID ? 'SET' : 'NOT SET',
+    TWITCH_CLIENT_SECRET: process.env.TWITCH_CLIENT_SECRET ? 'SET' : 'NOT SET'
+  });
+
   if (error) {
-    console.error('Twitch auth error:', error);
+    console.error('🔧 Twitch Callback: Auth error:', error);
     return NextResponse.redirect(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}?error=auth_failed`);
   }
 
   if (!code) {
+    console.error('🔧 Twitch Callback: No code received');
     return NextResponse.redirect(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}?error=no_code`);
   }
 
@@ -22,7 +29,7 @@ export async function GET(request: NextRequest) {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: new URLSearchParams({
-        client_id: process.env.TWITCH_CLIENT_ID!,
+        client_id: process.env.NEXT_PUBLIC_TWITCH_CLIENT_ID!,
         client_secret: process.env.TWITCH_CLIENT_SECRET!,
         code,
         grant_type: 'authorization_code',
@@ -41,7 +48,7 @@ export async function GET(request: NextRequest) {
     const userResponse = await fetch('https://api.twitch.tv/helix/users', {
       headers: {
         'Authorization': `Bearer ${access_token}`,
-        'Client-Id': process.env.TWITCH_CLIENT_ID!,
+        'Client-Id': process.env.NEXT_PUBLIC_TWITCH_CLIENT_ID!,
       },
     });
 
@@ -51,6 +58,8 @@ export async function GET(request: NextRequest) {
 
     const userData = await userResponse.json();
     const user = userData.data[0];
+
+    console.log('🔧 Twitch Callback: Authentication successful for user:', user.display_name);
 
     // Create a response that sets the token in localStorage via JavaScript
     const html = `
@@ -81,7 +90,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Twitch auth callback error:', error);
+    console.error('🔧 Twitch Callback: Error:', error);
     return NextResponse.redirect(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}?error=auth_failed`);
   }
 }
