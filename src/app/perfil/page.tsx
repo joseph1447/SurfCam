@@ -1,22 +1,24 @@
 "use client";
-import { useAuth } from '@/context/AuthContext';
+import { useTwitchAuth } from '@/hooks/useTwitchAuth';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 export default function PerfilPage() {
-  const { user, setUser, logout } = useAuth();
+  const { user, logout } = useTwitchAuth();
   const [editing, setEditing] = useState(false);
   const [username, setUsername] = useState(user?.username || '');
   const [instagram, setInstagram] = useState(user?.instagram || '');
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
   const router = useRouter();
+  
   if (!user) return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <div className="bg-white p-8 rounded-xl shadow-lg text-center">
-        <h2 className="text-2xl font-bold mb-4">Debes iniciar sesión</h2>
-        <button onClick={() => router.push('/')} className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold">Ir al inicio</button>
+        <h2 className="text-2xl font-bold mb-4">Conecta con Twitch</h2>
+        <p className="text-gray-600 mb-4">Para acceder a tu perfil, necesitas conectarte con Twitch primero.</p>
+        <button onClick={() => router.push('/')} className="bg-purple-600 text-white px-4 py-2 rounded-lg font-semibold">Ir a la cámara</button>
       </div>
     </div>
   );
@@ -31,7 +33,6 @@ export default function PerfilPage() {
       });
       const data = await res.json();
       if (data.success) {
-        setUser((u) => u ? { ...u, username, instagram } : u);
         setMsg('¡Guardado!');
         setEditing(false);
       } else {

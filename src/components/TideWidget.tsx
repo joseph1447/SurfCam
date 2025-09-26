@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Waves, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { useTwitchAuth } from '@/hooks/useTwitchAuth';
 import { useTheme } from '@/context/ThemeContext';
 
 interface TideData {
@@ -92,7 +92,7 @@ function getDayOfWeek(date: Date): string {
 }
 
 export default function TideWidget() {
-  const { user: authUser } = useAuth();
+  const { user: authUser } = useTwitchAuth();
   const { resolvedTheme } = useTheme();
   const [tideData, setTideData] = useState<TideData | null>(null);
   const [waveReport, setWaveReport] = useState<WaveReport | null>(null);

@@ -2,14 +2,12 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 
 export default function AppHeader() {
-  const { logout, user } = useAuth();
   const { resolvedTheme } = useTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -31,7 +29,7 @@ export default function AppHeader() {
               <path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"></path>
               <path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"></path>
             </svg>
-            <span>{user?.accessType === 'premium' ? 'Premium' : 'Santa Teresa Surf Cam'}</span>
+            <span>Santa Teresa Surf Cam</span>
           </button>
 
           {/* Desktop Menu */}
@@ -56,15 +54,7 @@ export default function AppHeader() {
                 Contacto
               </Button>
             </Link>
-            <Link href="/perfil">
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold shadow transition-all">
-                Perfil
-              </Button>
-            </Link>
             <ThemeToggle />
-            <Button onClick={logout} variant="outline" size="sm">
-              Cerrar Sesión
-            </Button>
           </div>
 
           {/* Mobile Menu Toggle */}
@@ -104,21 +94,11 @@ export default function AppHeader() {
                   📞 Contacto
                 </Button>
               </Link>
-              <Link href="/perfil">
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold shadow transition-all">
-                  Perfil
-                </Button>
-              </Link>
               <div className="pt-2 border-t border-border/50">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Tema:</span>
                   <ThemeToggle />
                 </div>
-              </div>
-              <div className="pt-2 border-t border-border/50">
-                <Button onClick={logout} variant="outline" className="w-full">
-                  Cerrar Sesión
-                </Button>
               </div>
             </div>
           </div>

@@ -158,15 +158,8 @@ function processTideDataForToday(processedData: DailyTideData[], targetDate: Dat
   // Convert target date to YYYY-MM-DD string for comparison
   const targetDateString = targetDate.toISOString().split('T')[0];
   
-  // Debug: Log the target date we're looking for
-  console.log('Looking for date:', targetDateString);
-  
   const todayData = processedData.find(day => {
     const dayDateString = day.date.toISOString().split('T')[0];
-    
-    // Debug: Log each day we're checking
-    console.log('Checking day:', dayDateString, 'Match:', dayDateString === targetDateString);
-    
     return dayDateString === targetDateString;
   });
   
@@ -187,7 +180,7 @@ function processTideDataForToday(processedData: DailyTideData[], targetDate: Dat
       }
       
       // Debug: Log which date we're using as fallback
-      console.log('Using fallback date:', closestData.date.toISOString().split('T')[0]);
+      // Using fallback date
       
       // Use current time for calculations, not targetDate (which is midnight)
       const now = new Date();
@@ -220,7 +213,7 @@ function processTideDataForToday(processedData: DailyTideData[], targetDate: Dat
   }
   
   // Debug: Log that we found the correct date
-  console.log('Found correct date:', todayData.date.toISOString().split('T')[0]);
+  // Found correct date
   
   // Calculate current height and next tides
   // Use current time for calculations, not targetDate (which is midnight)

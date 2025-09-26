@@ -170,6 +170,28 @@ const userSchema = new mongoose.Schema({
       enum: ['auto', '720p', '1080p'],
       default: 'auto'
     }
+  },
+  // Twitch integration
+  twitchId: {
+    type: String,
+    required: false,
+    unique: true,
+    sparse: true
+  },
+  profileImage: {
+    type: String,
+    required: false
+  },
+  twitchData: {
+    login: String,
+    displayName: String,
+    type: String,
+    broadcasterType: String,
+    description: String,
+    profileImageUrl: String,
+    offlineImageUrl: String,
+    viewCount: Number,
+    createdAt: String
   }
 }, {
   timestamps: true
@@ -180,5 +202,6 @@ userSchema.index({ email: 1 });
 userSchema.index({ accessType: 1 });
 userSchema.index({ isActive: 1 });
 userSchema.index({ 'subscription.status': 1 });
+userSchema.index({ twitchId: 1 });
 
 export default mongoose.models.User || mongoose.model('User', userSchema);
