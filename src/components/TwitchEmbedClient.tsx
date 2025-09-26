@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { useTwitchAuthCheck } from '@/hooks/useTwitchAuthCheck';
+import TwitchLoginModal from './TwitchLoginModal';
 
 interface TwitchEmbedClientProps {
   channel?: string;
@@ -51,10 +53,14 @@ export default function TwitchEmbedClient({
   onVideoPlay
 }: TwitchEmbedClientProps) {
   console.log('🔧 TwitchEmbedClient: Component function called with channel =', channel);
+  
+  // Use Twitch authentication check
+  const { isAuthenticated, user, isLoading, loginWithTwitch } = useTwitchAuthCheck();
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  
   const embedRef = useRef<HTMLDivElement>(null);
   const [embed, setEmbed] = useState<any>(null);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [showAuthMessage, setShowAuthMessage] = useState(false);
   const [authTimeout, setAuthTimeout] = useState<NodeJS.Timeout | null>(null);
   
   // Generate a consistent ID
@@ -77,7 +83,7 @@ export default function TwitchEmbedClient({
   // Handle authentication errors
   const handleAuthError = useCallback(() => {
     console.log('🔧 TwitchEmbedClient: Authentication required');
-    setShowAuthMessage(true);
+    setShowLoginModal(true);
     if (authTimeout) {
       clearTimeout(authTimeout);
     }
@@ -219,6 +225,58 @@ export default function TwitchEmbedClient({
   }, [isLoaded, embedId, channel, video, collection, width, height, layout, autoplay, muted, theme, allowfullscreen, time, parent, memoizedOnVideoReady, memoizedOnVideoPlay, handleAuthError, embed, authTimeout]);
 
   console.log('🔧 TwitchEmbedClient: Rendering with embedId =', embedId);
+  console.log('🔧 TwitchEmbedClient: Auth state:', { isAuthenticated, isLoading, user: !!user });
+
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="w-full relative">
+        <div 
+          className="w-full flex items-center justify-center"
+          style={{ minHeight: '480px', backgroundColor: '#0f0f23' }}
+        >
+          <div className="text-white text-center">
+            <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p>Verificando autenticación...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login prompt if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="w-full relative">
+        <div 
+          className="w-full flex items-center justify-center"
+          style={{ minHeight: '480px', backgroundColor: '#0f0f23' }}
+        >
+          <div className="text-white text-center max-w-md mx-4">
+            <div className="text-6xl mb-6">🎥</div>
+            <h3 className="text-2xl font-bold mb-4">
+              ¡Conecta con Twitch para ver el video!
+            </h3>
+            <p className="text-gray-300 mb-6">
+              Para ver el video en vivo y participar en el chat, necesitas iniciar sesión con tu cuenta de Twitch.
+            </p>
+            <button 
+              onClick={() => setShowLoginModal(true)}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors text-lg"
+            >
+              Iniciar sesión con Twitch
+            </button>
+          </div>
+        </div>
+        
+        <TwitchLoginModal
+          isOpen={showLoginModal}
+          onClose={() => setShowLoginModal(false)}
+          onLogin={loginWithTwitch}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full relative">
@@ -229,29 +287,16 @@ export default function TwitchEmbedClient({
         style={{ minHeight: '480px', backgroundColor: '#0f0f23' }}
       />
       
-      {/* Authentication message overlay */}
-      {showAuthMessage && (
-        <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-10">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-8 max-w-md mx-4 text-center shadow-xl">
-            <div className="text-6xl mb-4">🔐</div>
-            <h3 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
-              Inicia sesión con Twitch
-            </h3>
-            <p className="text-gray-600 dark:text-gray-300 mb-6">
-              Para ver el video en vivo, necesitas iniciar sesión con tu cuenta de Twitch. 
-              Haz clic en el botón "Sign In" en el reproductor de video.
-            </p>
-            <div className="space-y-3">
-              <div className="text-sm text-gray-500 dark:text-gray-400">
-                💡 <strong>Tip:</strong> Si no tienes cuenta de Twitch, puedes crear una gratis
-              </div>
-              <button 
-                onClick={() => setShowAuthMessage(false)}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
-              >
-                Entendido
-              </button>
-            </div>
+      {/* Show user info if authenticated */}
+      {isAuthenticated && user && (
+        <div className="absolute top-4 right-4 bg-black/70 text-white px-3 py-2 rounded-lg text-sm z-10">
+          <div className="flex items-center gap-2">
+            <img 
+              src={user.profile_image_url} 
+              alt={user.display_name}
+              className="w-6 h-6 rounded-full"
+            />
+            <span>{user.display_name}</span>
           </div>
         </div>
       )}

@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import TwitchEmbedClient from "./TwitchEmbedClient";
 import { usePWA } from "@/hooks/usePWA";
-import { useTwitchAuth } from "@/hooks/useTwitchAuth";
+// Removed useTwitchAuth import as we're now using TwitchEmbedClient's built-in auth
 import { ChevronDown } from "lucide-react";
 
 // Lazy load components with different priorities
@@ -46,7 +46,6 @@ const TideWidgetSkeleton = () => (
 
 export default function SurfCamTwitch() {
   const { isInstallable, isInstalled, installApp } = usePWA();
-  const { user, isAuthenticated, login, logout } = useTwitchAuth();
   const [isInstalling, setIsInstalling] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
   const { loadTideWidget } = useProgressiveLoading();
@@ -79,14 +78,7 @@ export default function SurfCamTwitch() {
     console.log('🎥 SurfCamTwitch: Twitch video started playing:', data);
   }, []);
 
-  const handleTwitchAuth = useCallback(async (accessToken: string) => {
-    const success = await login(accessToken);
-    if (success) {
-      console.log('Successfully authenticated with Twitch');
-    } else {
-      console.error('Failed to authenticate with Twitch');
-    }
-  }, [login]);
+  // Removed handleTwitchAuth as authentication is now handled by TwitchEmbedClient
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -158,32 +150,7 @@ export default function SurfCamTwitch() {
           )}
 
           {/* User Status */}
-          {isAuthenticated && user && (
-            <div className="mb-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white p-4 rounded-lg shadow-lg">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  {user.profileImage && (
-                    <img 
-                      src={user.profileImage} 
-                      alt={user.username}
-                      className="w-10 h-10 rounded-full border-2 border-white"
-                    />
-                  )}
-                  <div>
-                    <h3 className="font-bold text-lg">¡Bienvenido, {user.username}!</h3>
-                    <p className="text-sm opacity-90">Conectado con Twitch • Acceso Premium</p>
-                  </div>
-                </div>
-                <Button 
-                  onClick={logout}
-                  variant="outline"
-                  className="border-white text-white hover:bg-white hover:text-purple-600"
-                >
-                  Desconectar
-                </Button>
-              </div>
-            </div>
-          )}
+          {/* User status is now handled by TwitchEmbedClient */}
 
           {/* Main content area with video and tide widget */}
           <div className="flex flex-col lg:flex-row gap-6 w-full">
