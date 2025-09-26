@@ -100,6 +100,22 @@ export default function SurfCamTwitch() {
             </div>
           )}
 
+          {/* Seataya Banner */}
+          <div className="mb-6 bg-black py-4">
+            <a 
+              href="https://seataya.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="block hover:opacity-90 transition-opacity"
+            >
+              <img 
+                src="https://seataya.com/wp-content/uploads/logo.avif" 
+                alt="Seataya - Ocean & Jungle View Villas Resort" 
+                className="h-12 w-auto mx-auto"
+              />
+            </a>
+          </div>
+
           {/* User Status */}
           {/* User status is now handled by TwitchEmbedClient */}
 

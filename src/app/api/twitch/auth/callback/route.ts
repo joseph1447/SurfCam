@@ -4,21 +4,26 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
   const error = searchParams.get('error');
+  
+  // Get the current origin from the request
+  const origin = request.headers.get('origin') || request.headers.get('host');
+  const baseUrl = origin ? `https://${origin}` : (process.env.NEXTAUTH_URL || 'http://localhost:3000');
 
   console.log('🔧 Twitch Callback: Processing authentication');
   console.log('🔧 Twitch Callback: Environment check:', {
     NEXT_PUBLIC_TWITCH_CLIENT_ID: process.env.NEXT_PUBLIC_TWITCH_CLIENT_ID ? 'SET' : 'NOT SET',
-    TWITCH_CLIENT_SECRET: process.env.TWITCH_CLIENT_SECRET ? 'SET' : 'NOT SET'
+    TWITCH_CLIENT_SECRET: process.env.TWITCH_CLIENT_SECRET ? 'SET' : 'NOT SET',
+    BASE_URL: baseUrl
   });
 
   if (error) {
     console.error('🔧 Twitch Callback: Auth error:', error);
-    return NextResponse.redirect(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}?error=auth_failed`);
+    return NextResponse.redirect(`${baseUrl}?error=auth_failed`);
   }
 
   if (!code) {
     console.error('🔧 Twitch Callback: No code received');
-    return NextResponse.redirect(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}?error=no_code`);
+    return NextResponse.redirect(`${baseUrl}?error=no_code`);
   }
 
   try {
@@ -33,7 +38,7 @@ export async function GET(request: NextRequest) {
         client_secret: process.env.TWITCH_CLIENT_SECRET!,
         code,
         grant_type: 'authorization_code',
-        redirect_uri: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/twitch/auth/callback`,
+        redirect_uri: `${baseUrl}/api/twitch/auth/callback`,
       }),
     });
 
@@ -76,7 +81,7 @@ export async function GET(request: NextRequest) {
             localStorage.setItem('twitch_user', JSON.stringify(${JSON.stringify(user)}));
             
             // Redirect to main page
-            window.location.href = '${process.env.NEXTAUTH_URL || 'http://localhost:3000'}';
+            window.location.href = '${baseUrl}';
           </script>
           <p>Autenticación exitosa. Redirigiendo...</p>
         </body>
@@ -91,6 +96,6 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('🔧 Twitch Callback: Error:', error);
-    return NextResponse.redirect(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}?error=auth_failed`);
+    return NextResponse.redirect(`${baseUrl}?error=auth_failed`);
   }
 }
