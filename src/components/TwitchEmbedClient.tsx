@@ -54,9 +54,11 @@ export default function TwitchEmbedClient({
 }: TwitchEmbedClientProps) {
   console.log('🔧 TwitchEmbedClient: Component initialized with props:', { channel, video, collection, layout });
   
-  // Use Twitch authentication check (but don't block the UI)
+  // Use Twitch authentication check - show login modal first
   const { isAuthenticated, user, isLoading, loginWithTwitch } = useTwitchAuthCheck();
   const [isChannelOffline, setIsChannelOffline] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(!isAuthenticated);
+  const [embedReady, setEmbedReady] = useState(isAuthenticated);
   
   console.log('🔧 TwitchEmbedClient: Auth state:', { 
     isAuthenticated, 
@@ -95,6 +97,33 @@ export default function TwitchEmbedClient({
     }
   }, [authTimeout, isAuthenticated, user]);
 
+  // Handle login modal close
+  const handleLoginModalClose = useCallback(() => {
+    setShowLoginModal(false);
+  }, []);
+
+  // Handle login action
+  const handleLogin = useCallback(async () => {
+    try {
+      await loginWithTwitch();
+      setShowLoginModal(false);
+      setEmbedReady(true);
+    } catch (error) {
+      console.error('🔧 Twitch Auth: Login failed:', error);
+    }
+  }, [loginWithTwitch]);
+
+  // Update modal visibility when authentication state changes
+  useEffect(() => {
+    if (isAuthenticated) {
+      setShowLoginModal(false);
+      setEmbedReady(true);
+    } else {
+      setShowLoginModal(true);
+      setEmbedReady(false);
+    }
+  }, [isAuthenticated]);
+
 
   useEffect(() => {
     // Load Twitch embed script if not already loaded
@@ -118,13 +147,14 @@ export default function TwitchEmbedClient({
   }, []);
 
   useEffect(() => {
-    // Only run once when component is ready
-    if (!isLoaded || !window.Twitch || !embedRef.current || embed) {
+    // Only run once when component is ready and user is authenticated
+    if (!isLoaded || !window.Twitch || !embedRef.current || embed || !embedReady) {
       console.log('🔧 Twitch Embed: Not ready to create embed:', { 
         isLoaded, 
         hasTwitch: !!window.Twitch, 
         hasRef: !!embedRef.current, 
-        hasEmbed: !!embed 
+        hasEmbed: !!embed,
+        embedReady
       });
       return;
     }
@@ -153,8 +183,8 @@ export default function TwitchEmbedClient({
         width,
         height,
         layout,
-        autoplay: false, // Disable autoplay to avoid visibility issues
-        muted: true, // Start muted to comply with browser policies
+        autoplay: true, // Enable autoplay after authentication
+        muted: false, // Unmute after authentication
         theme,
         allowfullscreen: true,
         allowfullscreenInteractive: true,
@@ -313,7 +343,8 @@ export default function TwitchEmbedClient({
         clearTimeout(authTimeout);
       }
     };
-  }, [isLoaded, embedId, channel, video, collection, width, height, layout, autoplay, muted, theme, allowfullscreen, time, parent, memoizedOnVideoReady, memoizedOnVideoPlay, embed, authTimeout]);
+  }, [isLoaded, embedId, channel, video, collection, width, height, layout, autoplay, muted, theme, allowfullscreen, time, parent, memoizedOnVideoReady, memoizedOnVideoPlay, embed, authTimeout, embedReady]);
+
 
   // Show loading state while checking authentication
   if (isLoading) {
@@ -326,9 +357,45 @@ export default function TwitchEmbedClient({
         >
           <div className="text-white text-center">
             <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <p>Cargando...</p>
+            <p>Verificando autenticación...</p>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  // Show login modal when not authenticated
+  if (!isAuthenticated) {
+    console.log('🔧 TwitchEmbedClient: User not authenticated, showing login modal');
+    return (
+      <div className="w-full relative">
+        <div 
+          className="w-full flex items-center justify-center"
+          style={{ height: '480px', backgroundColor: '#0f0f23' }}
+        >
+          <div className="text-white text-center max-w-md mx-4">
+            <div className="text-6xl mb-6">📺</div>
+            <h3 className="text-2xl font-bold mb-4">
+              Inicia sesión para ver el stream
+            </h3>
+            <p className="text-gray-300 mb-6">
+              Para ver el video en vivo y participar en el chat, necesitas iniciar sesión con Twitch
+            </p>
+            <button 
+              onClick={handleLogin}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors text-lg"
+            >
+              Iniciar sesión con Twitch
+            </button>
+          </div>
+        </div>
+        
+        {/* Show login modal */}
+        <TwitchLoginModal
+          isOpen={showLoginModal}
+          onClose={handleLoginModalClose}
+          onLogin={handleLogin}
+        />
       </div>
     );
   }
@@ -377,10 +444,8 @@ export default function TwitchEmbedClient({
     );
   }
 
-  // Always show the embed - let Twitch handle authentication
-  console.log('🔧 TwitchEmbedClient: Showing embed, Twitch will handle authentication');
-
-  console.log('🔧 TwitchEmbedClient: Rendering authenticated embed');
+  // Show authenticated embed with autoplay
+  console.log('🔧 TwitchEmbedClient: Rendering authenticated embed with autoplay');
   console.log('🔧 TwitchEmbedClient: Final state:', { 
     isAuthenticated, 
     user: user?.display_name,
@@ -388,7 +453,8 @@ export default function TwitchEmbedClient({
     embedId,
     channel,
     isLoaded,
-    hasEmbed: !!embed
+    hasEmbed: !!embed,
+    embedReady
   });
 
   return (
