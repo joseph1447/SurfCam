@@ -54,19 +54,14 @@ export default function TwitchEmbedClient({
 }: TwitchEmbedClientProps) {
   console.log('🔧 TwitchEmbedClient: Component initialized with props:', { channel, video, collection, layout });
   
-  // Use Twitch authentication check
+  // Use Twitch authentication check (but don't block the UI)
   const { isAuthenticated, user, isLoading, loginWithTwitch } = useTwitchAuthCheck();
-  const [showLoginModal, setShowLoginModal] = useState(false);
   const [isChannelOffline, setIsChannelOffline] = useState(false);
-  const [authStep, setAuthStep] = useState<'idle' | 'checking' | 'login' | 'follow' | 'storage' | 'success'>('idle');
-  const [authError, setAuthError] = useState<string | null>(null);
   
   console.log('🔧 TwitchEmbedClient: Auth state:', { 
     isAuthenticated, 
     user: user?.display_name, 
-    isLoading, 
-    authStep,
-    authError 
+    isLoading
   });
   
   const embedRef = useRef<HTMLDivElement>(null);
@@ -90,43 +85,16 @@ export default function TwitchEmbedClient({
     if (onVideoPlay) onVideoPlay(data);
   }, [onVideoPlay]);
 
-  // Handle authentication errors
-  const handleAuthError = useCallback((error?: string) => {
-    console.log('🔧 Twitch Auth: Authentication error detected:', error);
-    setAuthStep('login');
-    setAuthError(error || 'Error de autenticación');
-    setShowLoginModal(true);
-    if (authTimeout) {
-      clearTimeout(authTimeout);
-    }
-  }, [authTimeout]);
-
   // Handle successful authentication
   const handleAuthSuccess = useCallback(() => {
     console.log('🔧 Twitch Auth: Authentication successful');
     console.log('🔧 Twitch Auth: User state:', { isAuthenticated, user: user?.display_name });
-    setAuthStep('success');
-    setAuthError(null);
-    setShowLoginModal(false);
     if (authTimeout) {
       clearTimeout(authTimeout);
       setAuthTimeout(null);
     }
   }, [authTimeout, isAuthenticated, user]);
 
-  // Handle follow step
-  const handleFollowStep = useCallback(() => {
-    console.log('🔧 Twitch Auth: Moving to follow step');
-    setAuthStep('follow');
-    setAuthError(null);
-  }, []);
-
-  // Handle storage step
-  const handleStorageStep = useCallback(() => {
-    console.log('🔧 Twitch Auth: Moving to storage step');
-    setAuthStep('storage');
-    setAuthError(null);
-  }, []);
 
   useEffect(() => {
     // Load Twitch embed script if not already loaded
@@ -259,26 +227,22 @@ export default function TwitchEmbedClient({
               console.log('  - HLS master playlist parsing failed');
               console.log('🔧 Twitch Embed: Current auth state:', { isAuthenticated, hasToken: !!localStorage.getItem('twitch_access_token') });
               
-              // If user is authenticated but still getting 1000, it might be a channel issue
-              if (isAuthenticated) {
-                console.log('🔧 Twitch Embed: User is authenticated but getting 1000 error');
-                console.log('🔧 Twitch Embed: This suggests the channel may be offline or having stream issues');
-                console.log('🔧 Twitch Embed: HLS master playlist error indicates stream is not available');
-                console.log('🔧 Twitch Embed: Moving to follow step to help user connect');
-                
-                // Instead of reloading, guide user through follow process
-                handleFollowStep();
-              } else {
-                console.log('🔧 Twitch Embed: User not authenticated and getting 1000 error - showing login');
-                handleAuthError('Necesitas iniciar sesión para ver el contenido');
-              }
+              // Error 1000 - let Twitch handle the authentication flow
+              console.log('🔧 Twitch Embed: Error 1000 detected - Twitch will handle authentication');
+              console.log('🔧 Twitch Embed: This could mean:');
+              console.log('  - Channel is offline');
+              console.log('  - User needs to authenticate with Twitch');
+              console.log('  - Channel has restrictions');
+              console.log('  - HLS master playlist parsing failed');
+              
+              // Don't show our UI, let Twitch handle it
+              // The embed will show its own authentication prompts
               return;
             }
             
-            // Authentication errors
+            // Authentication errors - let Twitch handle them
             if (errorMessage.includes('authentication') || errorMessage.includes('unauthorized')) {
-              console.log('🔧 Twitch Embed: Authentication error detected');
-              handleAuthError();
+              console.log('🔧 Twitch Embed: Authentication error detected - Twitch will handle it');
             }
 
             // HLS/Stream errors
@@ -324,30 +288,18 @@ export default function TwitchEmbedClient({
           console.log('🔧 Twitch Embed: Timeout - user state:', { 
             isAuthenticated, 
             user: user?.display_name,
-            hasToken: !!localStorage.getItem('twitch_access_token'),
-            authStep
+            hasToken: !!localStorage.getItem('twitch_access_token')
           });
           
-          // Only show auth error if user is not authenticated
-          // If user is authenticated but video doesn't load, it might be channel offline
-          if (!isAuthenticated) {
-            console.log('🔧 Twitch Embed: Timeout - user not authenticated, showing login');
-            handleAuthError('El video no pudo cargar. Intenta iniciar sesión nuevamente.');
-          } else {
-            console.log('🔧 Twitch Embed: Timeout - user authenticated but video not loading');
-            console.log('🔧 Twitch Embed: This could mean:');
-            console.log('  - Channel is offline');
-            console.log('  - Network issues');
-            console.log('  - Twitch embed configuration issues');
-            console.log('  - User needs to follow the channel');
-            
-            // If user is authenticated but video doesn't load, guide them through follow process
-            if (authStep === 'idle') {
-              handleFollowStep();
-            } else {
-              setIsChannelOffline(true);
-            }
-          }
+          // Timeout - let Twitch handle the authentication flow
+          console.log('🔧 Twitch Embed: Timeout reached - Twitch will handle authentication');
+          console.log('🔧 Twitch Embed: This could mean:');
+          console.log('  - Channel is offline');
+          console.log('  - Network issues');
+          console.log('  - Twitch embed configuration issues');
+          console.log('  - User needs to authenticate');
+          
+          // Don't show our UI, let Twitch handle it
         }, 20000);
         setAuthTimeout(timeout);
       } catch (error) {
@@ -361,7 +313,7 @@ export default function TwitchEmbedClient({
         clearTimeout(authTimeout);
       }
     };
-  }, [isLoaded, embedId, channel, video, collection, width, height, layout, autoplay, muted, theme, allowfullscreen, time, parent, memoizedOnVideoReady, memoizedOnVideoPlay, handleAuthError, embed, authTimeout]);
+  }, [isLoaded, embedId, channel, video, collection, width, height, layout, autoplay, muted, theme, allowfullscreen, time, parent, memoizedOnVideoReady, memoizedOnVideoPlay, embed, authTimeout]);
 
   // Show loading state while checking authentication
   if (isLoading) {
@@ -374,7 +326,7 @@ export default function TwitchEmbedClient({
         >
           <div className="text-white text-center">
             <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <p>Verificando autenticación...</p>
+            <p>Cargando...</p>
           </div>
         </div>
       </div>
@@ -425,134 +377,8 @@ export default function TwitchEmbedClient({
     );
   }
 
-  // Show authentication flow based on current step
-  if (!isAuthenticated || authStep !== 'idle') {
-    console.log('🔧 TwitchEmbedClient: Showing authentication flow, step:', authStep);
-    
-    return (
-      <div className="w-full relative">
-        <div 
-          className="w-full flex items-center justify-center"
-          style={{ height: '480px', backgroundColor: '#0f0f23' }}
-        >
-          <div className="text-white text-center max-w-md mx-4">
-            {/* Step 1: Initial Login */}
-            {authStep === 'idle' && !isAuthenticated && (
-              <>
-                <div className="text-6xl mb-6">🎥</div>
-                <h3 className="text-2xl font-bold mb-4">
-                  ¡Conecta con Twitch para ver el video!
-                </h3>
-                <p className="text-gray-300 mb-6">
-                  Para ver el video en vivo y participar en el chat, necesitas iniciar sesión con tu cuenta de Twitch.
-                </p>
-                <button 
-                  onClick={() => {
-                    setAuthStep('checking');
-                    loginWithTwitch();
-                  }}
-                  className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors text-lg"
-                >
-                  Iniciar sesión con Twitch
-                </button>
-              </>
-            )}
-
-            {/* Step 2: Follow Channel */}
-            {authStep === 'follow' && (
-              <>
-                <div className="text-6xl mb-6">❤️</div>
-                <h3 className="text-2xl font-bold mb-4">
-                  ¡Sigue al canal para continuar!
-                </h3>
-                <p className="text-gray-300 mb-6">
-                  Para acceder al contenido, necesitas seguir al canal. Haz clic en el botón de seguir que aparece en el reproductor.
-                </p>
-                <div className="space-y-3">
-                  <button 
-                    onClick={() => {
-                      setAuthStep('storage');
-                      handleStorageStep();
-                    }}
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors text-lg w-full"
-                  >
-                    Ya seguí al canal
-                  </button>
-                  <button 
-                    onClick={() => setAuthStep('idle')}
-                    className="bg-gray-600 hover:bg-gray-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors text-lg w-full"
-                  >
-                    Volver
-                  </button>
-                </div>
-              </>
-            )}
-
-            {/* Step 3: Storage Permission */}
-            {authStep === 'storage' && (
-              <>
-                <div className="text-6xl mb-6">🍪</div>
-                <h3 className="text-2xl font-bold mb-4">
-                  Permite el acceso al almacenamiento
-                </h3>
-                <p className="text-gray-300 mb-6">
-                  Twitch necesita acceso a las cookies de tu navegador para finalizar el inicio de sesión. 
-                  Acepta cuando aparezca la ventana emergente.
-                </p>
-                <div className="space-y-3">
-                  <button 
-                    onClick={() => {
-                      setAuthStep('success');
-                      handleAuthSuccess();
-                    }}
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors text-lg w-full"
-                  >
-                    Ya concedí el acceso
-                  </button>
-                  <button 
-                    onClick={() => setAuthStep('follow')}
-                    className="bg-gray-600 hover:bg-gray-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors text-lg w-full"
-                  >
-                    Volver
-                  </button>
-                </div>
-              </>
-            )}
-
-            {/* Step 4: Success */}
-            {authStep === 'success' && (
-              <>
-                <div className="text-6xl mb-6">✅</div>
-                <h3 className="text-2xl font-bold mb-4">
-                  ¡Listo! Cargando el video...
-                </h3>
-                <p className="text-gray-300 mb-6">
-                  Tu autenticación se completó correctamente. El video debería cargar en unos segundos.
-                </p>
-                <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>
-              </>
-            )}
-
-            {/* Error State */}
-            {authError && (
-              <div className="mt-4 p-4 bg-red-900/50 border border-red-500 rounded-lg">
-                <p className="text-red-200 text-sm">{authError}</p>
-                <button 
-                  onClick={() => {
-                    setAuthError(null);
-                    setAuthStep('idle');
-                  }}
-                  className="mt-2 text-red-300 hover:text-red-100 text-sm underline"
-                >
-                  Intentar de nuevo
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Always show the embed - let Twitch handle authentication
+  console.log('🔧 TwitchEmbedClient: Showing embed, Twitch will handle authentication');
 
   console.log('🔧 TwitchEmbedClient: Rendering authenticated embed');
   console.log('🔧 TwitchEmbedClient: Final state:', { 
