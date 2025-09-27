@@ -40,6 +40,8 @@ export function useTwitchAuthCheck() {
 
       if (storedToken && storedUser) {
         try {
+          console.log('🔧 Twitch Auth: Validating stored token');
+          
           // Verify the token is still valid by making a request
           const response = await fetch('https://api.twitch.tv/helix/users', {
             headers: {
@@ -51,6 +53,7 @@ export function useTwitchAuthCheck() {
           if (response.ok) {
             const data = await response.json();
             if (data.data && data.data.length > 0) {
+              console.log('🔧 Twitch Auth: Token valid, user authenticated');
               setAuthState({
                 isAuthenticated: true,
                 user: data.data[0],
@@ -59,13 +62,22 @@ export function useTwitchAuthCheck() {
               });
               return;
             }
+          } else if (response.status === 401) {
+            console.log('🔧 Twitch Auth: Token expired, clearing storage');
+            // Token expired, clear storage
+            localStorage.removeItem('twitch_access_token');
+            localStorage.removeItem('twitch_refresh_token');
+            localStorage.removeItem('twitch_user');
           }
         } catch (error) {
+          console.error('🔧 Twitch Auth: Error validating token:', error);
           // Clear invalid tokens
           localStorage.removeItem('twitch_access_token');
           localStorage.removeItem('twitch_refresh_token');
           localStorage.removeItem('twitch_user');
         }
+      } else {
+        console.log('🔧 Twitch Auth: No stored token found');
       }
 
       // If we get here, user is not authenticated
@@ -101,11 +113,17 @@ export function useTwitchAuthCheck() {
       return;
     }
     
+    // Clear any existing tokens before starting new auth
+    localStorage.removeItem('twitch_access_token');
+    localStorage.removeItem('twitch_refresh_token');
+    localStorage.removeItem('twitch_user');
+    
     const authUrl = `https://id.twitch.tv/oauth2/authorize?` +
       `client_id=${clientId}&` +
       `redirect_uri=${encodeURIComponent(redirectUri)}&` +
       `response_type=code&` +
-      `scope=${scope}`;
+      `scope=${scope}&` +
+      `force_verify=true`; // Force re-authentication
     
     console.log('🔧 Twitch Auth: Redirecting to:', authUrl);
     window.location.href = authUrl;

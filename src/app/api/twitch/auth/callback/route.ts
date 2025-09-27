@@ -18,7 +18,9 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     console.error('🔧 Twitch Callback: Auth error:', error);
-    return NextResponse.redirect(`${baseUrl}?error=auth_failed`);
+    const errorDescription = searchParams.get('error_description') || 'Unknown error';
+    console.error('🔧 Twitch Callback: Error description:', errorDescription);
+    return NextResponse.redirect(`${baseUrl}?error=auth_failed&description=${encodeURIComponent(errorDescription)}`);
   }
 
   if (!code) {
@@ -43,7 +45,9 @@ export async function GET(request: NextRequest) {
     });
 
     if (!tokenResponse.ok) {
-      throw new Error('Failed to exchange code for token');
+      const errorText = await tokenResponse.text();
+      console.error('🔧 Twitch Callback: Token exchange failed:', tokenResponse.status, errorText);
+      throw new Error(`Failed to exchange code for token: ${tokenResponse.status} ${errorText}`);
     }
 
     const tokenData = await tokenResponse.json();
@@ -58,7 +62,9 @@ export async function GET(request: NextRequest) {
     });
 
     if (!userResponse.ok) {
-      throw new Error('Failed to get user info');
+      const errorText = await userResponse.text();
+      console.error('🔧 Twitch Callback: User info request failed:', userResponse.status, errorText);
+      throw new Error(`Failed to get user info: ${userResponse.status} ${errorText}`);
     }
 
     const userData = await userResponse.json();

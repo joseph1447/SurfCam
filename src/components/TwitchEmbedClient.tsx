@@ -79,9 +79,20 @@ export default function TwitchEmbedClient({
 
   // Handle authentication errors
   const handleAuthError = useCallback(() => {
+    console.log('🔧 Twitch Auth: Authentication error detected, showing login modal');
     setShowLoginModal(true);
     if (authTimeout) {
       clearTimeout(authTimeout);
+    }
+  }, [authTimeout]);
+
+  // Handle successful authentication
+  const handleAuthSuccess = useCallback(() => {
+    console.log('🔧 Twitch Auth: Authentication successful');
+    setShowLoginModal(false);
+    if (authTimeout) {
+      clearTimeout(authTimeout);
+      setAuthTimeout(null);
     }
   }, [authTimeout]);
 
@@ -129,8 +140,8 @@ export default function TwitchEmbedClient({
         width,
         height,
         layout,
-        autoplay,
-        muted,
+        autoplay: false, // Disable autoplay to avoid visibility issues
+        muted: true, // Start muted to comply with browser policies
         theme,
         allowfullscreen,
         time,
@@ -165,15 +176,25 @@ export default function TwitchEmbedClient({
 
         // Listen for authentication errors
         newEmbed.addEventListener('error', (event: any) => {
-          if (event.error && (event.error.includes('1000') || event.error.includes('cancelado'))) {
+          console.log('🔧 Twitch Embed: Error event received:', event);
+          if (event.error && (event.error.includes('1000') || event.error.includes('cancelado') || event.error.includes('authentication'))) {
             handleAuthError();
           }
         });
 
-        // Set a timeout to show auth message if video doesn't load after 10 seconds
+        // Listen for successful video load
+        newEmbed.addEventListener(window.Twitch.Embed.VIDEO_READY, () => {
+          console.log('🔧 Twitch Embed: Video ready');
+          handleAuthSuccess();
+        });
+
+        // Set a timeout to show auth message if video doesn't load after 15 seconds
         const timeout = setTimeout(() => {
-          handleAuthError();
-        }, 10000);
+          console.log('🔧 Twitch Embed: Timeout reached, checking authentication');
+          if (!isAuthenticated) {
+            handleAuthError();
+          }
+        }, 15000);
         setAuthTimeout(timeout);
       } catch (error) {
         console.error('Error creating Twitch embed:', error);
