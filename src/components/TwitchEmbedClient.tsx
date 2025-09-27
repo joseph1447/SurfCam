@@ -24,11 +24,11 @@ interface TwitchEmbedClientProps {
 declare global {
   interface Window {
     Twitch: {
-      Embed: new (elementId: string, options: any) => {
-        addEventListener: (event: string, callback: (data?: any) => void) => void;
-        getPlayer: () => any;
-      };
       Embed: {
+        new (elementId: string, options: any): {
+          addEventListener: (event: string, callback: (data?: any) => void) => void;
+          getPlayer: () => any;
+        };
         VIDEO_READY: string;
         VIDEO_PLAY: string;
       };
@@ -149,6 +149,9 @@ export default function TwitchEmbedClient({
         time,
         // Add parent domain for security
         parent: [window.location.hostname],
+        // Add additional options to help with stream loading
+        quality: 'auto',
+        controls: true,
       };
 
       // Add required parameters based on content type
@@ -209,11 +212,14 @@ export default function TwitchEmbedClient({
               console.log('  - Channel is offline');
               console.log('  - User needs to authenticate with Twitch');
               console.log('  - Channel has restrictions');
+              console.log('  - HLS master playlist parsing failed');
               console.log('🔧 Twitch Embed: Current auth state:', { isAuthenticated, hasToken: !!localStorage.getItem('twitch_access_token') });
               
               // If user is authenticated but still getting 1000, it might be a channel issue
               if (isAuthenticated) {
-                console.log('🔧 Twitch Embed: User is authenticated but getting 1000 error - likely channel issue');
+                console.log('🔧 Twitch Embed: User is authenticated but getting 1000 error');
+                console.log('🔧 Twitch Embed: This suggests the channel may be offline or having stream issues');
+                console.log('🔧 Twitch Embed: HLS master playlist error indicates stream is not available');
                 setIsChannelOffline(true);
               } else {
                 console.log('🔧 Twitch Embed: User not authenticated and getting 1000 error - showing login');
@@ -227,6 +233,14 @@ export default function TwitchEmbedClient({
               console.log('🔧 Twitch Embed: Authentication error detected');
               handleAuthError();
             }
+
+            // HLS/Stream errors
+            if (errorMessage.includes('HLS') || errorMessage.includes('playlist') || errorMessage.includes('stream')) {
+              console.log('🔧 Twitch Embed: HLS/Stream error detected');
+              console.log('🔧 Twitch Embed: This indicates stream is not available or has issues');
+              console.log('🔧 Twitch Embed: Channel may be offline or experiencing technical difficulties');
+              setIsChannelOffline(true);
+            }
           }
         });
 
@@ -239,6 +253,22 @@ export default function TwitchEmbedClient({
             hasToken: !!localStorage.getItem('twitch_access_token')
           });
           handleAuthSuccess();
+        });
+
+        // Listen for video play event
+        newEmbed.addEventListener(window.Twitch.Embed.VIDEO_PLAY, () => {
+          console.log('🔧 Twitch Embed: Video started playing');
+          console.log('🔧 Twitch Embed: Stream is working correctly');
+        });
+
+        // Listen for video pause event
+        newEmbed.addEventListener('pause', () => {
+          console.log('🔧 Twitch Embed: Video paused');
+        });
+
+        // Listen for video ended event
+        newEmbed.addEventListener('ended', () => {
+          console.log('🔧 Twitch Embed: Video ended');
         });
 
         // Set a timeout to show auth message if video doesn't load after 20 seconds
@@ -310,17 +340,30 @@ export default function TwitchEmbedClient({
               Canal no disponible
             </h3>
             <p className="text-gray-300 mb-6">
-              El canal de Twitch no está transmitiendo en este momento. Vuelve más tarde para ver el contenido en vivo.
+              El canal de Twitch no está transmitiendo en este momento o está experimentando problemas técnicos. 
+              Vuelve más tarde para ver el contenido en vivo.
             </p>
-            <button 
-              onClick={() => {
-                setIsChannelOffline(false);
-                window.location.reload();
-              }}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors text-lg"
-            >
-              Reintentar
-            </button>
+            <div className="space-y-3">
+              <button 
+                onClick={() => {
+                  console.log('🔧 Twitch Embed: User clicked retry button');
+                  setIsChannelOffline(false);
+                  window.location.reload();
+                }}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors text-lg w-full"
+              >
+                Reintentar
+              </button>
+              <button 
+                onClick={() => {
+                  console.log('🔧 Twitch Embed: User clicked check channel button');
+                  window.open(`https://www.twitch.tv/${channel}`, '_blank');
+                }}
+                className="bg-gray-600 hover:bg-gray-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors text-lg w-full"
+              >
+                Ver en Twitch
+              </button>
+            </div>
           </div>
         </div>
       </div>
