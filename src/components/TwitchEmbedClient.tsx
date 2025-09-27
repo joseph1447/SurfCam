@@ -101,17 +101,20 @@ export default function TwitchEmbedClient({
   useEffect(() => {
     // Load Twitch embed script if not already loaded
     if (!window.Twitch) {
+      console.log('🔧 Twitch Embed: Loading Twitch embed script...');
       const script = document.createElement('script');
       script.src = 'https://embed.twitch.tv/embed/v1.js';
       script.async = true;
       script.onload = () => {
+        console.log('🔧 Twitch Embed: Script loaded successfully');
         setIsLoaded(true);
       };
       script.onerror = (error) => {
-        console.error('Error loading Twitch script:', error);
+        console.error('🔧 Twitch Embed: Error loading Twitch script:', error);
       };
       document.head.appendChild(script);
     } else {
+      console.log('🔧 Twitch Embed: Script already loaded');
       setIsLoaded(true);
     }
   }, []);
@@ -119,8 +122,16 @@ export default function TwitchEmbedClient({
   useEffect(() => {
     // Only run once when component is ready
     if (!isLoaded || !window.Twitch || !embedRef.current || embed) {
+      console.log('🔧 Twitch Embed: Not ready to create embed:', { 
+        isLoaded, 
+        hasTwitch: !!window.Twitch, 
+        hasRef: !!embedRef.current, 
+        hasEmbed: !!embed 
+      });
       return;
     }
+
+    console.log('🔧 Twitch Embed: Ready to create embed');
 
     // Add a small delay to ensure the DOM element is fully rendered
     const timer = setTimeout(() => {
@@ -128,9 +139,11 @@ export default function TwitchEmbedClient({
       const embedElement = document.getElementById(embedId);
       
       if (!embedElement) {
-        console.error(`Element with ID ${embedId} not found in DOM`);
+        console.error(`🔧 Twitch Embed: Element with ID ${embedId} not found in DOM`);
         return;
       }
+
+      console.log('🔧 Twitch Embed: DOM element found, clearing previous content');
 
       // Clear previous embed
       if (embedRef.current) {
@@ -145,7 +158,8 @@ export default function TwitchEmbedClient({
         autoplay: false, // Disable autoplay to avoid visibility issues
         muted: true, // Start muted to comply with browser policies
         theme,
-        allowfullscreen,
+        allowfullscreen: true,
+        allowfullscreenInteractive: true,
         time,
         // Add parent domain for security
         parent: [window.location.hostname],
@@ -220,6 +234,14 @@ export default function TwitchEmbedClient({
                 console.log('🔧 Twitch Embed: User is authenticated but getting 1000 error');
                 console.log('🔧 Twitch Embed: This suggests the channel may be offline or having stream issues');
                 console.log('🔧 Twitch Embed: HLS master playlist error indicates stream is not available');
+                console.log('🔧 Twitch Embed: Attempting to reload embed with different settings...');
+                
+                // Try to reload the embed with different settings
+                setTimeout(() => {
+                  console.log('🔧 Twitch Embed: Reloading embed...');
+                  window.location.reload();
+                }, 3000);
+                
                 setIsChannelOffline(true);
               } else {
                 console.log('🔧 Twitch Embed: User not authenticated and getting 1000 error - showing login');
