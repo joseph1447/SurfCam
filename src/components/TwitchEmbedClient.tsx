@@ -52,10 +52,14 @@ export default function TwitchEmbedClient({
   onVideoReady,
   onVideoPlay
 }: TwitchEmbedClientProps) {
+  console.log('🔧 TwitchEmbedClient: Component initialized with props:', { channel, video, collection, layout });
+  
   // Use Twitch authentication check
   const { isAuthenticated, user, isLoading, loginWithTwitch } = useTwitchAuthCheck();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [isChannelOffline, setIsChannelOffline] = useState(false);
+  
+  console.log('🔧 TwitchEmbedClient: Auth state:', { isAuthenticated, user: user?.display_name, isLoading });
   
   const embedRef = useRef<HTMLDivElement>(null);
   const [embed, setEmbed] = useState<any>(null);
@@ -332,7 +336,7 @@ export default function TwitchEmbedClient({
 
   // Show loading state while checking authentication
   if (isLoading) {
-    console.log('🔧 Twitch Embed: Loading state - checking authentication');
+    console.log('🔧 TwitchEmbedClient: Loading state - checking authentication');
     return (
       <div className="w-full relative">
         <div 
@@ -394,8 +398,8 @@ export default function TwitchEmbedClient({
 
   // Show login prompt if not authenticated
   if (!isAuthenticated) {
-    console.log('🔧 Twitch Embed: User not authenticated, showing login prompt');
-    console.log('🔧 Twitch Embed: Auth state:', { 
+    console.log('🔧 TwitchEmbedClient: User not authenticated, showing login prompt');
+    console.log('🔧 TwitchEmbedClient: Auth state:', { 
       isAuthenticated, 
       hasToken: !!localStorage.getItem('twitch_access_token'),
       hasUser: !!localStorage.getItem('twitch_user')
@@ -433,13 +437,15 @@ export default function TwitchEmbedClient({
     );
   }
 
-  console.log('🔧 Twitch Embed: Rendering authenticated embed');
-  console.log('🔧 Twitch Embed: Final state:', { 
+  console.log('🔧 TwitchEmbedClient: Rendering authenticated embed');
+  console.log('🔧 TwitchEmbedClient: Final state:', { 
     isAuthenticated, 
     user: user?.display_name,
     hasToken: !!localStorage.getItem('twitch_access_token'),
     embedId,
-    channel
+    channel,
+    isLoaded,
+    hasEmbed: !!embed
   });
 
   return (
