@@ -40,6 +40,7 @@ export async function PUT(
       {
         email: updateData.email.toLowerCase(),
         accessType: updateData.accessType,
+        role: updateData.role,
         isActive: updateData.isActive,
         ...(updateData.password && { password: updateData.password }) // Only update password if provided
       },
@@ -58,7 +59,9 @@ export async function PUT(
       user: {
         _id: updatedUser._id,
         email: updatedUser.email,
+        username: updatedUser.username,
         accessType: updatedUser.accessType,
+        role: updatedUser.role,
         isActive: updatedUser.isActive,
         loginCount: updatedUser.loginCount,
         lastLogin: updatedUser.lastLogin,

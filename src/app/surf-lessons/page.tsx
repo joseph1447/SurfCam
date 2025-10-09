@@ -121,23 +121,23 @@ export default function SurfLessons() {
           <CardContent>
             <div className="grid md:grid-cols-3 gap-6">
               <div className="text-center p-4 border rounded-lg">
-                <h3 className="text-lg font-semibold mb-2">Clase Individual</h3>
-                <p className="text-3xl font-bold text-blue-600 mb-2">$60</p>
+                <h3 className="text-lg font-semibold mb-2">Clase Privada</h3>
+                <p className="text-3xl font-bold text-blue-600 mb-2">$90</p>
                 <p className="text-sm text-gray-600 mb-4">por 2 horas</p>
                 <Badge variant="secondary" className="mb-2">1 estudiante</Badge>
               </div>
               
               <div className="text-center p-4 border rounded-lg bg-blue-50 border-blue-200">
                 <h3 className="text-lg font-semibold mb-2">Clase Grupal</h3>
-                <p className="text-3xl font-bold text-blue-600 mb-2">$45</p>
+                <p className="text-3xl font-bold text-blue-600 mb-2">$70</p>
                 <p className="text-sm text-gray-600 mb-4">por 2 horas</p>
                 <Badge variant="secondary" className="mb-2">2-3 estudiantes</Badge>
               </div>
               
               <div className="text-center p-4 border rounded-lg">
-                <h3 className="text-lg font-semibold mb-2">Paquete 5 Clases</h3>
+                <h3 className="text-lg font-semibold mb-2">Paquete 4 Clases</h3>
                 <p className="text-3xl font-bold text-blue-600 mb-2">$200</p>
-                <p className="text-sm text-gray-600 mb-4">ahorro de $50</p>
+                <p className="text-sm text-gray-600 mb-4">ahorro de $160</p>
                 <Badge variant="secondary" className="mb-2">Cualquier nivel</Badge>
               </div>
             </div>
@@ -211,14 +211,13 @@ export default function SurfLessons() {
             <div className="grid md:grid-cols-2 gap-6">
               <div>
                 <h4 className="font-semibold mb-3">✅ Incluido</h4>
-                <ul className="space-y-2 text-sm">
-                  <li>• Tabla de surf profesional</li>
-                  <li>• Leash de seguridad</li>
-                  <li>• Instructor certificado</li>
-                  <li>• Seguro de responsabilidad civil</li>
-                  <li>• Fotos de tu sesión</li>
-                  <li>• Agua y frutas</li>
-                </ul>
+                                 <ul className="space-y-2 text-sm">
+                   <li>• Tabla de surf profesional</li>
+                   <li>• Leash de seguridad</li>
+                   <li>• Instructor certificado</li>
+                   <li>• Fotos de tu sesión</li>
+                   <li>• Agua y frutas</li>
+                 </ul>
               </div>
               <div>
                 <h4 className="font-semibold mb-3">🎒 Traer Contigo</h4>

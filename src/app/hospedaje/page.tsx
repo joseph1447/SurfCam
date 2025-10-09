@@ -113,7 +113,7 @@ export default function Hospedaje() {
             <CardHeader>
               <CardTitle className="text-xl">Seataya Luxury Villas</CardTitle>
               <CardDescription>
-                Resort exclusivo de siete villas en las colinas de Santa Teresa
+                Villas de lujo con vista al océano en las colinas de Santa Teresa
               </CardDescription>
             </CardHeader>
             <CardContent>

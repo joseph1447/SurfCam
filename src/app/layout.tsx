@@ -1,8 +1,11 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
-import { AuthProvider } from '@/context/AuthContext';
+import { ThemeProvider } from '@/context/ThemeContext';
 import { Toaster } from "@/components/ui/toaster";
 import PWAProvider from '@/components/PWAProvider';
+import ThemeScript from '@/components/ThemeScript';
+import { SpeedInsights } from "@vercel/speed-insights/next"
+import { Analytics } from '@vercel/analytics/next';
 
 export const metadata: Metadata = {
   title: 'Santa Teresa Surf Cam',
@@ -57,14 +60,19 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="msapplication-TileColor" content="#3b82f6" />
         <meta name="msapplication-tap-highlight" content="no" />
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7316466179789028"
+     crossOrigin="anonymous"></script>
       </head>
       <body className="font-body antialiased">
-        <AuthProvider>
+        <ThemeScript />
+        <ThemeProvider>
           <PWAProvider>
             {children}
             <Toaster />
           </PWAProvider>
-        </AuthProvider>
+        </ThemeProvider>
+        <SpeedInsights />
+        <Analytics />
       </body>
     </html>
   );

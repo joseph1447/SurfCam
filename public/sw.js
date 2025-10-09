@@ -1,20 +1,24 @@
-const CACHE_NAME = 'santa-teresa-surf-cam-v1';
+const CACHE_NAME = 'surf-cam-1758915596598';
 const urlsToCache = [
   '/',
   '/contacto',
   '/manifest.json',
   '/wave-16.png',
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png'
+  '/wave-32.png',
+  '/wave-128.png'
 ];
 
 // Install event - cache resources
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('Opened cache');
-        return cache.addAll(urlsToCache);
+        return cache.addAll(urlsToCache).catch(err => {
+          // Suppress and log cache errors
+          console.error('Service Worker cache addAll failed:', err);
+        });
       })
   );
 });
@@ -46,7 +50,7 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
-    })
+    }).then(() => self.clients.claim())
   );
 });
 
@@ -66,8 +70,8 @@ function doBackgroundSync() {
 self.addEventListener('push', (event) => {
   const options = {
     body: event.data ? event.data.text() : '¡Nuevas olas en Santa Teresa!',
-    icon: '/icons/icon-192x192.png',
-    badge: '/icons/icon-72x72.png',
+    icon: '/wave-128.png',
+    badge: '/wave-16.png',
     vibrate: [100, 50, 100],
     data: {
       dateOfArrival: Date.now(),
@@ -77,12 +81,12 @@ self.addEventListener('push', (event) => {
       {
         action: 'explore',
         title: 'Ver Surf Cam',
-        icon: '/icons/icon-96x96.png'
+        icon: '/wave-32.png'
       },
       {
         action: 'close',
         title: 'Cerrar',
-        icon: '/icons/icon-96x96.png'
+        icon: '/wave-32.png'
       }
     ]
   };

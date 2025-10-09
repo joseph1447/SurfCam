@@ -16,7 +16,7 @@ export default function ContactoPage() {
       ? "Hola! Me interesa el plan individual de La Lora Surf Cam por $5/mes. ¿Cómo puedo proceder con el pago por SINPE?"
       : "Hola! Me interesa el plan de negocios para La Lora Surf Cam. ¿Podrían proporcionarme más información?";
     
-    const whatsappUrl = `https://wa.me/50683161976?text=${encodeURIComponent(message)}`;
+    const whatsappUrl = `https://wa.me/50662765617?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
 
@@ -30,7 +30,7 @@ export default function ContactoPage() {
   const handleDeveloperContact = (type: 'email' | 'whatsapp') => {
     if (type === 'whatsapp') {
       const message = "Hola! Me interesa obtener más información sobre servicios de desarrollo web y aplicaciones. ¿Podrían proporcionarme más detalles sobre sus servicios?";
-      const whatsappUrl = `https://wa.me/50683161976?text=${encodeURIComponent(message)}`;
+      const whatsappUrl = `https://wa.me/50662765617?text=${encodeURIComponent(message)}`;
       window.open(whatsappUrl, '_blank');
     } else {
       const subject = "Consulta Servicios de Desarrollo - La Lora Surf Cam";
@@ -192,7 +192,7 @@ export default function ContactoPage() {
                   <div>
                     <h4 className="font-semibold">Envía el comprobante</h4>
                     <p className="text-sm text-muted-foreground">
-                      Toma una captura de pantalla del comprobante de pago y envíalo por WhatsApp al +506 8316 1976.
+                      Toma una captura de pantalla del comprobante de pago y envíalo por WhatsApp al +506 6276 5617.
                     </p>
                   </div>
                 </div>
@@ -234,7 +234,7 @@ export default function ContactoPage() {
                      onClick={() => handleWhatsAppContact('individual')}
                      className="w-full"
                    >
-                     +506 8316 1976
+                     +506 6276 5617
                    </Button>
                  </div>
                  <div className="space-y-4">

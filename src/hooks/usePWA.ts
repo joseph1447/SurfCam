@@ -22,11 +22,9 @@ export function usePWA() {
     const checkInstallation = () => {
       if (typeof window !== 'undefined') {
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-        const isInApp = window.navigator.standalone === true;
+        // @ts-expect-error: 'standalone' is a non-standard property used by iOS Safari
+        const isInApp = typeof window.navigator.standalone !== 'undefined' && window.navigator.standalone === true;
         const isInstalled = isStandalone || isInApp;
-        
-
-        
         setIsInstalled(isInstalled);
   
       }
