@@ -3,6 +3,7 @@
 import { useRef, useEffect, useState } from "react";
 import AdOverlay from "./AdOverlay";
 import TideOverlay from "./TideOverlay";
+import SurfboardCalculatorOverlay from "./SurfboardCalculatorOverlay";
 
 interface YouTubeEmbedClientProps {
   videoId: string;
@@ -135,6 +136,9 @@ export default function YouTubeEmbedClient({
         
         {/* Tide Overlay */}
         <TideOverlay />
+        
+        {/* Surfboard Calculator Overlay */}
+        <SurfboardCalculatorOverlay />
     </div>
   );
 }
