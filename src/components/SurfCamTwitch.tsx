@@ -6,6 +6,8 @@ import AppHeader from "@/components/AppHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import TwitchEmbedClient from "./TwitchEmbedClient";
+import YouTubeEmbedWrapper from "./YouTubeEmbedWrapper";
+import ServerTabs from "./ServerTabs";
 import { usePWA } from "@/hooks/usePWA";
 // Removed useTwitchAuth import as we're now using TwitchEmbedClient's built-in auth
 import { ChevronDown } from "lucide-react";
@@ -45,6 +47,7 @@ export default function SurfCamTwitch() {
   const { isInstallable, isInstalled, installApp } = usePWA();
   const [isInstalling, setIsInstalling] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
+  const [currentServer, setCurrentServer] = useState<'twitch' | 'youtube'>('youtube');
   const { loadTideWidget } = useProgressiveLoading();
 
   const handleInstall = async () => {
@@ -66,6 +69,10 @@ export default function SurfCamTwitch() {
 
   const handleVideoPlay = useCallback((data: { sessionId: string }) => {
     // Video started playing
+  }, []);
+
+  const handleServerChange = useCallback((server: 'twitch' | 'youtube') => {
+    setCurrentServer(server);
   }, []);
 
   // Removed handleTwitchAuth as authentication is now handled by TwitchEmbedClient
@@ -100,21 +107,12 @@ export default function SurfCamTwitch() {
             </div>
           )}
 
-          {/* Seataya Banner */}
-          <div className="mb-6 bg-black py-4">
-            <a 
-              href="https://seataya.com" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="block hover:opacity-90 transition-opacity"
-            >
-              <img 
-                src="https://seataya.com/wp-content/uploads/logo.avif" 
-                alt="Seataya - Ocean & Jungle View Villas Resort" 
-                className="h-12 w-auto mx-auto"
-              />
-            </a>
-          </div>
+
+          {/* Server Tabs */}
+          <ServerTabs 
+            currentServer={currentServer} 
+            onServerChange={handleServerChange} 
+          />
 
           {/* User Status */}
           {/* User status is now handled by TwitchEmbedClient */}
@@ -124,16 +122,29 @@ export default function SurfCamTwitch() {
             {/* Video container */}
             <div className="flex-grow w-full lg:w-2/3 relative">
               <div className="w-full relative rounded-xl overflow-hidden shadow-2xl shadow-primary/20">
-                <TwitchEmbedClient
-                  channel="elsurfo" // Replace with your actual Twitch channel
-                  layout="video-with-chat"
-                  autoplay={true}
-                  muted={false}
-                  theme="dark"
-                  allowfullscreen={true}
-                  onVideoReady={handleVideoReady}
-                  onVideoPlay={handleVideoPlay}
-                />
+                {currentServer === 'youtube' ? (
+                  <YouTubeEmbedWrapper
+                    videoId="S4xhsAkiHKU"
+                    title="Pura Vida & Epic Waves | Santa Teresa Live Surf Cam 24/7 | Costa Rica"
+                    autoplay={true}
+                    muted={false}
+                    allowfullscreen={true}
+                    onVideoReady={handleVideoReady}
+                    onVideoPlay={handleVideoPlay}
+                  />
+                ) : (
+                  <TwitchEmbedClient
+                    channel="elsurfo" // Replace with your actual Twitch channel
+                    layout="video-with-chat"
+                    autoplay={true}
+                    muted={false}
+                    theme="dark"
+                    allowfullscreen={true}
+                    onVideoReady={handleVideoReady}
+                    onVideoPlay={handleVideoPlay}
+                    showLoginPrompt={true}
+                  />
+                )}
               </div>
             </div>
             

@@ -8,8 +8,65 @@ import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Analytics } from '@vercel/analytics/next';
 
 export const metadata: Metadata = {
-  title: 'Santa Teresa Surf Cam',
-  description: 'Transmisión en vivo de las olas de Santa Teresa, Costa Rica. Disfruta de las mejores olas en tiempo real.',
+  title: 'Santa Teresa Surf Cam | Transmisión en Vivo 24/7 | Costa Rica',
+  description: 'Mira las mejores olas de Santa Teresa, Costa Rica en tiempo real. Surf cam en vivo 24/7 con chat interactivo, datos de mareas y reportes de surfistas. Calidad HD en Twitch y YouTube.',
+  keywords: [
+    'Santa Teresa surf cam',
+    'Costa Rica surf',
+    'surf en vivo',
+    'olas Santa Teresa',
+    'surf cam Costa Rica',
+    'transmisión surf',
+    'surf live stream',
+    'Nicoya Peninsula',
+    'Puntarenas surf',
+    'surf conditions Costa Rica'
+  ],
+  authors: [{ name: 'Santa Teresa Surf Cam' }],
+  creator: 'Santa Teresa Surf Cam',
+  publisher: 'Santa Teresa Surf Cam',
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  metadataBase: new URL('https://santateresasurfcam.com'),
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    title: 'Santa Teresa Surf Cam | Transmisión en Vivo 24/7',
+    description: 'Mira las mejores olas de Santa Teresa, Costa Rica en tiempo real. Surf cam en vivo con chat interactivo y datos de mareas.',
+    url: 'https://santateresasurfcam.com',
+    siteName: 'Santa Teresa Surf Cam',
+    locale: 'es_CR',
+    type: 'website',
+    images: [
+      {
+        url: '/wave-128.png',
+        width: 128,
+        height: 128,
+        alt: 'Santa Teresa Surf Cam Logo',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Santa Teresa Surf Cam | Transmisión en Vivo 24/7',
+    description: 'Mira las mejores olas de Santa Teresa, Costa Rica en tiempo real.',
+    images: ['/wave-128.png'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,

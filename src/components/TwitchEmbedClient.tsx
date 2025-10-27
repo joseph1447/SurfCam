@@ -19,6 +19,7 @@ interface TwitchEmbedClientProps {
   parent?: string[];
   onVideoReady?: () => void;
   onVideoPlay?: (data: { sessionId: string }) => void;
+  showLoginPrompt?: boolean; // New prop to control login prompt
 }
 
 declare global {
@@ -50,14 +51,15 @@ export default function TwitchEmbedClient({
   time = '0h0m0s',
   parent = [],
   onVideoReady,
-  onVideoPlay
+  onVideoPlay,
+  showLoginPrompt = false
 }: TwitchEmbedClientProps) {
   console.log('🔧 TwitchEmbedClient: Component initialized with props:', { channel, video, collection, layout });
   
   // Use Twitch authentication check - show login modal first
   const { isAuthenticated, user, isLoading, loginWithTwitch } = useTwitchAuthCheck();
   const [isChannelOffline, setIsChannelOffline] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(!isAuthenticated);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const [embedReady, setEmbedReady] = useState(isAuthenticated);
   
   console.log('🔧 TwitchEmbedClient: Auth state:', { 
@@ -119,10 +121,16 @@ export default function TwitchEmbedClient({
       setShowLoginModal(false);
       setEmbedReady(true);
     } else {
-      setShowLoginModal(true);
       setEmbedReady(false);
     }
   }, [isAuthenticated]);
+
+  // Show login modal when showLoginPrompt prop changes
+  useEffect(() => {
+    if (showLoginPrompt && !isAuthenticated) {
+      setShowLoginModal(true);
+    }
+  }, [showLoginPrompt, isAuthenticated]);
 
 
   useEffect(() => {
@@ -364,33 +372,19 @@ export default function TwitchEmbedClient({
     );
   }
 
-  // Show login modal when not authenticated
+  // Show Twitch content when not authenticated (let Twitch handle auth)
   if (!isAuthenticated) {
-    console.log('🔧 TwitchEmbedClient: User not authenticated, showing login modal');
+    console.log('🔧 TwitchEmbedClient: User not authenticated, showing Twitch embed');
     return (
       <div className="w-full relative">
         <div 
-          className="w-full flex items-center justify-center"
-          style={{ height: '480px', backgroundColor: '#0f0f23' }}
-        >
-          <div className="text-white text-center max-w-md mx-4">
-            <div className="text-6xl mb-6">📺</div>
-            <h3 className="text-2xl font-bold mb-4">
-              Inicia sesión para ver el stream
-            </h3>
-            <p className="text-gray-300 mb-6">
-              Para ver el video en vivo y participar en el chat, necesitas iniciar sesión con Twitch
-            </p>
-            <button 
-              onClick={handleLogin}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors text-lg"
-            >
-              Iniciar sesión con Twitch
-            </button>
-          </div>
-        </div>
+          ref={embedRef}
+          id={embedId}
+          className="w-full"
+          style={{ backgroundColor: '#0f0f23', height: '480px' }}
+        />
         
-        {/* Show login modal */}
+        {/* Show login modal only when explicitly triggered */}
         <TwitchLoginModal
           isOpen={showLoginModal}
           onClose={handleLoginModalClose}

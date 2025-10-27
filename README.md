@@ -1,295 +1,118 @@
-# 🏄‍♂️ Santa Teresa Surf Cam
+# Santa Teresa Surf Cam
 
-Una aplicación web moderna y Progressive Web App (PWA) que proporciona acceso en tiempo real a las condiciones de surf de Santa Teresa, Costa Rica. Diseñada para ayudar a surfistas y visitantes a tomar decisiones informadas sobre cuándo ir a surfear, con funcionalidades premium y análisis de usuarios.
+Transmisión en vivo 24/7 de las mejores olas de Santa Teresa, Costa Rica.
 
-## ✨ Características Principales
+## 🌊 Características Principales
 
-- **📹 Transmisión en Tiempo Real:** Visualiza streams de video en vivo desde Santa Teresa
-- **📱 Progressive Web App (PWA):** Instalable en dispositivos móviles y de escritorio
-- **🔐 Sistema de Autenticación Avanzado:** Acceso gratuito solo con email, premium con contraseña
-- **⏱️ Sistema de Prueba Gratuita:** 60 segundos de acceso para usuarios gratuitos
-- **📊 Panel de Administración:** Gestión de usuarios y métricas en tiempo real
-- **📈 Análisis de Usuarios:** Tracking completo de actividad y sesiones
-- **🏨 Páginas Informativas:** Hospedaje, clases de surf, restaurantes y contacto
-- **🎨 UI Moderna:** Interfaz elegante construida con Tailwind CSS y shadcn/ui
-- **🚀 Proxy HLS Inteligente:** Solución CORS integrada para streams HLS
-- **🌐 Diseño Responsivo:** Optimizado para todos los dispositivos
+### 📺 Servidores de Video Duales
+- **Twitch (Recomendado)**: Calidad HD máxima, chat interactivo, suscripciones disponibles
+- **YouTube (Alternativo)**: Calidad estándar, acceso universal, opción de respaldo
 
-## 🛠️ Tecnologías Utilizadas
+### 🎯 Funcionalidades
+- **Transmisión en Vivo**: Video en tiempo real de las condiciones del surf
+- **Chat Interactivo**: Conecta con otros surfistas (solo en Twitch)
+- **Datos de Mareas**: Información actualizada sobre mareas y condiciones
+- **Reportes de Usuarios**: Los surfistas pueden reportar condiciones actuales
+- **PWA**: Instalable como aplicación móvil
+- **Responsive**: Optimizado para móviles y desktop
 
-### Frontend
-- **Next.js 15** - Framework React con App Router
-- **React 18** - Biblioteca para interfaces de usuario
-- **TypeScript** - Tipado estático para JavaScript
-- **Tailwind CSS** - Framework CSS utility-first
-- **shadcn/ui** - Componentes de UI modernos y accesibles
-- **Lucide React** - Iconos modernos y consistentes
+## 🚀 Tecnologías
 
-### Progressive Web App (PWA)
-- **Web App Manifest** - Configuración de instalación
-- **Service Worker** - Caching y funcionalidades offline
-- **HLS.js** - Biblioteca para reproducción de streams HLS
-- **HTTP Live Streaming (HLS)** - Protocolo de streaming adaptativo
+- **Frontend**: Next.js 14, React, TypeScript
+- **Styling**: Tailwind CSS
+- **Video**: Twitch Embed API, YouTube Embed API
+- **Autenticación**: Twitch OAuth2
+- **Base de Datos**: MongoDB con Mongoose
+- **Deployment**: Vercel
 
-### Backend & Base de Datos
-- **MongoDB Atlas** - Base de datos en la nube
-- **Mongoose** - ODM para MongoDB
-- **bcryptjs** - Hashing de contraseñas
-- **Next.js API Routes** - Endpoints del servidor
+## 🔧 Variables de Entorno
 
-### Herramientas de Desarrollo
-- **ESLint** - Linting de código
-- **PostCSS** - Procesamiento de CSS
-- **Vercel** - Plataforma de despliegue
+```bash
+# Twitch API Configuration
+NEXT_PUBLIC_TWITCH_CLIENT_ID=tu_client_id_de_twitch_aqui
+TWITCH_CLIENT_SECRET=tu_client_secret_de_twitch_aqui
 
-## 🚀 Instalación y Configuración
+# Application URLs
+NEXTAUTH_URL=https://santateresasurfcam.com
 
-### Prerrequisitos
-
-- **Node.js** (versión 18 o superior)
-- **npm** o **yarn** como gestor de paquetes
-- **Cuenta de MongoDB Atlas** para la base de datos
-
-### Pasos de Instalación
-
-1. **Clonar el repositorio**
-   ```bash
-   git clone <repository-url>
-   cd SurfCam
-   ```
-
-2. **Instalar dependencias**
-   ```bash
-   npm install
-   # o
-   yarn install
-   ```
-
-3. **Configurar variables de entorno**
-   
-   Crea un archivo `.env.local` en la raíz del proyecto:
-   ```env
-   # MongoDB Configuration
-   MONGODB_URI=your_mongodb_atlas_connection_string
-
-   # HLS Stream Configuration (opcional)
-   NEXT_PUBLIC_HLS_STREAM_URL=http://your-hls-server.com/hls
-
-   # Development Configuration
-   NEXT_PUBLIC_APP_URL=http://localhost:9002
-
-       # Premium Password (configurable)
-    NEXT_PUBLIC_PREMIUM_PASSWORD=your_premium_password
-    
-    # Admin credentials (configure as needed)
-    ADMIN_EMAIL=your_admin_email
-    ADMIN_PASSWORD=your_admin_password
-
-
-
-4. **Configurar MongoDB Atlas**
-   
-   - Ve a [MongoDB Atlas](https://cloud.mongodb.com/)
-   - Crea un nuevo cluster
-   - Obtén la cadena de conexión
-   - Configura las variables de entorno
-
-5. **Ejecutar en desarrollo**
-   ```bash
-   npm run dev
-   # o
-   yarn dev
-   ```
-
-6. **Abrir en el navegador**
-   
-   La aplicación estará disponible en `http://localhost:9002`
-
-## 🏗️ Arquitectura del Proyecto
-
-```
-SurfCam/
-├── src/
-│   ├── app/                    # Next.js App Router
-│   │   ├── api/               # API Routes
-│   │   │   ├── admin/         # Endpoints de administración
-│   │   │   ├── auth/          # Autenticación y registro
-│   │   │   └── hls-proxy/     # Proxy HLS para CORS
-│   │   ├── admin/             # Panel de administración
-│   │   ├── contacto/          # Página de planes premium
-│   │   ├── hospedaje/         # Página de hospedaje
-│   │   ├── restaurantes/      # Página de restaurantes
-│   │   ├── surf-lessons/      # Página de clases de surf
-│   │   ├── globals.css        # Estilos globales
-│   │   ├── layout.tsx         # Layout principal
-│   │   └── page.tsx           # Página principal
-│   ├── components/            # Componentes React
-│   │   ├── ui/               # Componentes shadcn/ui
-│   │   ├── AppHeader.tsx     # Header principal
-│   │   ├── HospedajeHeader.tsx # Header para hospedaje
-│   │   ├── SimpleHeader.tsx  # Header simple
-│   │   ├── HlsPlayer.tsx     # Reproductor HLS
-│   │   ├── Login.tsx         # Componente de login
-│   │   ├── SurfCam.tsx       # Componente principal
-│   │   ├── InstallPWAButton.tsx # Botón de instalación PWA
-│   │   └── PWAProvider.tsx   # Proveedor PWA
-│   ├── context/              # Contextos de React
-│   │   └── AuthContext.tsx   # Contexto de autenticación
-│   ├── hooks/                # Custom hooks
-│   │   └── usePWA.ts         # Hook para funcionalidades PWA
-│   ├── lib/                  # Utilidades
-│   │   └── mongodb.ts        # Conexión a MongoDB
-│   └── models/               # Modelos de MongoDB
-│       ├── User.ts           # Modelo de usuario
-│       ├── Admin.ts          # Modelo de administrador
-│       └── Metrics.ts        # Modelo de métricas
-├── public/                   # Archivos estáticos
-│   ├── manifest.json         # Web App Manifest
-│   ├── sw.js                 # Service Worker
-│   ├── seataya.png           # Logo de Seataya
-│   └── wave-*.png            # Iconos de la aplicación
-└── package.json             # Dependencias y scripts
+# MongoDB (si es necesario)
+MONGODB_URI=tu_mongodb_uri_aqui
 ```
 
-## 📱 Progressive Web App (PWA)
+## 📱 Instalación
 
-### Características PWA
-- **Instalación nativa** en dispositivos móviles y de escritorio
-- **Funcionalidad offline** con Service Worker
-- **Iconos adaptativos** para diferentes tamaños
-- **Splash screen** personalizado
-- **Actualizaciones automáticas**
-
-### Instalación
-- **Chrome/Edge:** Toca el ícono de instalación en la barra de direcciones
-- **Safari:** Toca el botón compartir y selecciona "Añadir a pantalla de inicio"
-- **Android:** Aparecerá un banner automático para instalar
-
-## 🔧 Configuración del Proxy HLS
-
-La aplicación incluye un proxy inteligente para manejar streams HLS que resuelve problemas de CORS:
-
-### Características del Proxy
-- **Reescritura de URLs:** Convierte URLs relativas y absolutas para usar el proxy
-- **Manejo de Contenido Binario:** Procesa correctamente archivos `.ts` (segmentos de video)
-- **Headers CORS:** Agrega headers necesarios para acceso cross-origin
-- **Content-Type Correcto:** Establece MIME types apropiados para HLS
-
-### Endpoint del Proxy
-```
-GET /api/hls-proxy/[path]
+1. **Clona el repositorio**
+```bash
+git clone https://github.com/tu-usuario/santateresasurfcam.git
+cd santateresasurfcam
 ```
 
-## 🎯 Funcionalidades Principales
-
-### Sistema de Autenticación
-- **Login/Logout** con base de datos MongoDB
-- **Acceso gratuito** solo requiere email
-- **Acceso premium** cualquier email + contraseña premium configurable
-- **Admin Panel** acceso restringido con credenciales específicas
-- **Persistencia de sesión** entre recargas
-- **Tracking de actividad** y métricas de usuario
-
-### Sistema de Prueba Gratuita
-- **60 segundos de acceso** para usuarios gratuitos
-- **Contador visual** del tiempo restante
-- **Pantalla de bloqueo** al terminar el tiempo
-- **Opciones de upgrade** a premium
-
-### Panel de Administración (`/admin`)
-- **Métricas en tiempo real** (usuarios activos, gratuitos, premium)
-- **Gestión de usuarios** (activar/desactivar, cambiar tipo)
-- **Análisis detallado** (sesiones, dispositivos, actividad)
-- **Acceso restringido** solo para administradores autorizados
-
-### Páginas Informativas
-- **Hospedaje** (`/hospedaje`): Seataya Luxury Villas y Leidymar Apartments
-- **Clases de Surf** (`/surf-lessons`): Información de instructores locales
-- **Restaurantes** (`/restaurantes`): Recomendaciones gastronómicas
-- **Contacto** (`/contacto`): Planes premium y servicios de desarrollo
-
-### Reproductor HLS
-- **Reproducción automática** al cargar
-- **Controles nativos** del navegador
-- **Manejo de errores** y recuperación automática
-- **Soporte para Safari** (HLS nativo) y otros navegadores (HLS.js)
-- **Prevención de reproducción** después del tiempo gratuito
-
-## 📊 Análisis de Usuarios
-
-### Métricas Recolectadas
-- **Conteo de logins** y frecuencia de uso
-- **Tiempo de sesión** promedio y total
-- **Dispositivos y navegadores** utilizados
-- **Actividad por hora y día**
-- **Historial de sesiones** detallado
-
-### API Endpoints
-- `POST /api/auth/register` - Registro y tracking de login
-- `POST /api/auth/logout` - Tracking de logout
-- `POST /api/auth/activity` - Tracking de actividad
-- `GET /api/admin/users` - Lista de usuarios
-- `GET /api/admin/metrics` - Métricas en tiempo real
-
-## 🚀 Despliegue
-
-### Vercel (Recomendado)
-1. Conecta tu repositorio a Vercel
-2. Configura las variables de entorno en el dashboard de Vercel
-3. Despliega automáticamente en cada push
-
-### Variables de Entorno para Producción
-```env
-MONGODB_URI=your_mongodb_atlas_connection_string
-NEXT_PUBLIC_APP_URL=https://your-domain.com
-ADMIN_EMAIL=your_admin_email
-ADMIN_PASSWORD=your_admin_password
-NEXT_PUBLIC_PREMIUM_PASSWORD=your_premium_password
+2. **Instala dependencias**
+```bash
+npm install
 ```
 
-## 🔒 Variables de Entorno
+3. **Configura variables de entorno**
+```bash
+cp .env.example .env.local
+# Edita .env.local con tus credenciales
+```
 
-| Variable | Descripción | Requerida |
-|----------|-------------|-----------|
-| `MONGODB_URI` | Cadena de conexión de MongoDB Atlas | ✅ |
-| `NEXT_PUBLIC_HLS_STREAM_URL` | URL del servidor HLS | ❌ |
-| `NEXT_PUBLIC_APP_URL` | URL de la aplicación | ❌ |
-| `ADMIN_EMAIL` | Email del administrador | ✅ |
-| `ADMIN_PASSWORD` | Contraseña del administrador | ✅ |
-| `NEXT_PUBLIC_PREMIUM_PASSWORD` | Contraseña para acceso premium | ✅ |
+4. **Ejecuta en desarrollo**
+```bash
+npm run dev
+```
 
-## 📞 Contacto y Soporte
+## 🌐 SEO Optimizado
 
-### Información de Contacto
-- **Email:** [Configurar en variables de entorno]
-- **WhatsApp:** [Configurar en variables de entorno]
-- **Sitio Web:** [Configurar en variables de entorno]
+- **Dominio**: santateresasurfcam.com
+- **Metadatos**: Optimizados para surf, Costa Rica, Santa Teresa
+- **Sitemap**: Generado automáticamente
+- **Robots.txt**: Configurado para mejor indexación
+- **Open Graph**: Metadatos para redes sociales
+- **Twitter Cards**: Optimizado para Twitter
 
-### Planes Premium
-- **Individual:** [Configurar precio y método de pago]
-- **Empresarial:** [Configurar contacto]
-- **Servicios de Desarrollo:** [Configurar servicios]
+## 🎥 Configuración de Video
 
-## 🤝 Contribución
+### Twitch
+- **Canal**: elsurfo
+- **Layout**: video-with-chat
+- **Calidad**: HD máxima
+- **Autenticación**: Requerida para mejor experiencia
 
-1. Fork el proyecto
-2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
+### YouTube
+- **Video ID**: S4xhsAkiHKU
+- **Título**: "Pura Vida & Epic Waves | Santa Teresa Live Surf Cam 24/7 | Costa Rica"
+- **Calidad**: Estándar
+- **Acceso**: Universal
 
-## 📝 Licencia
+## 🔄 Cambio de Servidor
 
-Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
+Los usuarios pueden cambiar entre servidores usando el switcher en la interfaz:
 
-## 🙏 Agradecimientos
+1. **Twitch**: Recomendado para mejor calidad y experiencia
+2. **YouTube**: Alternativo para acceso universal
 
-- **Proveedores de hospedaje** - Por proporcionar la increíble vista a las olas
-- **Socios comerciales** - Por el hospedaje de calidad
-- **shadcn/ui** - Por los componentes de UI de alta calidad
-- **HLS.js** - Por la biblioteca de streaming HLS
-- **MongoDB Atlas** - Por la base de datos en la nube
+## 📊 Monitoreo
+
+- **Vercel Analytics**: Métricas de rendimiento
+- **Speed Insights**: Optimización de velocidad
+- **Console Logs**: Solo logs críticos de autenticación
+
+## 🚀 Deployment
+
+El proyecto se despliega automáticamente en Vercel en cada commit:
+
+```bash
+git add .
+git commit -m "feat: nueva funcionalidad"
+git push origin main
+```
+
+## 📞 Soporte
+
+Para soporte técnico o preguntas sobre el proyecto, contacta al equipo de desarrollo.
 
 ---
 
-**¡Disfruta surfeando en Santa Teresa! 🏄‍♂️🌊**
+**Santa Teresa Surf Cam** - Conectando surfistas con las mejores olas de Costa Rica 🌊
