@@ -6,19 +6,7 @@ export async function GET() {
   try {
     await connectDB();
     
-    let config = await CalculatorConfig.findOne();
-    
-    // If no config exists, return default values
-    if (!config) {
-      return NextResponse.json({
-        success: true,
-        config: {
-          isEnabled: true,
-          buttonText: '¿Cuál es mi modelo de tabla?',
-          position: 'top-right'
-        }
-      });
-    }
+    const config = await CalculatorConfig.getSingleton();
     
     return NextResponse.json({
       success: true,

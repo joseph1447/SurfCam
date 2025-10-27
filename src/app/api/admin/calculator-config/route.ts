@@ -6,17 +6,7 @@ export async function GET() {
   try {
     await connectDB();
     
-    let config = await CalculatorConfig.findOne();
-    
-    // If no config exists, create default one
-    if (!config) {
-      config = new CalculatorConfig({
-        isEnabled: true,
-        buttonText: '¿Cuál es mi modelo de tabla?',
-        position: 'top-right'
-      });
-      await config.save();
-    }
+    const config = await CalculatorConfig.getSingleton();
     
     return NextResponse.json({
       success: true,
@@ -41,46 +31,41 @@ export async function PUT(request: NextRequest) {
     
     const { isEnabled, buttonText, position } = await request.json();
     
-    // Validate input
-    if (typeof isEnabled !== 'boolean') {
+    // Validate input - only validate fields that are provided
+    if (isEnabled !== undefined && typeof isEnabled !== 'boolean') {
       return NextResponse.json(
         { success: false, error: 'isEnabled debe ser un booleano' },
         { status: 400 }
       );
     }
     
-    if (buttonText && (typeof buttonText !== 'string' || buttonText.length > 100)) {
+    if (buttonText !== undefined && (typeof buttonText !== 'string' || buttonText.length > 100)) {
       return NextResponse.json(
         { success: false, error: 'buttonText debe ser una cadena de máximo 100 caracteres' },
         { status: 400 }
       );
     }
     
-    if (position && !['top-right', 'top-left', 'bottom-right', 'bottom-left'].includes(position)) {
+    if (position !== undefined && !['top-right', 'top-left', 'bottom-right', 'bottom-left'].includes(position)) {
       return NextResponse.json(
         { success: false, error: 'Posición inválida' },
         { status: 400 }
       );
     }
     
-    let config = await CalculatorConfig.findOne();
+    let config = await CalculatorConfig.getSingleton();
     
-    if (!config) {
-      config = new CalculatorConfig();
-    }
-    
-    // Update fields
-    if (typeof isEnabled === 'boolean') {
+    // Update fields - only update if provided
+    if (isEnabled !== undefined) {
       config.isEnabled = isEnabled;
     }
-    if (buttonText) {
+    if (buttonText !== undefined) {
       config.buttonText = buttonText;
     }
-    if (position) {
+    if (position !== undefined) {
       config.position = position;
     }
     
-    config.updatedAt = new Date();
     await config.save();
     
     return NextResponse.json({

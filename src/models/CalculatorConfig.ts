@@ -25,20 +25,23 @@ const CalculatorConfigSchema = new Schema<ICalculatorConfig>({
     enum: ['top-right', 'top-left', 'bottom-right', 'bottom-left'],
     default: 'top-right',
     required: true
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
   }
 }, {
   timestamps: true
 });
 
-// Ensure only one config document exists
-CalculatorConfigSchema.index({}, { unique: true });
+// Ensure only one config document exists by using a singleton pattern
+CalculatorConfigSchema.statics.getSingleton = async function() {
+  let config = await this.findOne();
+  if (!config) {
+    config = new this({
+      isEnabled: true,
+      buttonText: '¿Cuál es mi modelo de tabla?',
+      position: 'top-right'
+    });
+    await config.save();
+  }
+  return config;
+};
 
 export default mongoose.models.CalculatorConfig || mongoose.model<ICalculatorConfig>('CalculatorConfig', CalculatorConfigSchema);
