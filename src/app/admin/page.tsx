@@ -19,7 +19,9 @@ import {
   LogOut,
   Monitor,
   Calendar,
-  MousePointer
+  MousePointer,
+  Calculator,
+  Settings
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import AdminLogin from '@/components/AdminLogin';
@@ -38,6 +40,12 @@ interface AdOverlay {
   updatedAt: string;
 }
 
+interface CalculatorConfig {
+  isEnabled: boolean;
+  buttonText: string;
+  position: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
+}
+
 export default function AdminPage() {
   // Authentication state
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -46,6 +54,14 @@ export default function AdminPage() {
   
   const [overlays, setOverlays] = useState<AdOverlay[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Calculator config state
+  const [calculatorConfig, setCalculatorConfig] = useState<CalculatorConfig>({
+    isEnabled: true,
+    buttonText: '¿Cuál es mi modelo de tabla?',
+    position: 'top-right'
+  });
+  const [configLoading, setConfigLoading] = useState(false);
   
   // Dialog state
   const [selectedOverlay, setSelectedOverlay] = useState<AdOverlay | null>(null);
@@ -74,6 +90,7 @@ export default function AdminPage() {
   useEffect(() => {
     if (isAuthenticated) {
       fetchOverlays();
+      fetchCalculatorConfig();
     }
   }, [isAuthenticated]);
 
@@ -149,6 +166,52 @@ export default function AdminPage() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCalculatorConfig = async () => {
+    try {
+      const response = await fetch('/api/admin/calculator-config');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setCalculatorConfig(data.config);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching calculator config:', error);
+    }
+  };
+
+  const updateCalculatorConfig = async (newConfig: Partial<CalculatorConfig>) => {
+    setConfigLoading(true);
+    try {
+      const response = await fetch('/api/admin/calculator-config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newConfig),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setCalculatorConfig(data.config);
+          toast({
+            title: "Éxito",
+            description: "Configuración de calculadora actualizada",
+          });
+        }
+      } else {
+        throw new Error('Error al actualizar configuración');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Error al actualizar configuración de calculadora",
+        variant: "destructive",
+      });
+    } finally {
+      setConfigLoading(false);
     }
   };
 
@@ -393,7 +456,82 @@ export default function AdminPage() {
         </Card>
       </div>
 
-      {/* Overlays Management */}
+      {/* Calculator Configuration */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calculator className="w-5 h-5 text-blue-600" />
+            Configuración de Calculadora de Tablas
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label htmlFor="calculator-enabled" className="text-base font-medium">
+                  Habilitar Calculadora
+                </Label>
+                <p className="text-sm text-gray-600">
+                  Mostrar u ocultar el botón de la calculadora de tablas
+                </p>
+              </div>
+              <Switch
+                id="calculator-enabled"
+                checked={calculatorConfig.isEnabled}
+                onCheckedChange={(checked) => updateCalculatorConfig({ isEnabled: checked })}
+                disabled={configLoading}
+              />
+            </div>
+            
+            {calculatorConfig.isEnabled && (
+              <>
+                <div>
+                  <Label htmlFor="button-text" className="text-base font-medium">
+                    Texto del Botón
+                  </Label>
+                  <Input
+                    id="button-text"
+                    value={calculatorConfig.buttonText}
+                    onChange={(e) => setCalculatorConfig({ ...calculatorConfig, buttonText: e.target.value })}
+                    onBlur={() => updateCalculatorConfig({ buttonText: calculatorConfig.buttonText })}
+                    placeholder="¿Cuál es mi modelo de tabla?"
+                    maxLength={100}
+                    disabled={configLoading}
+                    className="mt-2"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Máximo 100 caracteres
+                  </p>
+                </div>
+                
+                <div>
+                  <Label htmlFor="button-position" className="text-base font-medium">
+                    Posición del Botón
+                  </Label>
+                  <Select 
+                    value={calculatorConfig.position} 
+                    onValueChange={(value: any) => {
+                      setCalculatorConfig({ ...calculatorConfig, position: value });
+                      updateCalculatorConfig({ position: value });
+                    }}
+                    disabled={configLoading}
+                  >
+                    <SelectTrigger className="mt-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="top-right">Esquina superior derecha</SelectItem>
+                      <SelectItem value="top-left">Esquina superior izquierda</SelectItem>
+                      <SelectItem value="bottom-right">Esquina inferior derecha</SelectItem>
+                      <SelectItem value="bottom-left">Esquina inferior izquierda</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
+          </div>
+        </CardContent>
+      </Card>
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
