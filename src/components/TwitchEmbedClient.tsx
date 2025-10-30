@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useTwitchAuthCheck } from '@/hooks/useTwitchAuthCheck';
-import TwitchLoginModal from './TwitchLoginModal';
+import { Button } from '@/components/ui/button';
 
 interface TwitchEmbedClientProps {
   channel?: string;
@@ -125,12 +125,7 @@ export default function TwitchEmbedClient({
     }
   }, [isAuthenticated]);
 
-  // Show login modal when showLoginPrompt prop changes
-  useEffect(() => {
-    if (showLoginPrompt && !isAuthenticated) {
-      setShowLoginModal(true);
-    }
-  }, [showLoginPrompt, isAuthenticated]);
+  // Do not auto-open any modal; we'll show an inline button instead
 
 
   useEffect(() => {
@@ -383,13 +378,17 @@ export default function TwitchEmbedClient({
           className="w-full"
           style={{ backgroundColor: '#0f0f23', height: '480px' }}
         />
-        
-        {/* Show login modal only when explicitly triggered */}
-        <TwitchLoginModal
-          isOpen={showLoginModal}
-          onClose={handleLoginModalClose}
-          onLogin={handleLogin}
-        />
+
+        {/* Inline login button overlay (no popup) */}
+        <div className="absolute top-4 right-4 z-10">
+          <Button
+            onClick={handleLogin}
+            className="bg-purple-600 hover:bg-purple-700 text-white"
+            size="sm"
+          >
+            Iniciar sesión con Twitch
+          </Button>
+        </div>
       </div>
     );
   }

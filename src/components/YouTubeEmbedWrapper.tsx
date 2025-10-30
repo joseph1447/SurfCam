@@ -17,7 +17,8 @@ const YouTubeEmbedClient = dynamic(() => import('./YouTubeEmbedClient'), {
 });
 
 interface YouTubeEmbedWrapperProps {
-  videoId: string;
+  videoId?: string;
+  channelId?: string;
   title?: string;
   width?: string | number;
   height?: string | number;

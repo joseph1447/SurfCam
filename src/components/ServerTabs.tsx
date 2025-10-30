@@ -17,22 +17,7 @@ export default function ServerTabs({ currentServer, onServerChange }: ServerTabs
         <CardContent className="p-4">
           <div className="flex items-center justify-center">
             <div className="flex bg-gray-100 rounded-lg p-1 w-full max-w-md">
-              {/* YouTube Tab - Default */}
-              <Button
-                variant={currentServer === 'youtube' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => onServerChange('youtube')}
-                className={`flex-1 flex items-center gap-2 ${
-                  currentServer === 'youtube' 
-                    ? 'bg-red-600 hover:bg-red-700 text-white shadow-sm' 
-                    : 'hover:bg-gray-200 text-gray-700'
-                }`}
-              >
-                <Youtube className="w-4 h-4" />
-                <span className="font-medium">YouTube</span>
-              </Button>
-              
-              {/* Twitch Tab */}
+              {/* Twitch Tab - Left, default selected externally */}
               <Button
                 variant={currentServer === 'twitch' ? 'default' : 'ghost'}
                 size="sm"
@@ -46,6 +31,21 @@ export default function ServerTabs({ currentServer, onServerChange }: ServerTabs
                 <Tv className="w-4 h-4" />
                 <span className="font-medium hidden sm:inline">Twitch HD & Replays</span>
                 <span className="font-medium sm:hidden">Twitch HD</span>
+              </Button>
+
+              {/* YouTube Tab - Right */}
+              <Button
+                variant={currentServer === 'youtube' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => onServerChange('youtube')}
+                className={`flex-1 flex items-center gap-2 ${
+                  currentServer === 'youtube' 
+                    ? 'bg-red-600 hover:bg-red-700 text-white shadow-sm' 
+                    : 'hover:bg-gray-200 text-gray-700'
+                }`}
+              >
+                <Youtube className="w-4 h-4" />
+                <span className="font-medium">YouTube</span>
               </Button>
             </div>
           </div>

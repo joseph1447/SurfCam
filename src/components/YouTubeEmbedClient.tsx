@@ -4,7 +4,8 @@ import { useRef, useEffect, useState } from "react";
 import AdOverlay from "./AdOverlay";
 
 interface YouTubeEmbedClientProps {
-  videoId: string;
+  videoId?: string;
+  channelId?: string; // If provided, load the channel's current live stream
   title?: string;
   width?: string | number;
   height?: string | number;
@@ -25,6 +26,7 @@ interface AdOverlayData {
 
 export default function YouTubeEmbedClient({
   videoId,
+  channelId,
   title = "Santa Teresa Live Surf Cam 24/7 | Costa Rica",
   width = "100%",
   height = 480,
@@ -38,6 +40,7 @@ export default function YouTubeEmbedClient({
   const [isLoaded, setIsLoaded] = useState(false);
   const [overlays, setOverlays] = useState<AdOverlayData[]>([]);
   const [origin, setOrigin] = useState('');
+  const resolvedChannelId = channelId || process.env.NEXT_PUBLIC_YT_CHANNEL_ID;
 
   // Set origin only on client side to avoid hydration mismatch
   useEffect(() => {
@@ -98,7 +101,9 @@ export default function YouTubeEmbedClient({
             ref={iframeRef}
             width={width}
             height={height}
-            src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&controls=1&showinfo=0&rel=0&modestbranding=1&fs=1&cc_load_policy=0&iv_load_policy=3&autohide=0&disablekb=1&playsinline=1&enablejsapi=0&origin=${origin}`}
+            src={(resolvedChannelId
+              ? `https://www.youtube.com/embed/live_stream?channel=${resolvedChannelId}`
+              : `https://www.youtube.com/embed/${videoId}`) + `?autoplay=1&mute=0&controls=1&showinfo=0&rel=0&modestbranding=1&fs=1&cc_load_policy=0&iv_load_policy=3&autohide=0&disablekb=1&playsinline=1&enablejsapi=0&origin=${origin}`}
             title={title}
             frameBorder="0"
             allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen"
