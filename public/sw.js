@@ -1,4 +1,4 @@
-const CACHE_NAME = 'surf-cam-1767129369007';
+const CACHE_NAME = 'surf-cam-1767133291790';
 const urlsToCache = [
   '/',
   '/contacto',
