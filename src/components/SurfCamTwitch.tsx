@@ -124,7 +124,7 @@ export default function SurfCamTwitch() {
               <div className="w-full relative rounded-xl overflow-hidden shadow-2xl shadow-primary/20">
                 {currentServer === 'youtube' ? (
                   <YouTubeEmbedWrapper
-                    videoId={process.env.NEXT_PUBLIC_YT_DEFAULT_VIDEO_ID || 'w4JI5DRDCcM'}
+                    videoId="zgrrc0SLcPo"
                     title="Pura Vida & Epic Waves | Santa Teresa Live Surf Cam 24/7 | Costa Rica"
                     autoplay={true}
                     muted={false}

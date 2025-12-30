@@ -1,65 +1,69 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 body {
-  font-family: 'PT Sans', sans-serif;
+  font-family: 'IBM Plex Sans', sans-serif;
+  background: linear-gradient(135deg, hsl(210, 50%, 6%) 0%, hsl(200, 45%, 12%) 50%, hsl(195, 40%, 8%) 100%);
+  background-attachment: fixed;
 }
 
 @layer base {
   :root {
-    --background: 168 48% 92%;
-    --foreground: 215 28% 17%;
-    --card: 168 48% 92%;
-    --card-foreground: 215 28% 17%;
-    --popover: 168 48% 92%;
-    --popover-foreground: 215 28% 17%;
-    --primary: 166 40% 50%;
-    --primary-foreground: 168 48% 98%;
-    --secondary: 167 30% 85%;
-    --secondary-foreground: 215 28% 17%;
-    --muted: 167 30% 88%;
-    --muted-foreground: 215 28% 45%;
-    --accent: 14 84% 62%;
-    --accent-foreground: 0 0% 100%;
+    --background: 210 50% 6%;
+    --foreground: 210 20% 95%;
+    --card: 215 30% 12%;
+    --card-foreground: 210 20% 95%;
+    --popover: 215 30% 12%;
+    --popover-foreground: 210 20% 95%;
+    --primary: 200 100% 50%;
+    --primary-foreground: 210 50% 6%;
+    --secondary: 195 100% 45%;
+    --secondary-foreground: 210 50% 6%;
+    --muted: 215 25% 35%;
+    --muted-foreground: 210 15% 75%;
+    --accent: 15 100% 55%;
+    --accent-foreground: 210 50% 6%;
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 167 30% 80%;
-    --input: 167 30% 80%;
-    --ring: 166 40% 50%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
+    --destructive-foreground: 210 50% 6%;
+    --border: 215 25% 25%;
+    --input: 215 25% 20%;
+    --ring: 200 100% 50%;
+    --chart-1: 200 100% 50%;
+    --chart-2: 195 100% 45%;
+    --chart-3: 15 100% 55%;
+    --chart-4: 260 100% 60%;
+    --chart-5: 165 100% 45%;
+    --radius: 1rem;
   }
 
   .dark {
-    --background: 215 28% 17%;
-    --foreground: 168 48% 92%;
-    --card: 215 28% 17%;
-    --card-foreground: 168 48% 92%;
-    --popover: 215 28% 17%;
-    --popover-foreground: 168 48% 92%;
-    --primary: 166 40% 50%;
-    --primary-foreground: 168 48% 98%;
-    --secondary: 215 28% 25%;
-    --secondary-foreground: 168 48% 98%;
-    --muted: 215 28% 25%;
-    --muted-foreground: 168 48% 65%;
-    --accent: 14 84% 62%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 215 28% 28%;
-    --input: 215 28% 28%;
-    --ring: 166 40% 50%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --background: 210 50% 6%;
+    --foreground: 210 20% 95%;
+    --card: 215 30% 12%;
+    --card-foreground: 210 20% 95%;
+    --popover: 215 30% 12%;
+    --popover-foreground: 210 20% 95%;
+    --primary: 200 100% 50%;
+    --primary-foreground: 210 50% 6%;
+    --secondary: 195 100% 45%;
+    --secondary-foreground: 210 50% 6%;
+    --muted: 215 25% 35%;
+    --muted-foreground: 210 15% 75%;
+    --accent: 15 100% 55%;
+    --accent-foreground: 210 50% 6%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 50% 6%;
+    --border: 215 25% 25%;
+    --input: 215 25% 20%;
+    --ring: 200 100% 50%;
+    --chart-1: 200 100% 50%;
+    --chart-2: 195 100% 45%;
+    --chart-3: 15 100% 55%;
+    --chart-4: 260 100% 60%;
+    --chart-5: 165 100% 45%;
   }
 }
 
@@ -69,5 +73,64 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-headline;
+  }
+  
+  code, pre {
+    @apply font-mono;
+  }
+}
+
+@layer utilities {
+  .gradient-ocean {
+    @apply bg-gradient-to-b from-[hsl(210,50%,6%)] via-[hsl(200,100%,50%)] to-[hsl(210,50%,6%)];
+  }
+  
+  .gradient-glow {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(15, 42, 61, 0.05) 100%);
+  }
+  
+  .glass-effect {
+    @apply bg-white/10 backdrop-blur-md border border-white/20;
+  }
+  
+  .ocean-glow {
+    @apply shadow-lg shadow-cyan-500/20;
+  }
+  
+  .wave-animation {
+    animation: wave 3s ease-in-out infinite;
+  }
+  
+  @keyframes wave {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-4px); }
+  }
+  
+  .pulse-glow {
+    animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 20px rgba(6, 182, 212, 0.5); }
+    50% { box-shadow: 0 0 40px rgba(6, 182, 212, 0.8); }
+  }
+  
+  .fade-in-up {
+    animation: fade-in-up 0.6s ease-out;
+  }
+  
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }

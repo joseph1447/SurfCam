@@ -54,19 +54,11 @@ export default function TwitchEmbedClient({
   onVideoPlay,
   showLoginPrompt = false
 }: TwitchEmbedClientProps) {
-  console.log('🔧 TwitchEmbedClient: Component initialized with props:', { channel, video, collection, layout });
-  
   // Use Twitch authentication check - show login modal first
   const { isAuthenticated, user, isLoading, loginWithTwitch } = useTwitchAuthCheck();
   const [isChannelOffline, setIsChannelOffline] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [embedReady, setEmbedReady] = useState(isAuthenticated);
-  
-  console.log('🔧 TwitchEmbedClient: Auth state:', { 
-    isAuthenticated, 
-    user: user?.display_name, 
-    isLoading
-  });
   
   const embedRef = useRef<HTMLDivElement>(null);
   const [embed, setEmbed] = useState<any>(null);
@@ -91,13 +83,11 @@ export default function TwitchEmbedClient({
 
   // Handle successful authentication
   const handleAuthSuccess = useCallback(() => {
-    console.log('🔧 Twitch Auth: Authentication successful');
-    console.log('🔧 Twitch Auth: User state:', { isAuthenticated, user: user?.display_name });
     if (authTimeout) {
       clearTimeout(authTimeout);
       setAuthTimeout(null);
     }
-  }, [authTimeout, isAuthenticated, user]);
+  }, [authTimeout]);
 
   // Handle login modal close
   const handleLoginModalClose = useCallback(() => {
@@ -131,20 +121,17 @@ export default function TwitchEmbedClient({
   useEffect(() => {
     // Load Twitch embed script if not already loaded
     if (!window.Twitch) {
-      console.log('🔧 Twitch Embed: Loading Twitch embed script...');
       const script = document.createElement('script');
       script.src = 'https://embed.twitch.tv/embed/v1.js';
       script.async = true;
       script.onload = () => {
-        console.log('🔧 Twitch Embed: Script loaded successfully');
         setIsLoaded(true);
       };
       script.onerror = (error) => {
-        console.error('🔧 Twitch Embed: Error loading Twitch script:', error);
+        console.error('Error loading Twitch script:', error);
       };
       document.head.appendChild(script);
     } else {
-      console.log('🔧 Twitch Embed: Script already loaded');
       setIsLoaded(true);
     }
   }, []);
@@ -152,17 +139,8 @@ export default function TwitchEmbedClient({
   useEffect(() => {
     // Only run once when component is ready and user is authenticated
     if (!isLoaded || !window.Twitch || !embedRef.current || embed || !embedReady) {
-      console.log('🔧 Twitch Embed: Not ready to create embed:', { 
-        isLoaded, 
-        hasTwitch: !!window.Twitch, 
-        hasRef: !!embedRef.current, 
-        hasEmbed: !!embed,
-        embedReady
-      });
       return;
     }
-
-    console.log('🔧 Twitch Embed: Ready to create embed');
 
     // Add a small delay to ensure the DOM element is fully rendered
     const timer = setTimeout(() => {
@@ -170,11 +148,9 @@ export default function TwitchEmbedClient({
       const embedElement = document.getElementById(embedId);
       
       if (!embedElement) {
-        console.error(`🔧 Twitch Embed: Element with ID ${embedId} not found in DOM`);
+        console.error(`Twitch Embed: Element with ID ${embedId} not found in DOM`);
         return;
       }
-
-      console.log('🔧 Twitch Embed: DOM element found, clearing previous content');
 
       // Clear previous embed
       if (embedRef.current) {
@@ -214,13 +190,6 @@ export default function TwitchEmbedClient({
       }
 
       try {
-        console.log('🔧 Twitch Embed: Creating embed with options:', embedOptions);
-        console.log('🔧 Twitch Embed: User authentication state:', { 
-          isAuthenticated, 
-          user: user?.display_name,
-          hasToken: !!localStorage.getItem('twitch_access_token')
-        });
-        
         const newEmbed = new window.Twitch.Embed(embedId, embedOptions);
         setEmbed(newEmbed);
 
@@ -235,54 +204,20 @@ export default function TwitchEmbedClient({
 
         // Listen for authentication errors
         newEmbed.addEventListener('error', (event: any) => {
-          console.log('🔧 Twitch Embed: Error event received:', event);
-          console.log('🔧 Twitch Embed: Error event - user state:', { 
-            isAuthenticated, 
-            user: user?.display_name,
-            hasToken: !!localStorage.getItem('twitch_access_token')
-          });
-          
           // Handle different types of errors
           if (event.error) {
             const errorCode = event.error.code || event.error;
             const errorMessage = event.error.message || '';
             
-            console.log('🔧 Twitch Embed: Error details:', { code: errorCode, message: errorMessage });
-            console.log('🔧 Twitch Embed: Full error object:', event.error);
-            
             // Error 1000: Video download cancelled (usually means channel is offline or restricted)
             if (errorCode === 1000 || errorMessage.includes('1000') || errorMessage.includes('cancelado')) {
-              console.log('🔧 Twitch Embed: Error 1000 detected - Video download cancelled');
-              console.log('🔧 Twitch Embed: This could mean:');
-              console.log('  - Channel is offline');
-              console.log('  - User needs to authenticate with Twitch');
-              console.log('  - Channel has restrictions');
-              console.log('  - HLS master playlist parsing failed');
-              console.log('🔧 Twitch Embed: Current auth state:', { isAuthenticated, hasToken: !!localStorage.getItem('twitch_access_token') });
-              
-              // Error 1000 - let Twitch handle the authentication flow
-              console.log('🔧 Twitch Embed: Error 1000 detected - Twitch will handle authentication');
-              console.log('🔧 Twitch Embed: This could mean:');
-              console.log('  - Channel is offline');
-              console.log('  - User needs to authenticate with Twitch');
-              console.log('  - Channel has restrictions');
-              console.log('  - HLS master playlist parsing failed');
-              
               // Don't show our UI, let Twitch handle it
               // The embed will show its own authentication prompts
               return;
             }
-            
-            // Authentication errors - let Twitch handle them
-            if (errorMessage.includes('authentication') || errorMessage.includes('unauthorized')) {
-              console.log('🔧 Twitch Embed: Authentication error detected - Twitch will handle it');
-            }
 
             // HLS/Stream errors
             if (errorMessage.includes('HLS') || errorMessage.includes('playlist') || errorMessage.includes('stream')) {
-              console.log('🔧 Twitch Embed: HLS/Stream error detected');
-              console.log('🔧 Twitch Embed: This indicates stream is not available or has issues');
-              console.log('🔧 Twitch Embed: Channel may be offline or experiencing technical difficulties');
               setIsChannelOffline(true);
             }
           }
@@ -290,48 +225,12 @@ export default function TwitchEmbedClient({
 
         // Listen for successful video load
         newEmbed.addEventListener(window.Twitch.Embed.VIDEO_READY, () => {
-          console.log('🔧 Twitch Embed: Video ready - embed loaded successfully');
-          console.log('🔧 Twitch Embed: Video ready - user state:', { 
-            isAuthenticated, 
-            user: user?.display_name,
-            hasToken: !!localStorage.getItem('twitch_access_token')
-          });
           handleAuthSuccess();
-        });
-
-        // Listen for video play event
-        newEmbed.addEventListener(window.Twitch.Embed.VIDEO_PLAY, () => {
-          console.log('🔧 Twitch Embed: Video started playing');
-          console.log('🔧 Twitch Embed: Stream is working correctly');
-        });
-
-        // Listen for video pause event
-        newEmbed.addEventListener('pause', () => {
-          console.log('🔧 Twitch Embed: Video paused');
-        });
-
-        // Listen for video ended event
-        newEmbed.addEventListener('ended', () => {
-          console.log('🔧 Twitch Embed: Video ended');
         });
 
         // Set a timeout to show auth message if video doesn't load after 20 seconds
         const timeout = setTimeout(() => {
-          console.log('🔧 Twitch Embed: Timeout reached after 20 seconds');
-          console.log('🔧 Twitch Embed: Timeout - user state:', { 
-            isAuthenticated, 
-            user: user?.display_name,
-            hasToken: !!localStorage.getItem('twitch_access_token')
-          });
-          
           // Timeout - let Twitch handle the authentication flow
-          console.log('🔧 Twitch Embed: Timeout reached - Twitch will handle authentication');
-          console.log('🔧 Twitch Embed: This could mean:');
-          console.log('  - Channel is offline');
-          console.log('  - Network issues');
-          console.log('  - Twitch embed configuration issues');
-          console.log('  - User needs to authenticate');
-          
           // Don't show our UI, let Twitch handle it
         }, 20000);
         setAuthTimeout(timeout);
@@ -351,7 +250,6 @@ export default function TwitchEmbedClient({
 
   // Show loading state while checking authentication
   if (isLoading) {
-    console.log('🔧 TwitchEmbedClient: Loading state - checking authentication');
     return (
       <div className="w-full relative">
         <div 
@@ -369,7 +267,6 @@ export default function TwitchEmbedClient({
 
   // Show Twitch content when not authenticated (let Twitch handle auth)
   if (!isAuthenticated) {
-    console.log('🔧 TwitchEmbedClient: User not authenticated, showing Twitch embed');
     return (
       <div className="w-full relative">
         <div 
@@ -413,7 +310,6 @@ export default function TwitchEmbedClient({
             <div className="space-y-3">
               <button 
                 onClick={() => {
-                  console.log('🔧 Twitch Embed: User clicked retry button');
                   setIsChannelOffline(false);
                   window.location.reload();
                 }}
@@ -423,7 +319,6 @@ export default function TwitchEmbedClient({
               </button>
               <button 
                 onClick={() => {
-                  console.log('🔧 Twitch Embed: User clicked check channel button');
                   window.open(`https://www.twitch.tv/${channel}`, '_blank');
                 }}
                 className="bg-gray-600 hover:bg-gray-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors text-lg w-full"
@@ -438,18 +333,6 @@ export default function TwitchEmbedClient({
   }
 
   // Show authenticated embed with autoplay
-  console.log('🔧 TwitchEmbedClient: Rendering authenticated embed with autoplay');
-  console.log('🔧 TwitchEmbedClient: Final state:', { 
-    isAuthenticated, 
-    user: user?.display_name,
-    hasToken: !!localStorage.getItem('twitch_access_token'),
-    embedId,
-    channel,
-    isLoaded,
-    hasEmbed: !!embed,
-    embedReady
-  });
-
   return (
     <div className="w-full relative">
       <div 
