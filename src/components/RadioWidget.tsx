@@ -61,14 +61,14 @@ const getInitialGenre = (): RadioGenre => {
   return RADIO_GENRES[0]; // Costa Rica
 };
 
-// Get initial volume from localStorage or default to 0.5
+// Get initial volume from localStorage or default to 0.25 (25%)
 const getInitialVolume = (): number => {
   const savedVolume = getPreference(STORAGE_KEYS.VOLUME);
   if (savedVolume) {
     const vol = parseFloat(savedVolume);
     if (!isNaN(vol) && vol >= 0 && vol <= 1) return vol;
   }
-  return 0.5;
+  return 0.25;
 };
 
 export default function RadioWidget({
