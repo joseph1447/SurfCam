@@ -113,8 +113,9 @@ export async function searchStationsByTags(tags: string[], limit: number = 10): 
       const stations = await response.json();
 
       for (const station of stations) {
-        // Only add if not already in list and has a resolved URL
-        if (station.url_resolved && !allStations.find(s => s.id === station.stationuuid)) {
+        // Only add if not already in list, has a resolved URL, and is HTTPS (to avoid mixed content errors)
+        const isHttps = station.url_resolved?.startsWith('https://');
+        if (station.url_resolved && isHttps && !allStations.find(s => s.id === station.stationuuid)) {
           allStations.push({
             id: station.stationuuid,
             name: station.name,
@@ -167,19 +168,22 @@ export async function getTopStations(limit: number = 20): Promise<RadioStation[]
 
     const stations = await response.json();
 
-    return stations.map((station: any) => ({
-      id: station.stationuuid,
-      name: station.name,
-      url: station.url,
-      urlResolved: station.url_resolved,
-      favicon: station.favicon || '',
-      tags: station.tags || '',
-      country: station.country || '',
-      language: station.language || '',
-      votes: station.votes || 0,
-      codec: station.codec || '',
-      bitrate: station.bitrate || 0
-    }));
+    // Filter to only include HTTPS streams to avoid mixed content errors
+    return stations
+      .filter((station: any) => station.url_resolved?.startsWith('https://'))
+      .map((station: any) => ({
+        id: station.stationuuid,
+        name: station.name,
+        url: station.url,
+        urlResolved: station.url_resolved,
+        favicon: station.favicon || '',
+        tags: station.tags || '',
+        country: station.country || '',
+        language: station.language || '',
+        votes: station.votes || 0,
+        codec: station.codec || '',
+        bitrate: station.bitrate || 0
+      }));
   } catch (error) {
     console.error('Error fetching top stations:', error);
     rotateServer();
