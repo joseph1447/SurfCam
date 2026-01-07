@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, Suspense, lazy, useCallback } from "react";
-import Link from "next/link";
+import { useState, useEffect, Suspense, lazy, useCallback } from "react";
 import AppHeader from "@/components/AppHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,34 +12,34 @@ import { usePWA } from "@/hooks/usePWA";
 import { ChevronDown } from "lucide-react";
 
 // Lazy load components with different priorities
-const TideWidget = lazy(() => import("./TideWidget"));
+const RadioWidget = lazy(() => import("./RadioWidget"));
 
 // Progressive loading hook
 function useProgressiveLoading() {
-  const [loadTideWidget, setLoadTideWidget] = useState(false);
+  const [loadWidgets, setLoadWidgets] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setLoadTideWidget(true);
-    }, 1000); // Load tide widget after 1 second
+      setLoadWidgets(true);
+    }, 1000); // Load widgets after 1 second
 
     return () => clearTimeout(timer);
   }, []);
 
-  return { loadTideWidget };
+  return { loadWidgets };
 }
 
 // Skeleton components for loading states
-const TideWidgetSkeleton = () => (
-  <Card className="w-full">
-    <CardContent className="p-6">
-      <div className="space-y-4">
-        <div className="h-6 bg-gray-200 rounded animate-pulse"></div>
-        <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
-        <div className="h-32 bg-gray-200 rounded"></div>
+const RadioWidgetSkeleton = () => (
+  <div className="w-full backdrop-blur-md bg-black/40 border border-cyan-500/20 rounded-2xl p-3 sm:p-4">
+    <div className="flex items-center gap-3 animate-pulse">
+      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-700"></div>
+      <div className="flex-1 space-y-2">
+        <div className="h-4 bg-gray-700 rounded w-32"></div>
+        <div className="h-3 bg-gray-700 rounded w-20"></div>
       </div>
-    </CardContent>
-  </Card>
+    </div>
+  </div>
 );
 
 export default function SurfCamTwitch() {
@@ -48,7 +47,7 @@ export default function SurfCamTwitch() {
   const [isInstalling, setIsInstalling] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
   const [currentServer, setCurrentServer] = useState<'twitch' | 'youtube'>('twitch');
-  const { loadTideWidget } = useProgressiveLoading();
+  const { loadWidgets } = useProgressiveLoading();
 
   const handleInstall = async () => {
     if (!isInstallable) return;
@@ -68,7 +67,8 @@ export default function SurfCamTwitch() {
   }, []);
 
   const handleVideoPlay = useCallback((data: { sessionId: string }) => {
-    // Video started playing
+    // Dispatch custom event for RadioWidget to listen
+    window.dispatchEvent(new CustomEvent('surfcam:videoplay', { detail: data }));
   }, []);
 
   const handleServerChange = useCallback((server: 'twitch' | 'youtube') => {
@@ -117,112 +117,42 @@ export default function SurfCamTwitch() {
           {/* User Status */}
           {/* User status is now handled by TwitchEmbedClient */}
 
-          {/* Main content area with video and tide widget */}
-          <div className="flex flex-col lg:flex-row gap-6 w-full">
-            {/* Video container */}
-            <div className="flex-grow w-full lg:w-2/3 relative">
-              <div className="w-full relative rounded-xl overflow-hidden shadow-2xl shadow-primary/20">
-                {currentServer === 'youtube' ? (
-                  <YouTubeEmbedWrapper
-                    videoId="zgrrc0SLcPo"
-                    title="Pura Vida & Epic Waves | Santa Teresa Live Surf Cam 24/7 | Costa Rica"
-                    autoplay={true}
-                    muted={false}
-                    allowfullscreen={true}
-                    onVideoReady={handleVideoReady}
-                    onVideoPlay={handleVideoPlay}
-                  />
-                ) : (
-                  <TwitchEmbedClient
-                    channel="elsurfo" // Replace with your actual Twitch channel
-                    layout="video-with-chat"
-                    autoplay={true}
-                    muted={false}
-                    theme="dark"
-                    allowfullscreen={true}
-                    onVideoReady={handleVideoReady}
-                    onVideoPlay={handleVideoPlay}
-                  />
-                )}
-              </div>
-            </div>
-            
-            {/* Tide Widget - sidebar on desktop, below on mobile */}
-            <div className="w-full lg:w-1/3">
-              {loadTideWidget ? (
-                <Suspense fallback={<TideWidgetSkeleton />}>
-                  <TideWidget />
-                </Suspense>
+          {/* Main content area - Video full width */}
+          <div className="w-full space-y-4">
+            {/* Video container - Full width */}
+            <div className="w-full relative rounded-xl overflow-hidden shadow-2xl shadow-primary/20">
+              {currentServer === 'youtube' ? (
+                <YouTubeEmbedWrapper
+                  videoId="zgrrc0SLcPo"
+                  title="Pura Vida & Epic Waves | Santa Teresa Live Surf Cam 24/7 | Costa Rica"
+                  autoplay={true}
+                  muted={false}
+                  allowfullscreen={true}
+                  onVideoReady={handleVideoReady}
+                  onVideoPlay={handleVideoPlay}
+                />
               ) : (
-                <TideWidgetSkeleton />
+                <TwitchEmbedClient
+                  channel="elsurfo"
+                  layout="video-with-chat"
+                  autoplay={true}
+                  muted={false}
+                  theme="dark"
+                  allowfullscreen={true}
+                  onVideoReady={handleVideoReady}
+                  onVideoPlay={handleVideoPlay}
+                />
               )}
             </div>
-          </div>
 
-          {/* Additional content sections */}
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Surf Lessons Card */}
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    🏄‍♂️
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg">Clases de Surf</h3>
-                    <p className="text-sm text-gray-600">Aprende con los mejores</p>
-                  </div>
-                </div>
-                <p className="text-gray-700 mb-4">
-                  Clases personalizadas para todos los niveles. Instructores certificados y equipamiento incluido.
-                </p>
-                <Link href="/surf-lessons">
-                  <Button className="w-full">Ver Clases</Button>
-                </Link>
-              </CardContent>
-            </Card>
-
-            {/* Accommodation Card */}
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                    🏨
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg">Hospedaje</h3>
-                    <p className="text-sm text-gray-600">Cerca de las mejores olas</p>
-                  </div>
-                </div>
-                <p className="text-gray-700 mb-4">
-                  Alojamiento cómodo y accesible. Perfecto para tu estadía de surf en Santa Teresa.
-                </p>
-                <Link href="/hospedaje">
-                  <Button className="w-full">Ver Opciones</Button>
-                </Link>
-              </CardContent>
-            </Card>
-
-            {/* Restaurants Card */}
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-                    🍽️
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg">Restaurantes</h3>
-                    <p className="text-sm text-gray-600">Sabor local y fresco</p>
-                  </div>
-                </div>
-                <p className="text-gray-700 mb-4">
-                  Los mejores restaurantes de la zona. Comida fresca y deliciosa después de surfear.
-                </p>
-                <Link href="/restaurantes">
-                  <Button className="w-full">Ver Restaurantes</Button>
-                </Link>
-              </CardContent>
-            </Card>
+            {/* Radio Widget - Below video, horizontal layout */}
+            {loadWidgets ? (
+              <Suspense fallback={<RadioWidgetSkeleton />}>
+                <RadioWidget />
+              </Suspense>
+            ) : (
+              <RadioWidgetSkeleton />
+            )}
           </div>
 
           {/* Instructions for first-time users */}
