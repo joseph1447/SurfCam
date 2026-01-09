@@ -1,0 +1,48 @@
+{"location":"layout.tsx:145","message":"LocaleLayout entry","data":{"locale":"es"},"timestamp":1767844800034,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"layout.tsx:22","message":"generateMetadata called","data":{"locale":"es"},"timestamp":1767844800053,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"layout.tsx:152","message":"Messages loaded","data":{"hasMessages":true,"locale":"es"},"timestamp":1767844800065,"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}
+{"location":"layout.tsx:145","message":"LocaleLayout entry","data":{"locale":"es"},"timestamp":1767844803041,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"layout.tsx:22","message":"generateMetadata called","data":{"locale":"es"},"timestamp":1767844803049,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"layout.tsx:152","message":"Messages loaded","data":{"hasMessages":true,"locale":"es"},"timestamp":1767844803059,"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}
+{"location":"Footer.tsx:7","message":"Footer component render start","data":{},"timestamp":1767844809207,"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}
+{"location":"Footer.tsx:12","message":"useTranslations success","data":{},"timestamp":1767844809208,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"Footer.tsx:22","message":"Footer about to return JSX","data":{"hasT":true},"timestamp":1767844809209,"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}
+{"location":"Footer.tsx:7","message":"Footer component render start","data":{},"timestamp":1767844809248,"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}
+{"location":"Footer.tsx:12","message":"useTranslations success","data":{},"timestamp":1767844809250,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"Footer.tsx:22","message":"Footer about to return JSX","data":{"hasT":true},"timestamp":1767844809255,"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}
+{"location":"Footer.tsx:7","message":"Footer component render start","data":{},"timestamp":1767844828487,"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}
+{"location":"Footer.tsx:12","message":"useTranslations success","data":{},"timestamp":1767844828488,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"Footer.tsx:22","message":"Footer about to return JSX","data":{"hasT":true},"timestamp":1767844828489,"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}
+{"location":"Footer.tsx:7","message":"Footer component render start","data":{},"timestamp":1767844828496,"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}
+{"location":"Footer.tsx:12","message":"useTranslations success","data":{},"timestamp":1767844828502,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"Footer.tsx:22","message":"Footer about to return JSX","data":{"hasT":true},"timestamp":1767844828505,"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}
+{"location":"Footer.tsx:7","message":"Footer component render start","data":{},"timestamp":1767844831101,"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}
+{"location":"Footer.tsx:12","message":"useTranslations success","data":{},"timestamp":1767844831102,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"Footer.tsx:22","message":"Footer about to return JSX","data":{"hasT":true},"timestamp":1767844831102,"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}
+{"location":"Footer.tsx:7","message":"Footer component render start","data":{},"timestamp":1767844831104,"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}
+{"location":"Footer.tsx:12","message":"useTranslations success","data":{},"timestamp":1767844831105,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"Footer.tsx:22","message":"Footer about to return JSX","data":{"hasT":true},"timestamp":1767844831106,"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}
+{"location":"Footer.tsx:7","message":"Footer component render start","data":{},"timestamp":1767844832934,"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}
+{"location":"Footer.tsx:12","message":"useTranslations success","data":{},"timestamp":1767844832936,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"Footer.tsx:22","message":"Footer about to return JSX","data":{"hasT":true},"timestamp":1767844832940,"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}
+{"location":"Footer.tsx:7","message":"Footer component render start","data":{},"timestamp":1767844832943,"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}
+{"location":"Footer.tsx:12","message":"useTranslations success","data":{},"timestamp":1767844832944,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"Footer.tsx:22","message":"Footer about to return JSX","data":{"hasT":true},"timestamp":1767844832963,"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}
+{"location":"Footer.tsx:7","message":"Footer component render start","data":{},"timestamp":1767844844542,"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}
+{"location":"Footer.tsx:12","message":"useTranslations success","data":{"hasT":true},"timestamp":1767844844544,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"Footer.tsx:32","message":"Footer about to return JSX","data":{"hasT":true,"year":2026},"timestamp":1767844844545,"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}
+{"location":"Footer.tsx:7","message":"Footer component render start","data":{},"timestamp":1767844844585,"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}
+{"location":"Footer.tsx:12","message":"useTranslations success","data":{"hasT":true},"timestamp":1767844844588,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"Footer.tsx:32","message":"Footer about to return JSX","data":{"hasT":true,"year":2026},"timestamp":1767844844590,"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}
+{"location":"Footer.tsx:7","message":"Footer component render start","data":{},"timestamp":1767845018951,"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}
+{"location":"Footer.tsx:12","message":"useTranslations success","data":{"hasT":true},"timestamp":1767845018952,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"Footer.tsx:32","message":"Footer about to return JSX","data":{"hasT":true,"year":2026},"timestamp":1767845018952,"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}
+{"location":"Footer.tsx:7","message":"Footer component render start","data":{},"timestamp":1767845019114,"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}
+{"location":"Footer.tsx:32","message":"Footer about to return JSX","data":{"hasT":true,"year":2026},"timestamp":1767845019115,"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}
+{"location":"Footer.tsx:12","message":"useTranslations success","data":{"hasT":true},"timestamp":1767845019115,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"Footer.tsx:7","message":"Footer component render start","data":{},"timestamp":1767845019434,"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}
+{"location":"Footer.tsx:12","message":"useTranslations success","data":{"hasT":true},"timestamp":1767845019435,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"Footer.tsx:32","message":"Footer about to return JSX","data":{"hasT":true,"year":2026},"timestamp":1767845019435,"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}
+{"location":"Footer.tsx:7","message":"Footer component render start","data":{},"timestamp":1767845019436,"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}
+{"location":"Footer.tsx:12","message":"useTranslations success","data":{"hasT":true},"timestamp":1767845019437,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"Footer.tsx:32","message":"Footer about to return JSX","data":{"hasT":true,"year":2026},"timestamp":1767845019437,"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}

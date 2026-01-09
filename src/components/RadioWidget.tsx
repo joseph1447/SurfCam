@@ -112,7 +112,6 @@ export default function RadioWidget({
     });
 
     audio.addEventListener('error', () => {
-      // Only show error if user explicitly clicked play
       if (userClickedPlayRef.current) {
         setError('Error al reproducir');
         setIsBuffering(false);
@@ -175,27 +174,22 @@ export default function RadioWidget({
       } else {
         setStations(fetchedStations);
 
-        // Determine which station to select
         let stationToSelect: RadioStation | null = null;
 
-        // 1. Try to find saved station from localStorage
         if (savedStationId) {
           stationToSelect = fetchedStations.find(s => s.id === savedStationId) || null;
         }
 
-        // 2. If no saved station found, try to find default station (Urbano 106)
         if (!stationToSelect) {
           stationToSelect = fetchedStations.find(s =>
             s.name.toLowerCase().includes(DEFAULT_STATION_NAME.toLowerCase())
           ) || null;
         }
 
-        // 3. If still no match, use first station
         if (!stationToSelect) {
           stationToSelect = fetchedStations[0];
         }
 
-        // Only change station if none selected or current not in new list
         if (!currentStation || !fetchedStations.find(s => s.id === currentStation.id)) {
           setCurrentStation(stationToSelect);
         }
@@ -211,7 +205,6 @@ export default function RadioWidget({
   const playStation = useCallback(async (station: RadioStation) => {
     if (!audioRef.current) return;
 
-    // Mark that user has interacted
     userClickedPlayRef.current = true;
 
     setCurrentStation(station);
@@ -219,11 +212,9 @@ export default function RadioWidget({
     setError(null);
 
     try {
-      // Stop current playback first
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
 
-      // Set new source and play
       audioRef.current.src = station.urlResolved;
       audioRef.current.load();
 
@@ -233,7 +224,6 @@ export default function RadioWidget({
         reportStationClick(station.id);
       }
     } catch (err: any) {
-      // Only show error if it's not an autoplay restriction
       if (err?.name !== 'NotAllowedError') {
         setError('Error al reproducir');
       }
@@ -247,7 +237,6 @@ export default function RadioWidget({
     if (isPlaying) {
       audioRef.current.pause();
     } else {
-      // Mark that user has interacted
       userClickedPlayRef.current = true;
       setIsBuffering(true);
       try {
@@ -274,7 +263,6 @@ export default function RadioWidget({
 
   const handleGenreChange = (genre: RadioGenre) => {
     setSelectedGenre(genre);
-    // Open station list to show new stations
     setShowStationList(true);
   };
 
@@ -296,12 +284,12 @@ export default function RadioWidget({
   // Loading skeleton
   if (isLoading && stations.length === 0) {
     return (
-      <div className="w-full backdrop-blur-md bg-black/40 border border-cyan-500/20 rounded-2xl p-3 sm:p-4">
+      <div className="w-full backdrop-blur-md bg-[#121419]/80 border border-white/10 rounded-2xl p-3 sm:p-4">
         <div className="flex items-center gap-3 animate-pulse">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-700"></div>
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10"></div>
           <div className="flex-1 space-y-2">
-            <div className="h-4 bg-gray-700 rounded w-24"></div>
-            <div className="h-3 bg-gray-700 rounded w-16"></div>
+            <div className="h-4 bg-white/10 rounded w-24"></div>
+            <div className="h-3 bg-white/10 rounded w-16"></div>
           </div>
         </div>
       </div>
@@ -309,7 +297,7 @@ export default function RadioWidget({
   }
 
   return (
-    <div className="w-full backdrop-blur-md bg-black/40 border border-cyan-500/20 rounded-2xl overflow-hidden">
+    <div className="w-full backdrop-blur-md bg-[#121419]/80 border border-white/10 rounded-2xl overflow-hidden">
       {/* Main Player Row - Always visible */}
       <div className="p-3 sm:p-4">
         <div className="flex items-center gap-2 sm:gap-3">
@@ -317,9 +305,9 @@ export default function RadioWidget({
           <button
             onClick={togglePlay}
             disabled={!currentStation || isBuffering}
-            className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600
-                       flex items-center justify-center shadow-lg shadow-cyan-500/30
-                       hover:shadow-cyan-500/50 transition-all active:scale-95 disabled:opacity-50"
+            className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-[#3366BB] to-[#2A5599]
+                       flex items-center justify-center shadow-lg shadow-black/30
+                       hover:from-[#4477CC] hover:to-[#3366AA] transition-all active:scale-95 disabled:opacity-50"
           >
             {isBuffering ? (
               <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin text-white" />
@@ -339,18 +327,18 @@ export default function RadioWidget({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-xs sm:text-sm font-semibold text-white truncate">
-                    {currentStation?.name || 'Selecciona emisora'}
+                    {currentStation?.name || 'Select station'}
                   </span>
                   {isPlaying && (
                     <span className="flex-shrink-0 w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
                   )}
                 </div>
-                <div className="flex items-center gap-2 text-[10px] sm:text-xs text-gray-400">
+                <div className="flex items-center gap-2 text-[10px] sm:text-xs text-white/50">
                   <span>{selectedGenre.icon} {selectedGenre.name}</span>
-                  {error && <span className="text-red-400">• {error}</span>}
+                  {error && <span className="text-red-400">- {error}</span>}
                 </div>
               </div>
-              <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ${showStationList ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-4 h-4 text-white/40 transition-transform flex-shrink-0 ${showStationList ? 'rotate-180' : ''}`} />
             </div>
           </button>
 
@@ -360,7 +348,7 @@ export default function RadioWidget({
             disabled={stations.length === 0}
             className="flex-shrink-0 w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors"
           >
-            <SkipForward className="w-4 h-4 text-gray-400" />
+            <SkipForward className="w-4 h-4 text-white/50" />
           </button>
 
           {/* Volume Control - Desktop only */}
@@ -370,9 +358,9 @@ export default function RadioWidget({
               className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors"
             >
               {isMuted || volume === 0 ? (
-                <VolumeX className="w-4 h-4 text-gray-400" />
+                <VolumeX className="w-4 h-4 text-white/50" />
               ) : (
-                <Volume2 className="w-4 h-4 text-gray-400" />
+                <Volume2 className="w-4 h-4 text-white/50" />
               )}
             </button>
             <input
@@ -385,11 +373,11 @@ export default function RadioWidget({
                 setVolume(parseFloat(e.target.value));
                 setIsMuted(false);
               }}
-              className="w-20 h-1 bg-gray-600 rounded-full appearance-none cursor-pointer
+              className="w-20 h-1 bg-white/20 rounded-full appearance-none cursor-pointer
                          [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3
-                         [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-cyan-400
+                         [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#3366BB]
                          [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:rounded-full
-                         [&::-moz-range-thumb]:bg-cyan-400 [&::-moz-range-thumb]:border-0"
+                         [&::-moz-range-thumb]:bg-[#3366BB] [&::-moz-range-thumb]:border-0"
             />
           </div>
         </div>
@@ -403,8 +391,8 @@ export default function RadioWidget({
                 onClick={() => handleGenreChange(genre)}
                 className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap
                   ${selectedGenre.id === genre.id
-                    ? `bg-gradient-to-r ${genre.color} text-white shadow-md`
-                    : 'bg-white/10 text-gray-300 hover:bg-white/20'
+                    ? 'bg-gradient-to-r from-[#3366BB] to-[#2A5599] text-white shadow-md'
+                    : 'bg-white/10 text-white/70 hover:bg-white/20'
                   }`}
               >
                 <span className="mr-1">{genre.icon}</span>
@@ -421,9 +409,9 @@ export default function RadioWidget({
             className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors"
           >
             {isMuted || volume === 0 ? (
-              <VolumeX className="w-4 h-4 text-gray-400" />
+              <VolumeX className="w-4 h-4 text-white/50" />
             ) : (
-              <Volume2 className="w-4 h-4 text-gray-400" />
+              <Volume2 className="w-4 h-4 text-white/50" />
             )}
           </button>
           <input
@@ -436,29 +424,28 @@ export default function RadioWidget({
               setVolume(parseFloat(e.target.value));
               setIsMuted(false);
             }}
-            className="flex-1 h-1 bg-gray-600 rounded-full appearance-none cursor-pointer
+            className="flex-1 h-1 bg-white/20 rounded-full appearance-none cursor-pointer
                        [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4
-                       [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-cyan-400
+                       [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#3366BB]
                        [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full
-                       [&::-moz-range-thumb]:bg-cyan-400 [&::-moz-range-thumb]:border-0"
+                       [&::-moz-range-thumb]:bg-[#3366BB] [&::-moz-range-thumb]:border-0"
           />
-          <span className="text-xs text-gray-500 w-8 text-right">{Math.round(volume * 100)}%</span>
+          <span className="text-xs text-white/40 w-8 text-right">{Math.round(volume * 100)}%</span>
         </div>
       </div>
 
       {/* Station List - Expandable */}
       {showStationList && stations.length > 0 && (
-        <div className="border-t border-cyan-500/20 max-h-48 overflow-y-auto bg-black/30">
+        <div className="border-t border-white/10 max-h-48 overflow-y-auto bg-[#0D0F14]/80">
           {stations.map((station) => (
             <button
               key={station.id}
               onClick={() => {
                 playStation(station);
-                // Keep list open so user can easily switch between stations
               }}
               className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all border-b border-white/5 last:border-0
                 ${currentStation?.id === station.id
-                  ? 'bg-cyan-500/20'
+                  ? 'bg-[#3366BB]/20'
                   : 'hover:bg-white/5 active:bg-white/10'
                 }`}
             >
@@ -466,29 +453,29 @@ export default function RadioWidget({
                 <img
                   src={station.favicon}
                   alt=""
-                  className="w-8 h-8 rounded-lg object-cover bg-gray-700 flex-shrink-0"
+                  className="w-8 h-8 rounded-lg object-cover bg-white/10 flex-shrink-0"
                   onError={(e) => {
                     (e.target as HTMLImageElement).style.display = 'none';
                   }}
                 />
               ) : (
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500/30 to-blue-500/30 flex items-center justify-center flex-shrink-0">
-                  <Music className="w-4 h-4 text-cyan-400" />
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#3366BB]/30 to-[#2A5599]/30 flex items-center justify-center flex-shrink-0">
+                  <Music className="w-4 h-4 text-[#3366BB]" />
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <div className={`text-sm truncate ${currentStation?.id === station.id ? 'text-cyan-400 font-medium' : 'text-white'}`}>
+                <div className={`text-sm truncate ${currentStation?.id === station.id ? 'text-[#5588DD] font-medium' : 'text-white'}`}>
                   {station.name}
                 </div>
                 {station.country && (
-                  <div className="text-[10px] text-gray-500 truncate">{station.country}</div>
+                  <div className="text-[10px] text-white/40 truncate">{station.country}</div>
                 )}
               </div>
               {currentStation?.id === station.id && isPlaying && (
                 <div className="flex gap-0.5 items-end h-4">
-                  <span className="w-1 bg-cyan-400 rounded-full animate-bounce" style={{ height: '40%', animationDelay: '0ms' }}></span>
-                  <span className="w-1 bg-cyan-400 rounded-full animate-bounce" style={{ height: '70%', animationDelay: '150ms' }}></span>
-                  <span className="w-1 bg-cyan-400 rounded-full animate-bounce" style={{ height: '50%', animationDelay: '300ms' }}></span>
+                  <span className="w-1 bg-[#3366BB] rounded-full animate-bounce" style={{ height: '40%', animationDelay: '0ms' }}></span>
+                  <span className="w-1 bg-[#3366BB] rounded-full animate-bounce" style={{ height: '70%', animationDelay: '150ms' }}></span>
+                  <span className="w-1 bg-[#3366BB] rounded-full animate-bounce" style={{ height: '50%', animationDelay: '300ms' }}></span>
                 </div>
               )}
             </button>
