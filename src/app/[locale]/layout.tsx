@@ -1,4 +1,3 @@
-import '../globals.css';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
@@ -6,7 +5,6 @@ import { isValidLocale } from '@/i18n/config';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { Toaster } from "@/components/ui/toaster";
 import PWAProvider from '@/components/PWAProvider';
-import ThemeScript from '@/components/ThemeScript';
 import Footer from '@/components/Footer';
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Analytics } from '@vercel/analytics/next';
@@ -143,7 +141,7 @@ export const viewport: Viewport = {
 
 export default async function LocaleLayout({ children, params }: Props) {
   const { locale } = await params;
-  
+
   if (!isValidLocale(locale)) {
     notFound();
   }
@@ -151,63 +149,19 @@ export default async function LocaleLayout({ children, params }: Props) {
   const messages = await getMessages();
 
   return (
-    <html lang={locale} suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=PT+Serif:wght@400;700&family=Open+Sans:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/wave-16.png" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/wave-32.png" />
-        <link rel="shortcut icon" href="/wave-16.png" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="Santa Teresa Surf Cam" />
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="msapplication-TileColor" content="#3b82f6" />
-        <meta name="msapplication-tap-highlight" content="no" />
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1542717605257272" crossOrigin="anonymous"></script>
-        
-        {/* Google Tag Manager */}
-        <script dangerouslySetInnerHTML={{
-          __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','GTM-PBK4JCWB');`
-        }} />
-        
-        {/* Hreflang tags for SEO */}
-        <link rel="alternate" hrefLang="es-CR" href={baseUrl} />
-        <link rel="alternate" hrefLang="en-US" href={`${baseUrl}/en`} />
-        <link rel="alternate" hrefLang="x-default" href={baseUrl} />
-      </head>
-      <body className="font-body antialiased">
-        {/* Google Tag Manager (noscript) */}
-        <noscript>
-          <iframe 
-            src="https://www.googletagmanager.com/ns.html?id=GTM-PBK4JCWB"
-            height="0" 
-            width="0" 
-            style={{display: 'none', visibility: 'hidden'}}
-          />
-        </noscript>
-        
-        <ThemeScript />
-        <NextIntlClientProvider messages={messages}>
-          <ThemeProvider>
-            <PWAProvider>
-              <div className="flex flex-col min-h-screen relative">
-                {children}
-                <Footer />
-              </div>
-              <Toaster />
-            </PWAProvider>
-          </ThemeProvider>
-        </NextIntlClientProvider>
-        <SpeedInsights />
-        <Analytics />
-      </body>
-    </html>
+    <NextIntlClientProvider messages={messages}>
+      <ThemeProvider>
+        <PWAProvider>
+          <div className="flex flex-col min-h-screen relative font-sans antialiased">
+            {children}
+            <Footer />
+          </div>
+          <Toaster />
+        </PWAProvider>
+      </ThemeProvider>
+      <SpeedInsights />
+      <Analytics />
+    </NextIntlClientProvider>
   );
 }
 

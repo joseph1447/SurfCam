@@ -43,6 +43,7 @@ export default function SurfCamTwitch() {
   const { isInstallable, isInstalled, installApp } = usePWA();
   const [isInstalling, setIsInstalling] = useState(false);
   const [currentServer, setCurrentServer] = useState<'twitch' | 'youtube'>('youtube');
+  const [youtubeVideoId, setYoutubeVideoId] = useState('c5y9NOgTZuQ');
   const { loadWidgets } = useProgressiveLoading();
 
   const handleInstall = async () => {
@@ -68,6 +69,26 @@ export default function SurfCamTwitch() {
 
   const handleServerChange = useCallback((server: 'twitch' | 'youtube') => {
     setCurrentServer(server);
+  }, []);
+
+  // Obtener el video ID de YouTube desde la configuración
+  useEffect(() => {
+    const fetchYoutubeVideoId = async () => {
+      try {
+        const response = await fetch('/api/site-config?key=youtube_video_id');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.value) {
+            setYoutubeVideoId(data.value);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching YouTube video ID:', error);
+        // Mantener el valor por defecto en caso de error
+      }
+    };
+
+    fetchYoutubeVideoId();
   }, []);
 
   return (
@@ -112,7 +133,7 @@ export default function SurfCamTwitch() {
             <div className="w-full relative rounded-xl overflow-hidden shadow-2xl shadow-black/40">
               {currentServer === 'youtube' ? (
                 <YouTubeEmbedWrapper
-                  videoId="c5y9NOgTZuQ"
+                  videoId={youtubeVideoId}
                   title="Pura Vida & Epic Waves | Santa Teresa Live Surf Cam 24/7 | Costa Rica"
                   autoplay={true}
                   muted={true}

@@ -46,6 +46,11 @@ export default function AdminPage() {
   
   const [overlays, setOverlays] = useState<AdOverlay[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Site configuration state
+  const [youtubeVideoId, setYoutubeVideoId] = useState('');
+  const [youtubeVideoIdInput, setYoutubeVideoIdInput] = useState('');
+  const [isSavingConfig, setIsSavingConfig] = useState(false);
   
   // Dialog state
   const [selectedOverlay, setSelectedOverlay] = useState<AdOverlay | null>(null);
@@ -74,6 +79,7 @@ export default function AdminPage() {
   useEffect(() => {
     if (isAuthenticated) {
       fetchOverlays();
+      fetchSiteConfig();
     }
   }, [isAuthenticated]);
 
@@ -130,6 +136,24 @@ export default function AdminPage() {
     }
   };
 
+  const fetchSiteConfig = async () => {
+    try {
+      const response = await fetch('/api/admin/site-config?key=youtube_video_id');
+      if (response.ok) {
+        const data = await response.json();
+        setYoutubeVideoId(data.value || 'c5y9NOgTZuQ');
+        setYoutubeVideoIdInput(data.value || 'c5y9NOgTZuQ');
+      }
+    } catch (error) {
+      console.error('Error fetching site config:', error);
+      toast({
+        title: "Error",
+        description: "Error al cargar la configuración",
+        variant: "destructive",
+      });
+    }
+  };
+
   const fetchOverlays = async () => {
     setLoading(true);
     try {
@@ -149,6 +173,50 @@ export default function AdminPage() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveYoutubeVideoId = async () => {
+    if (!youtubeVideoIdInput.trim()) {
+      toast({
+        title: "Error",
+        description: "El ID del video no puede estar vacío",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSavingConfig(true);
+    try {
+      const response = await fetch('/api/admin/site-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          key: 'youtube_video_id',
+          value: youtubeVideoIdInput.trim(),
+          description: 'YouTube Video ID for live stream'
+        }),
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        setYoutubeVideoId(youtubeVideoIdInput.trim());
+        toast({
+          title: "Éxito",
+          description: "ID del video de YouTube actualizado correctamente",
+        });
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al guardar configuración');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Error al guardar configuración",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingConfig(false);
     }
   };
 
@@ -341,6 +409,44 @@ export default function AdminPage() {
           </Button>
         </div>
       </div>
+
+      {/* Site Configuration - YouTube */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Configuración del Sitio</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="youtube-video-id">ID del Video de YouTube</Label>
+              <p className="text-sm text-gray-500 mb-2">
+                Ingresa el ID del video de YouTube que deseas mostrar en el stream.
+                Ejemplo: si la URL es https://youtube.com/watch?v=c5y9NOgTZuQ, el ID es "c5y9NOgTZuQ"
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  id="youtube-video-id"
+                  value={youtubeVideoIdInput}
+                  onChange={(e) => setYoutubeVideoIdInput(e.target.value)}
+                  placeholder="c5y9NOgTZuQ"
+                  className="flex-1"
+                />
+                <Button
+                  onClick={handleSaveYoutubeVideoId}
+                  disabled={isSavingConfig || youtubeVideoIdInput === youtubeVideoId}
+                >
+                  {isSavingConfig ? 'Guardando...' : 'Guardar'}
+                </Button>
+              </div>
+              {youtubeVideoId && (
+                <p className="text-sm text-green-600 mt-2">
+                  Video ID actual: <span className="font-mono font-semibold">{youtubeVideoId}</span>
+                </p>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Metrics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
