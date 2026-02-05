@@ -1,78 +1,34 @@
-import type { Metadata, Viewport } from 'next';
+// Root layout - provides HTML structure for all routes
 import './globals.css';
-import { ThemeProvider } from '@/context/ThemeContext';
-import { Toaster } from "@/components/ui/toaster";
-import PWAProvider from '@/components/PWAProvider';
-import ThemeScript from '@/components/ThemeScript';
-import { SpeedInsights } from "@vercel/speed-insights/next"
-import { Analytics } from '@vercel/analytics/next';
+import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Santa Teresa Surf Cam',
-  description: 'Transmisión en vivo de las olas de Santa Teresa, Costa Rica. Disfruta de las mejores olas en tiempo real.',
-  manifest: '/manifest.json',
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'default',
-    title: 'Santa Teresa Surf Cam',
-  },
-  icons: {
-    icon: [
-      { url: '/wave-16.png', sizes: '16x16', type: 'image/png' },
-      { url: '/wave-32.png', sizes: '32x32', type: 'image/png' },
-      { url: '/wave-128.png', sizes: '128x128', type: 'image/png' },
-      { url: '/wave-128.png', sizes: '192x192', type: 'image/png' },
-      { url: '/wave-128.png', sizes: '512x512', type: 'image/png' },
-    ],
-    apple: [
-      { url: '/wave-16.png', sizes: '16x16', type: 'image/png' },
-      { url: '/wave-128.png', sizes: '192x192', type: 'image/png' },
-    ],
-  },
+  title: 'Santa Teresa Surf Cam | Live Stream 24/7',
+  description: 'Watch live surf conditions from Santa Teresa, Costa Rica',
 };
 
-export const viewport: Viewport = {
-  width: 'device-width',
-  initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
-  themeColor: '#3b82f6',
-};
-
-export default function RootLayout({
+export default async function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="es">
+    <html lang="es" suppressHydrationWarning>
       <head>
+        {/* Preconnect to critical origins for faster loading */}
+        <link rel="preconnect" href="https://www.youtube.com" />
+        <link rel="preconnect" href="https://i.ytimg.com" />
+        <link rel="dns-prefetch" href="https://www.youtube.com" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
-        <link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap" rel="stylesheet" />
+        {/* Optimized font loading with display=swap for better performance */}
+        <link href="https://fonts.googleapis.com/css2?family=PT+Serif:wght@400;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
         <link rel="icon" type="image/png" sizes="16x16" href="/wave-16.png" />
         <link rel="icon" type="image/png" sizes="32x32" href="/wave-32.png" />
         <link rel="shortcut icon" href="/wave-16.png" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="Santa Teresa Surf Cam" />
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="msapplication-TileColor" content="#3b82f6" />
-        <meta name="msapplication-tap-highlight" content="no" />
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7316466179789028"
-     crossOrigin="anonymous"></script>
       </head>
-      <body className="font-body antialiased">
-        <ThemeScript />
-        <ThemeProvider>
-          <PWAProvider>
-            {children}
-            <Toaster />
-          </PWAProvider>
-        </ThemeProvider>
-        <SpeedInsights />
-        <Analytics />
+      <body suppressHydrationWarning>
+        {children}
       </body>
     </html>
   );

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'surf-cam-1758915596598';
+const CACHE_NAME = 'surf-cam-1767849274594';
 const urlsToCache = [
   '/',
   '/contacto',
@@ -25,16 +25,92 @@ self.addEventListener('install', (event) => {
 
 // Fetch event - serve from cache, fallback to network
 self.addEventListener('fetch', (event) => {
+  // Skip non-GET requests
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
+  // Skip chrome-extension, chrome, and other non-http(s) requests
+  const url = new URL(event.request.url);
+  if (!url.protocol.startsWith('http')) {
+    return;
+  }
+
+  // Skip YouTube and external video/streaming services - let browser handle them directly
+  if (url.hostname.includes('youtube.com') || 
+      url.hostname.includes('youtubei.googleapis.com') ||
+      url.hostname.includes('ytimg.com') ||
+      url.hostname.includes('googlevideo.com') ||
+      url.hostname.includes('twitch.tv') ||
+      url.hostname.includes('twitchcdn.net')) {
+    return; // Don't intercept - let browser handle directly
+  }
+
   event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        // Return cached version or fetch from network
-        if (response) {
-          return response;
+    (async () => {
+      try {
+        // Try to use preloadResponse if available (for navigation requests)
+        const preloadResponse = event.preloadResponse;
+        if (preloadResponse) {
+          try {
+            const response = await preloadResponse;
+            if (response) {
+              return response;
+            }
+          } catch (err) {
+            console.log('[SW] PreloadResponse failed, falling back to cache/network:', err);
+          }
         }
-        return fetch(event.request);
+
+        // Try cache first
+        const cachedResponse = await caches.match(event.request);
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+
+        // Fallback to network
+        try {
+          const networkResponse = await fetch(event.request);
+          
+          // Cache successful responses (but not for streaming or large files)
+          if (networkResponse.ok && networkResponse.status === 200) {
+            const contentType = networkResponse.headers.get('content-type');
+            // Don't cache streaming content, videos, or very large files
+            if (contentType && 
+                !contentType.includes('video') && 
+                !contentType.includes('stream') &&
+                !contentType.includes('application/octet-stream')) {
+              const cache = await caches.open(CACHE_NAME);
+              // Clone the response before caching (responses can only be read once)
+              cache.put(event.request, networkResponse.clone()).catch(err => {
+                console.log('[SW] Failed to cache response:', err);
+              });
+            }
+          }
+          
+          return networkResponse;
+        } catch (fetchError) {
+          console.log('[SW] Network fetch failed:', fetchError);
+          // Return a basic offline page or error response
+          if (event.request.destination === 'document') {
+            return new Response('Offline', {
+              status: 503,
+              statusText: 'Service Unavailable',
+              headers: { 'Content-Type': 'text/plain' }
+            });
+          }
+          throw fetchError;
+        }
+      } catch (error) {
+        console.error('[SW] Fetch handler error:', error);
+        // Return a basic error response instead of failing completely
+        return new Response('Network error', {
+          status: 408,
+          statusText: 'Request Timeout',
+          headers: { 'Content-Type': 'text/plain' }
+        });
       }
-    )
+    })()
   );
 });
 

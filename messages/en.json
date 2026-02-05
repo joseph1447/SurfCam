@@ -1,0 +1,75 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "contact": "Contact",
+    "email": "Email",
+    "location": "Location",
+    "phone": "Phone"
+  },
+  "footer": {
+    "title": "Santa Teresa Surf Cam",
+    "description": "24/7 live stream of the best waves in Santa Teresa, Costa Rica.",
+    "quickLinks": "Quick Links",
+    "surfLessons": "Surf Lessons",
+    "accommodation": "Accommodation",
+    "restaurants": "Restaurants",
+    "contact": "Contact",
+    "contactSection": "Contact",
+    "location": "📍 Santa Teresa, Costa Rica",
+    "copyright": "© {year} Santa Teresa Surf Cam. All rights reserved.",
+    "poweredBy": "Powered by",
+    "aiservices": "AIServices Santa Teresa"
+  },
+  "nav": {
+    "home": "Home",
+    "surfLessons": "Surf Lessons",
+    "accommodation": "Accommodation",
+    "restaurants": "Restaurants",
+    "contact": "Contact",
+    "profile": "Profile",
+    "admin": "Admin"
+  },
+  "home": {
+    "title": "Santa Teresa Surf Cam",
+    "subtitle": "24/7 Live Stream",
+    "description": "Watch the best waves of Santa Teresa, Costa Rica in real time",
+    "liveStream": "Live Stream",
+    "chat": "Chat",
+    "tides": "Tides",
+    "conditions": "Conditions"
+  },
+  "aiservices": {
+    "title": "Online Presence for Businesses in Santa Teresa, Costa Rica",
+    "subtitle": "Professional web development, digital marketing and technology solutions to grow your business in Santa Teresa and the Nicoya Peninsula. Specialists in tourism, hospitality and local commerce.",
+    "services": "Our Services",
+    "servicesDescription": "Complete technological solutions specifically designed for businesses in Santa Teresa, Puntarenas and Costa Rica. From landing pages to complex platforms.",
+    "pricing": "Transparent Pricing",
+    "pricingDescription": "Affordable solutions for businesses of all sizes",
+    "startingFrom": "From $30",
+    "perMonth": "/month",
+    "basicPlan": "Basic Plan - Landing Page + Hosting",
+    "contactNow": "Contact Now",
+    "viewServices": "View Services",
+    "howItWorks": "How It Works",
+    "howItWorksDescription": "A simple and efficient process to take your business to the next level",
+    "caseStudies": "Successful Projects",
+    "caseStudiesDescription": "Real cases of businesses that trusted us",
+    "industries": "Industries We Serve",
+    "industriesDescription": "Proven experience across multiple sectors",
+    "readyToStart": "Ready to Get Started?",
+    "readyToStartDescription": "Transform your digital presence today. Contact us for a free consultation.",
+    "sendEmail": "Send Email",
+    "viewContactPage": "View Contact Page"
+  }
+}
+

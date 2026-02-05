@@ -40,8 +40,6 @@ export function useTwitchAuthCheck() {
 
       if (storedToken && storedUser) {
         try {
-          console.log('🔧 Twitch Auth: Validating stored token');
-          
           // Verify the token is still valid by making a request
           const response = await fetch('https://api.twitch.tv/helix/users', {
             headers: {
@@ -53,7 +51,6 @@ export function useTwitchAuthCheck() {
           if (response.ok) {
             const data = await response.json();
             if (data.data && data.data.length > 0) {
-              console.log('🔧 Twitch Auth: Token valid, user authenticated');
               setAuthState({
                 isAuthenticated: true,
                 user: data.data[0],
@@ -63,21 +60,18 @@ export function useTwitchAuthCheck() {
               return;
             }
           } else if (response.status === 401) {
-            console.log('🔧 Twitch Auth: Token expired, clearing storage');
             // Token expired, clear storage
             localStorage.removeItem('twitch_access_token');
             localStorage.removeItem('twitch_refresh_token');
             localStorage.removeItem('twitch_user');
           }
         } catch (error) {
-          console.error('🔧 Twitch Auth: Error validating token:', error);
+          console.error('Error validating Twitch token:', error);
           // Clear invalid tokens
           localStorage.removeItem('twitch_access_token');
           localStorage.removeItem('twitch_refresh_token');
           localStorage.removeItem('twitch_user');
         }
-      } else {
-        console.log('🔧 Twitch Auth: No stored token found');
       }
 
       // If we get here, user is not authenticated
@@ -103,12 +97,8 @@ export function useTwitchAuthCheck() {
     const redirectUri = `${window.location.origin}/api/twitch/auth/callback`;
     const scope = 'user:read:email';
     
-    console.log('🔧 Twitch Auth: Starting login process');
-    console.log('🔧 Twitch Auth: Client ID =', clientId ? 'SET' : 'NOT SET');
-    console.log('🔧 Twitch Auth: Redirect URI =', redirectUri);
-    
     if (!clientId) {
-      console.error('🔧 Twitch Auth: NEXT_PUBLIC_TWITCH_CLIENT_ID is not defined!');
+      console.error('NEXT_PUBLIC_TWITCH_CLIENT_ID is not defined!');
       alert('Error: NEXT_PUBLIC_TWITCH_CLIENT_ID no está configurado. Por favor, verifica las variables de entorno.');
       return;
     }
@@ -125,7 +115,6 @@ export function useTwitchAuthCheck() {
       `scope=${scope}&` +
       `force_verify=true`; // Force re-authentication
     
-    console.log('🔧 Twitch Auth: Redirecting to:', authUrl);
     window.location.href = authUrl;
   }, []);
 

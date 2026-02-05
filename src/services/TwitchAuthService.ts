@@ -1,5 +1,5 @@
-import { User } from '@/models/User';
-import { connectToDatabase } from '@/lib/mongodb';
+import User from '@/models/User';
+import connectDB from '@/lib/mongodb';
 
 export interface TwitchUser {
   id: string;
@@ -43,20 +43,19 @@ export class TwitchAuthService {
   /**
    * Create or update user based on Twitch authentication
    */
-  static async createOrUpdateUserFromTwitch(twitchUser: TwitchUser): Promise<User | null> {
+  static async createOrUpdateUserFromTwitch(twitchUser: TwitchUser) {
     try {
-      const { db } = await connectToDatabase();
-      const usersCollection = db.collection('users');
+      await connectDB();
 
       // Check if user already exists by Twitch ID or email
-      const existingUser = await usersCollection.findOne({
+      const existingUser = await User.findOne({
         $or: [
           { twitchId: twitchUser.id },
-          { email: twitchUser.email }
+          { email: twitchUser.email || `${twitchUser.login}@twitch.local` }
         ]
       });
 
-      const userData = {
+      const userData: any = {
         twitchId: twitchUser.id,
         username: twitchUser.display_name,
         email: twitchUser.email || `${twitchUser.login}@twitch.local`,
@@ -74,21 +73,18 @@ export class TwitchAuthService {
           viewCount: twitchUser.view_count,
           createdAt: twitchUser.created_at,
         },
-        createdAt: existingUser?.createdAt || new Date(),
-        updatedAt: new Date(),
       };
 
       if (existingUser) {
         // Update existing user
-        await usersCollection.updateOne(
-          { _id: existingUser._id },
-          { $set: userData }
-        );
-        return { ...existingUser, ...userData } as User;
+        Object.assign(existingUser, userData);
+        await existingUser.save();
+        return existingUser;
       } else {
         // Create new user
-        const result = await usersCollection.insertOne(userData);
-        return { _id: result.insertedId, ...userData } as User;
+        const newUser = new User(userData);
+        await newUser.save();
+        return newUser;
       }
     } catch (error) {
       console.error('Error creating/updating user from Twitch:', error);
@@ -99,7 +95,7 @@ export class TwitchAuthService {
   /**
    * Handle Twitch authentication callback
    */
-  static async handleTwitchAuth(accessToken: string): Promise<User | null> {
+  static async handleTwitchAuth(accessToken: string) {
     try {
       const twitchUser = await this.getTwitchUserInfo(accessToken);
       if (!twitchUser) {

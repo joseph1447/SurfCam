@@ -1,0 +1,75 @@
+{
+  "common": {
+    "loading": "Cargando...",
+    "error": "Error",
+    "success": "Éxito",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "close": "Cerrar",
+    "back": "Volver",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "contact": "Contacto",
+    "email": "Correo electrónico",
+    "location": "Ubicación",
+    "phone": "Teléfono"
+  },
+  "footer": {
+    "title": "Santa Teresa Surf Cam",
+    "description": "Transmisión en vivo 24/7 de las mejores olas de Santa Teresa, Costa Rica.",
+    "quickLinks": "Enlaces Rápidos",
+    "surfLessons": "Clases de Surf",
+    "accommodation": "Hospedaje",
+    "restaurants": "Restaurantes",
+    "contact": "Contacto",
+    "contactSection": "Contacto",
+    "location": "📍 Santa Teresa, Costa Rica",
+    "copyright": "© {year} Santa Teresa Surf Cam. Todos los derechos reservados.",
+    "poweredBy": "Powered by",
+    "aiservices": "AIServices Santa Teresa"
+  },
+  "nav": {
+    "home": "Inicio",
+    "surfLessons": "Clases de Surf",
+    "accommodation": "Hospedaje",
+    "restaurants": "Restaurantes",
+    "contact": "Contacto",
+    "profile": "Perfil",
+    "admin": "Admin"
+  },
+  "home": {
+    "title": "Santa Teresa Surf Cam",
+    "subtitle": "Transmisión en Vivo 24/7",
+    "description": "Mira las mejores olas de Santa Teresa, Costa Rica en tiempo real",
+    "liveStream": "Transmisión en Vivo",
+    "chat": "Chat",
+    "tides": "Mareas",
+    "conditions": "Condiciones"
+  },
+  "aiservices": {
+    "title": "Presencia Online para Negocios en Santa Teresa, Costa Rica",
+    "subtitle": "Desarrollo web profesional, marketing digital y soluciones tecnológicas para hacer crecer tu negocio en Santa Teresa y la Península de Nicoya. Especialistas en turismo, hospitalidad y comercio local.",
+    "services": "Nuestros Servicios",
+    "servicesDescription": "Soluciones tecnológicas completas diseñadas específicamente para negocios en Santa Teresa, Puntarenas y Costa Rica. Desde landing pages hasta plataformas complejas.",
+    "pricing": "Precios Transparentes",
+    "pricingDescription": "Soluciones accesibles para negocios de todos los tamaños",
+    "startingFrom": "Desde $30",
+    "perMonth": "/mes",
+    "basicPlan": "Plan Básico - Landing Page + Hosting",
+    "contactNow": "Contactar Ahora",
+    "viewServices": "Ver Servicios",
+    "howItWorks": "Cómo Funciona",
+    "howItWorksDescription": "Un proceso simple y eficiente para llevar tu negocio al siguiente nivel",
+    "caseStudies": "Proyectos Exitosos",
+    "caseStudiesDescription": "Casos reales de negocios que confiaron en nosotros",
+    "industries": "Industrias que Atendemos",
+    "industriesDescription": "Experiencia comprobada en múltiples sectores",
+    "readyToStart": "¿Listo para Comenzar?",
+    "readyToStartDescription": "Transforma tu presencia digital hoy mismo. Contáctanos para una consulta gratuita.",
+    "sendEmail": "Enviar Email",
+    "viewContactPage": "Ver Página de Contacto"
+  }
+}
+
