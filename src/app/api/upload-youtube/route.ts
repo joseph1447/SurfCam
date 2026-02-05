@@ -9,6 +9,7 @@ const CRON_SECRET = process.env.CRON_SECRET;
 
 interface ClipData {
   videoUrl: string;
+  videoUrls?: string[]; // Multiple possible URLs to try
   clipId: string;
   title: string;
   duration: number;
@@ -49,24 +50,138 @@ Santa Teresa is one of the best surf spots in Costa Rica, known for its consiste
 #shorts #surf #santateresa #costarica #surfing #waves #beach #ocean #puravida #surfcam #livesurf`;
 }
 
-// Download video from URL
-async function downloadVideo(url: string): Promise<Buffer> {
-  console.log(`📥 Downloading video from: ${url}`);
+// Download video from URL with content-type verification
+async function downloadVideo(url: string): Promise<{ buffer: Buffer; contentType: string }> {
+  console.log(`📥 Attempting download from: ${url}`);
 
   const response = await fetch(url, {
     headers: {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      'Accept': 'video/mp4,video/*,*/*',
     },
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to download video: ${response.status} ${response.statusText}`);
+    throw new Error(`Failed to download: ${response.status} ${response.statusText}`);
   }
 
-  const arrayBuffer = await response.arrayBuffer();
-  console.log(`✅ Downloaded ${(arrayBuffer.byteLength / 1024 / 1024).toFixed(2)} MB`);
+  const contentType = response.headers.get('content-type') || '';
+  console.log(`📋 Content-Type: ${contentType}`);
 
-  return Buffer.from(arrayBuffer);
+  const arrayBuffer = await response.arrayBuffer();
+  const sizeMB = (arrayBuffer.byteLength / 1024 / 1024).toFixed(2);
+  console.log(`📦 Downloaded ${sizeMB} MB`);
+
+  return { buffer: Buffer.from(arrayBuffer), contentType };
+}
+
+// Try multiple URLs and return the first successful video download
+async function downloadVideoFromUrls(urls: string[]): Promise<Buffer> {
+  for (const url of urls) {
+    try {
+      const { buffer, contentType } = await downloadVideo(url);
+
+      // Verify it's actually a video
+      const isVideo = contentType.includes('video') ||
+                      contentType.includes('mp4') ||
+                      contentType.includes('octet-stream');
+
+      // Also check magic bytes for MP4 (ftyp signature at offset 4)
+      const magicBytes = buffer.slice(4, 8).toString('ascii');
+      const isMp4MagicBytes = magicBytes === 'ftyp' ||
+                              magicBytes === 'moov' ||
+                              magicBytes === 'mdat' ||
+                              magicBytes === 'free' ||
+                              magicBytes === 'isom';
+
+      console.log(`🔍 Magic bytes: "${magicBytes}" (MP4 check: ${isMp4MagicBytes})`);
+
+      if (isVideo || isMp4MagicBytes) {
+        console.log(`✅ Valid video found at: ${url}`);
+        return buffer;
+      }
+
+      // Check if it's an image (JPEG starts with FFD8FF)
+      const isJpeg = buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF;
+      const isPng = buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E;
+
+      if (isJpeg || isPng) {
+        console.log(`⚠️ URL returned an image, not a video: ${url}`);
+        continue; // Try next URL
+      }
+
+      // Unknown format but not image, might still work
+      console.log(`⚠️ Unknown content type but attempting to use: ${contentType}`);
+      return buffer;
+
+    } catch (error) {
+      console.log(`❌ Failed to download from ${url}:`, error);
+      continue; // Try next URL
+    }
+  }
+
+  throw new Error('Could not download video from any of the provided URLs');
+}
+
+// Fetch video URL from Twitch clip embed page
+async function getVideoUrlFromEmbed(clipUrl: string): Promise<string | null> {
+  try {
+    // Extract clip slug from URL (e.g., https://clips.twitch.tv/SlugHere)
+    const slugMatch = clipUrl.match(/clips\.twitch\.tv\/([^?]+)/);
+    if (!slugMatch) {
+      console.log('⚠️ Could not extract clip slug from URL');
+      return null;
+    }
+    const slug = slugMatch[1];
+
+    // Fetch the clip embed page
+    const embedUrl = `https://clips.twitch.tv/${slug}`;
+    console.log(`📄 Fetching clip page: ${embedUrl}`);
+
+    const response = await fetch(embedUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'text/html',
+      },
+    });
+
+    if (!response.ok) {
+      console.log(`⚠️ Failed to fetch clip page: ${response.status}`);
+      return null;
+    }
+
+    const html = await response.text();
+
+    // Try to find video URL in the page
+    // Pattern 1: Look for video source URL in script tags
+    const videoUrlMatch = html.match(/"videoUrl"\s*:\s*"([^"]+\.mp4[^"]*)"/);
+    if (videoUrlMatch) {
+      const url = videoUrlMatch[1].replace(/\\u0026/g, '&');
+      console.log(`✅ Found video URL in page: ${url}`);
+      return url;
+    }
+
+    // Pattern 2: Look for quality_options with source URL
+    const qualityMatch = html.match(/"source"\s*:\s*"([^"]+\.mp4[^"]*)"/);
+    if (qualityMatch) {
+      const url = qualityMatch[1].replace(/\\u0026/g, '&');
+      console.log(`✅ Found quality source URL: ${url}`);
+      return url;
+    }
+
+    // Pattern 3: Look for clip-video-url
+    const clipVideoMatch = html.match(/clip-video-url="([^"]+)"/);
+    if (clipVideoMatch) {
+      console.log(`✅ Found clip-video-url: ${clipVideoMatch[1]}`);
+      return clipVideoMatch[1];
+    }
+
+    console.log('⚠️ Could not find video URL in clip page');
+    return null;
+  } catch (error) {
+    console.log('❌ Error fetching clip embed:', error);
+    return null;
+  }
 }
 
 // Create OAuth2 client
@@ -183,10 +298,37 @@ export async function POST(request: NextRequest) {
 
     console.log('🎬 Starting YouTube upload process...');
 
-    // Step 1: Download the video
-    const videoBuffer = await downloadVideo(clipData.videoUrl);
+    // Step 1: Build list of URLs to try
+    let urlsToTry = clipData.videoUrls || [clipData.videoUrl];
+    console.log(`📋 Will try ${urlsToTry.length} URL(s) from thumbnail conversion`);
 
-    // Step 2: Upload to YouTube
+    let videoBuffer: Buffer | null = null;
+
+    // Step 2: Try downloading from converted thumbnail URLs
+    try {
+      videoBuffer = await downloadVideoFromUrls(urlsToTry);
+    } catch (error) {
+      console.log('⚠️ Thumbnail URL method failed, trying embed page method...');
+
+      // Step 2b: Try fetching video URL from clip embed page
+      if (clipData.twitchUrl) {
+        const embedVideoUrl = await getVideoUrlFromEmbed(clipData.twitchUrl);
+        if (embedVideoUrl) {
+          console.log(`📋 Trying URL from embed page: ${embedVideoUrl}`);
+          try {
+            videoBuffer = await downloadVideoFromUrls([embedVideoUrl]);
+          } catch (embedError) {
+            console.log('❌ Embed page method also failed');
+          }
+        }
+      }
+    }
+
+    if (!videoBuffer) {
+      throw new Error('Could not download video from any source');
+    }
+
+    // Step 3: Upload to YouTube
     const result = await uploadToYouTube(videoBuffer, clipData);
 
     console.log('🎉 Successfully uploaded to YouTube!');

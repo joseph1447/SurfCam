@@ -208,10 +208,34 @@ async function getClipInfo(token: string, clipId: string): Promise<TwitchClipInf
 }
 
 // Convert thumbnail URL to video URL
-function getVideoUrlFromThumbnail(thumbnailUrl: string): string {
-  // thumbnail_url: https://clips-media-assets2.twitch.tv/xxx-preview-480x272.jpg
-  // video_url: https://clips-media-assets2.twitch.tv/xxx.mp4
-  return thumbnailUrl.replace(/-preview-\d+x\d+\.jpg$/, '.mp4');
+function getVideoUrlFromThumbnail(thumbnailUrl: string): string[] {
+  // Twitch thumbnail formats:
+  // Old: https://clips-media-assets2.twitch.tv/xxx-preview-480x272.jpg
+  // New: https://clips-media-assets2.twitch.tv/AT-cm%7Cxxx-preview-480x272.jpg
+  // Video: Replace -preview-WxH.jpg with .mp4
+  console.log(`🔗 Thumbnail URL: ${thumbnailUrl}`);
+
+  // Try multiple possible video URL patterns
+  const videoUrls: string[] = [];
+
+  // Pattern 1: Direct replacement of -preview-WxH.jpg with .mp4
+  const directMp4 = thumbnailUrl.replace(/-preview-\d+x\d+\.jpg$/, '.mp4');
+  videoUrls.push(directMp4);
+
+  // Pattern 2: Some clips use -offset-WxH format
+  const offsetMp4 = thumbnailUrl.replace(/-offset-\d+x\d+\.jpg$/, '.mp4');
+  if (offsetMp4 !== thumbnailUrl) {
+    videoUrls.push(offsetMp4);
+  }
+
+  // Pattern 3: Try with -index- pattern (older format)
+  const indexMp4 = thumbnailUrl.replace(/-index-\d+-preview-\d+x\d+\.jpg$/, '.mp4');
+  if (indexMp4 !== thumbnailUrl && indexMp4 !== directMp4) {
+    videoUrls.push(indexMp4);
+  }
+
+  console.log(`🔗 Possible video URLs:`, videoUrls);
+  return videoUrls;
 }
 
 // Wait helper
@@ -291,9 +315,10 @@ export async function GET(request: NextRequest) {
     }
     console.log(`✅ Got clip info: ${clipInfo.title}`);
 
-    // Step 6: Get video download URL
-    const videoUrl = getVideoUrlFromThumbnail(clipInfo.thumbnail_url);
-    console.log(`✅ Video URL: ${videoUrl}`);
+    // Step 6: Get video download URL(s)
+    const videoUrls = getVideoUrlFromThumbnail(clipInfo.thumbnail_url);
+    const videoUrl = videoUrls[0]; // Primary URL for backwards compatibility
+    console.log(`✅ Primary Video URL: ${videoUrl}`);
 
     // Step 7: Trigger YouTube upload
     const uploadUrl = new URL('/api/upload-youtube', request.url);
@@ -305,6 +330,7 @@ export async function GET(request: NextRequest) {
       },
       body: JSON.stringify({
         videoUrl,
+        videoUrls, // Send all possible URLs so the upload service can try each
         clipId: clipInfo.id,
         title: clipInfo.title,
         duration: clipInfo.duration,
