@@ -3,7 +3,7 @@
   "crons": [
     {
       "path": "/api/create-clip",
-      "schedule": "0 10 * * *"
+      "schedule": "15 18 * * *"
     }
   ]
 }

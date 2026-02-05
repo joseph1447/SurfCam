@@ -123,16 +123,98 @@ async function downloadVideoFromUrls(urls: string[]): Promise<Buffer> {
   throw new Error('Could not download video from any of the provided URLs');
 }
 
-// Fetch video URL from Twitch clip embed page
+// Extract clip slug from various URL formats
+function extractClipSlug(clipUrl: string): string | null {
+  // Format 1: https://clips.twitch.tv/SlugHere
+  const clipsMatch = clipUrl.match(/clips\.twitch\.tv\/([^?/]+)/);
+  if (clipsMatch) return clipsMatch[1];
+
+  // Format 2: https://www.twitch.tv/channel/clip/SlugHere
+  const channelClipMatch = clipUrl.match(/twitch\.tv\/[^/]+\/clip\/([^?/]+)/);
+  if (channelClipMatch) return channelClipMatch[1];
+
+  return null;
+}
+
+// Fetch video URL using Twitch's GQL API (most reliable method)
+async function getVideoUrlFromGQL(clipSlug: string): Promise<string | null> {
+  try {
+    console.log(`🔍 Fetching clip URL via Twitch GQL API for: ${clipSlug}`);
+
+    const gqlQuery = {
+      operationName: 'VideoAccessToken_Clip',
+      variables: { slug: clipSlug },
+      extensions: {
+        persistedQuery: {
+          version: 1,
+          sha256Hash: '36b89d2507fce29e5ca551df756d27c1cfe079e2609642b4390aa4c35796eb11'
+        }
+      }
+    };
+
+    const response = await fetch('https://gql.twitch.tv/gql', {
+      method: 'POST',
+      headers: {
+        'Client-ID': 'kimne78kx3ncx6brgo4mv6wki5h1ko', // Twitch's public web client ID
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(gqlQuery),
+    });
+
+    if (!response.ok) {
+      console.log(`⚠️ GQL request failed: ${response.status}`);
+      return null;
+    }
+
+    const data = await response.json();
+
+    // Extract video URL from GQL response
+    const clip = data?.data?.clip;
+    if (!clip) {
+      console.log('⚠️ No clip data in GQL response');
+      return null;
+    }
+
+    // Get the video playback access token
+    const playbackAccessToken = clip.playbackAccessToken;
+    if (!playbackAccessToken) {
+      console.log('⚠️ No playback access token');
+      return null;
+    }
+
+    // Get video qualities
+    const videoQualities = clip.videoQualities;
+    if (!videoQualities || videoQualities.length === 0) {
+      console.log('⚠️ No video qualities available');
+      return null;
+    }
+
+    // Get the highest quality (first one is usually the best)
+    const bestQuality = videoQualities[0];
+    const sourceUrl = bestQuality.sourceURL;
+
+    // Append the access token to the URL
+    const token = encodeURIComponent(playbackAccessToken.value);
+    const sig = playbackAccessToken.signature;
+
+    const finalUrl = `${sourceUrl}?sig=${sig}&token=${token}`;
+    console.log(`✅ Got video URL from GQL API (quality: ${bestQuality.quality})`);
+
+    return finalUrl;
+  } catch (error) {
+    console.log('❌ Error fetching from GQL API:', error);
+    return null;
+  }
+}
+
+// Fetch video URL from Twitch clip embed page (fallback method)
 async function getVideoUrlFromEmbed(clipUrl: string): Promise<string | null> {
   try {
-    // Extract clip slug from URL (e.g., https://clips.twitch.tv/SlugHere)
-    const slugMatch = clipUrl.match(/clips\.twitch\.tv\/([^?]+)/);
-    if (!slugMatch) {
+    const slug = extractClipSlug(clipUrl);
+    if (!slug) {
       console.log('⚠️ Could not extract clip slug from URL');
       return null;
     }
-    const slug = slugMatch[1];
 
     // Fetch the clip embed page
     const embedUrl = `https://clips.twitch.tv/${slug}`;
@@ -298,34 +380,53 @@ export async function POST(request: NextRequest) {
 
     console.log('🎬 Starting YouTube upload process...');
 
-    // Step 1: Build list of URLs to try
-    let urlsToTry = clipData.videoUrls || [clipData.videoUrl];
-    console.log(`📋 Will try ${urlsToTry.length} URL(s) from thumbnail conversion`);
-
     let videoBuffer: Buffer | null = null;
 
-    // Step 2: Try downloading from converted thumbnail URLs
-    try {
-      videoBuffer = await downloadVideoFromUrls(urlsToTry);
-    } catch (error) {
-      console.log('⚠️ Thumbnail URL method failed, trying embed page method...');
-
-      // Step 2b: Try fetching video URL from clip embed page
-      if (clipData.twitchUrl) {
-        const embedVideoUrl = await getVideoUrlFromEmbed(clipData.twitchUrl);
-        if (embedVideoUrl) {
-          console.log(`📋 Trying URL from embed page: ${embedVideoUrl}`);
+    // Step 1: Try GQL API method first (most reliable)
+    if (clipData.twitchUrl) {
+      const clipSlug = extractClipSlug(clipData.twitchUrl);
+      if (clipSlug) {
+        console.log(`📋 Attempting GQL API method for clip: ${clipSlug}`);
+        const gqlVideoUrl = await getVideoUrlFromGQL(clipSlug);
+        if (gqlVideoUrl) {
           try {
-            videoBuffer = await downloadVideoFromUrls([embedVideoUrl]);
-          } catch (embedError) {
-            console.log('❌ Embed page method also failed');
+            videoBuffer = await downloadVideoFromUrls([gqlVideoUrl]);
+            console.log('✅ GQL API method succeeded!');
+          } catch (gqlError) {
+            console.log('⚠️ GQL API download failed, trying fallback methods...');
           }
         }
       }
     }
 
+    // Step 2: Try thumbnail URL conversion (fallback)
     if (!videoBuffer) {
-      throw new Error('Could not download video from any source');
+      const urlsToTry = clipData.videoUrls || [clipData.videoUrl];
+      console.log(`📋 Trying ${urlsToTry.length} URL(s) from thumbnail conversion`);
+      try {
+        videoBuffer = await downloadVideoFromUrls(urlsToTry);
+        console.log('✅ Thumbnail URL method succeeded!');
+      } catch (error) {
+        console.log('⚠️ Thumbnail URL method failed, trying embed page method...');
+      }
+    }
+
+    // Step 3: Try embed page scraping (last resort)
+    if (!videoBuffer && clipData.twitchUrl) {
+      const embedVideoUrl = await getVideoUrlFromEmbed(clipData.twitchUrl);
+      if (embedVideoUrl) {
+        console.log(`📋 Trying URL from embed page: ${embedVideoUrl}`);
+        try {
+          videoBuffer = await downloadVideoFromUrls([embedVideoUrl]);
+          console.log('✅ Embed page method succeeded!');
+        } catch (embedError) {
+          console.log('❌ Embed page method also failed');
+        }
+      }
+    }
+
+    if (!videoBuffer) {
+      throw new Error('Could not download video from any source. All methods failed.');
     }
 
     // Step 3: Upload to YouTube
