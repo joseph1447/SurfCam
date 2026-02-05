@@ -21,6 +21,6 @@ export const config = {
   // - Static files (_next, images, etc.)
   // - Files with extensions
   // - Admin routes
-  matcher: ['/((?!api|_next|_vercel|admin|.*\\..*).*)']
+  matcher: ['/((?!api|_next|_vercel|admin|createclip|.*\\..*).*)']
 };
 
