@@ -1,12 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/routing";
 import { Menu, X } from "lucide-react";
+import dynamic from "next/dynamic";
+
+const AnimatedLogo = dynamic(() => import("./AnimatedLogo"), {
+  ssr: false,
+  loading: () => <div style={{ width: '400px', height: '100px' }} />,
+});
 
 export default function AppHeader() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -16,25 +27,8 @@ export default function AppHeader() {
     <header className="sticky top-0 z-50 backdrop-blur-xl bg-[#090A0E]/95 border-b border-white/10 shadow-lg shadow-black/20">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
-          {/* Logo - Brand Name */}
-          <button
-            onClick={toggleMobileMenu}
-            className="flex items-center gap-3 group"
-          >
-            <div className="w-10 h-10 bg-gradient-to-br from-[#3366BB] to-[#2A5599] rounded-lg flex items-center justify-center transform group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-black/30">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
-                <path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"></path>
-                <path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"></path>
-                <path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"></path>
-              </svg>
-            </div>
-            <span className="text-xl font-headline font-bold text-white hidden sm:inline-block">
-              Santa Teresa Surf Cam
-            </span>
-            <span className="text-lg font-headline font-bold text-white sm:hidden">
-              SurfCam
-            </span>
-          </button>
+          {/* 3D Animated Logo */}
+          {mounted && <AnimatedLogo />}
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-1">

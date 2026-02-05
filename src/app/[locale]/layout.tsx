@@ -6,6 +6,7 @@ import { ThemeProvider } from '@/context/ThemeContext';
 import { Toaster } from "@/components/ui/toaster";
 import PWAProvider from '@/components/PWAProvider';
 import Footer from '@/components/Footer';
+import WaveBackground from '@/components/WaveBackground';
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Analytics } from '@vercel/analytics/next';
 import type { Metadata, Viewport } from 'next';
@@ -152,7 +153,8 @@ export default async function LocaleLayout({ children, params }: Props) {
     <NextIntlClientProvider messages={messages}>
       <ThemeProvider>
         <PWAProvider>
-          <div className="flex flex-col min-h-screen relative font-sans antialiased">
+          <WaveBackground />
+          <div className="flex flex-col min-h-screen relative font-sans antialiased z-10">
             {children}
             <Footer />
           </div>

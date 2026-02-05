@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import AppHeader from '@/components/AppHeader';
-import SpaceBackground from '@/components/SpaceBackground';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -244,9 +243,7 @@ export default async function AIServicesPage({ params }: Props) {
 
   return (
     <div className="min-h-screen relative">
-      <SpaceBackground />
-      <div className="relative z-[1]">
-        <AppHeader />
+      <AppHeader />
         
         {/* Hero Section */}
         <section className="relative overflow-hidden pt-20 pb-16 px-4">
@@ -619,7 +616,6 @@ export default async function AIServicesPage({ params }: Props) {
           })
         }}
       />
-      </div>
     </div>
   );
 }
