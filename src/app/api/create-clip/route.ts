@@ -374,7 +374,7 @@ export async function GET(request: NextRequest) {
         videoUrl,
       },
       youtube: uploadResult,
-      whatsapp: whatsappResult,
+      email: emailResult,
       timestamp: new Date().toISOString(),
     });
 
