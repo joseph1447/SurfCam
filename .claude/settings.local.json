@@ -17,7 +17,8 @@
       "Bash(Select-Object ProcessName,Id)",
       "Bash(netstat:*)",
       "Bash(taskkill:*)",
-      "Bash(start:*)"
+      "Bash(start:*)",
+      "Bash(npx depcheck:*)"
     ]
   }
 }
