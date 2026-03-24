@@ -18,7 +18,10 @@
       "Bash(netstat:*)",
       "Bash(taskkill:*)",
       "Bash(start:*)",
-      "Bash(npx depcheck:*)"
+      "Bash(npx depcheck:*)",
+      "Bash(find /c/Repos/SurfCam -maxdepth 2 -type f \\\\\\(-name .env* -o -name *.example \\\\\\))",
+      "Bash(grep -r YouTubeEmbed /c/Repos/SurfCam/src --include=*.tsx --include=*.ts)",
+      "Bash(grep -r \"embed.*youtube\\\\|youtube.*embed\" /c/Repos/SurfCam/src --include=*.tsx --include=*.ts -i)"
     ]
   }
 }

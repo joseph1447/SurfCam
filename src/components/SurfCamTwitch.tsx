@@ -58,7 +58,7 @@ export default function SurfCamTwitch() {
   const { isInstallable, isInstalled, installApp } = usePWA();
   const [isInstalling, setIsInstalling] = useState(false);
   const [currentServer, setCurrentServer] = useState<'twitch' | 'youtube'>('youtube');
-  const [youtubeVideoId, setYoutubeVideoId] = useState('c5y9NOgTZuQ');
+  const [youtubeVideoId, setYoutubeVideoId] = useState<string | undefined>(undefined);
   const { loadWidgets } = useProgressiveLoading();
 
   const handleInstall = async () => {
@@ -86,24 +86,34 @@ export default function SurfCamTwitch() {
     setCurrentServer(server);
   }, []);
 
-  // Obtener el video ID de YouTube desde la configuración
+  // Auto-detect current live stream from YouTube channel
   useEffect(() => {
-    const fetchYoutubeVideoId = async () => {
+    const fetchLiveVideoId = async () => {
+      try {
+        const response = await fetch('/api/youtube-live');
+        if (response.ok) {
+          const data = await response.json();
+          // If live, use the live video ID; otherwise leave undefined so embed uses live_stream channel URL
+          setYoutubeVideoId(data.videoId ?? undefined);
+          return;
+        }
+      } catch {
+        // Ignore and fall through to site-config fallback
+      }
+
+      // Fallback: use manually configured video ID from admin panel
       try {
         const response = await fetch('/api/site-config?key=youtube_video_id');
         if (response.ok) {
           const data = await response.json();
-          if (data.value) {
-            setYoutubeVideoId(data.value);
-          }
+          if (data.value) setYoutubeVideoId(data.value);
         }
       } catch (error) {
         console.error('Error fetching YouTube video ID:', error);
-        // Mantener el valor por defecto en caso de error
       }
     };
 
-    fetchYoutubeVideoId();
+    fetchLiveVideoId();
   }, []);
 
   return (
