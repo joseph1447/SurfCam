@@ -150,14 +150,27 @@ export default function EmbedStreamPage() {
             allowFullScreen
             style={styles.iframe}
           />
-          <div style={styles.watermark}>
+          <div style={styles.bottomBar}>
+            <a
+              href="https://santateresasurfcam.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={styles.visitLink}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+              </svg>
+              Visitar Santa Teresa Surf Cam
+            </a>
+            <span style={styles.separator}>|</span>
             <a
               href="https://www.wedoitwithai.com"
               target="_blank"
               rel="noopener noreferrer"
-              style={styles.watermarkLink}
+              style={styles.poweredLink}
             >
-              Powered by WeDoItWithAI.com
+              Powered by <span style={styles.poweredBrand}>WeDoItWithAI.com</span>
             </a>
           </div>
         </>
@@ -225,21 +238,48 @@ const styles: Record<string, React.CSSProperties> = {
     top: 0,
     left: 0,
     width: "100%",
-    height: "100%",
+    height: "calc(100% - 32px)",
     border: "none",
   },
-  watermark: {
+  bottomBar: {
     position: "absolute",
-    bottom: 8,
-    right: 12,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 32,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    background: "linear-gradient(135deg, #0a1628 0%, #0f2a3d 100%)",
+    borderTop: "1px solid rgba(6, 182, 212, 0.2)",
     zIndex: 10,
-    pointerEvents: "auto",
   },
-  watermarkLink: {
-    color: "rgba(255,255,255,0.5)",
+  visitLink: {
+    color: "#06B6D4",
+    fontSize: 12,
+    textDecoration: "none",
+    fontWeight: 600,
+    display: "flex",
+    alignItems: "center",
+    gap: 5,
+    letterSpacing: 0.3,
+    transition: "color 0.2s",
+  },
+  separator: {
+    color: "rgba(255,255,255,0.15)",
+    fontSize: 12,
+    userSelect: "none" as const,
+  },
+  poweredLink: {
+    color: "rgba(255,255,255,0.45)",
     fontSize: 11,
     textDecoration: "none",
-    fontWeight: 500,
-    letterSpacing: 0.3,
+    fontWeight: 400,
+    letterSpacing: 0.2,
+  },
+  poweredBrand: {
+    color: "rgba(255,255,255,0.65)",
+    fontWeight: 600,
   },
 };
