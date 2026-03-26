@@ -23,7 +23,8 @@
       "Bash(grep -r YouTubeEmbed /c/Repos/SurfCam/src --include=*.tsx --include=*.ts)",
       "Bash(grep -r \"embed.*youtube\\\\|youtube.*embed\" /c/Repos/SurfCam/src --include=*.tsx --include=*.ts -i)",
       "Bash(rm \"c:/Repos/SurfCam/src/app/[locale]/Aiservices/page.tsx\")",
-      "Bash(rmdir \"c:/Repos/SurfCam/src/app/[locale]/Aiservices\")"
+      "Bash(rmdir \"c:/Repos/SurfCam/src/app/[locale]/Aiservices\")",
+      "WebFetch(domain:malpaisurfcam.com)"
     ]
   }
 }

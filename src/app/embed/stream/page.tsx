@@ -11,12 +11,16 @@ export default function EmbedStreamPage() {
   );
 
   useEffect(() => {
-    // Verify the parent domain is allowed
+    // TODO: Re-enable domain verification when client sites are ready
+    // For now, allow all domains to embed the stream
+    setAllowed(true);
+    fetchVideoId();
+
+    /* Domain verification (re-enable later):
     const parentOrigin = document.referrer
       ? new URL(document.referrer).origin
       : null;
 
-    // If loaded directly (no referrer), check if it's development
     if (!parentOrigin) {
       const isDev =
         window.location.hostname === "localhost" ||
@@ -31,7 +35,6 @@ export default function EmbedStreamPage() {
       return;
     }
 
-    // Verify domain against our API
     fetch(`/api/embed/verify?origin=${encodeURIComponent(parentOrigin)}`)
       .then((res) => res.json())
       .then((data) => {
@@ -47,6 +50,7 @@ export default function EmbedStreamPage() {
         setAllowed(false);
         setError("Error al verificar autorización.");
       });
+    */
   }, []);
 
   const fetchVideoId = async () => {
