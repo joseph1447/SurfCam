@@ -53,6 +53,21 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      {
+        // Allow the embed page to be loaded in iframes
+        // Domain validation is handled by the embed page + /api/embed/verify
+        source: '/embed/:path*',
+        headers: [
+          {
+            key: 'X-Frame-Options',
+            value: 'ALLOWALL',
+          },
+          {
+            key: 'Content-Security-Policy',
+            value: 'frame-ancestors *',
+          },
+        ],
+      },
     ];
   },
 };

@@ -13,7 +13,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: 'contacto', priority: 0.5, changeFrequency: 'monthly' as const },
     { path: 'condiciones-servicio', priority: 0.3, changeFrequency: 'yearly' as const },
     { path: 'politica-privacidad', priority: 0.3, changeFrequency: 'yearly' as const },
-    { path: 'Aiservices', priority: 0.8, changeFrequency: 'monthly' as const },
   ]
 
   const entries: MetadataRoute.Sitemap = []

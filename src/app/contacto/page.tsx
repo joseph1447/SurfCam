@@ -5,8 +5,7 @@ import SimpleHeader from "@/components/SimpleHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Mail, MessageCircle, CreditCard, Users, User, Building2, CheckCircle, Code, Globe, Smartphone, Database } from "lucide-react";
+import { Mail, MessageCircle, CreditCard, User, Building2, CheckCircle } from "lucide-react";
 
 export default function ContactoPage() {
   const [selectedPlan, setSelectedPlan] = useState<'individual' | 'business' | null>(null);
@@ -25,19 +24,6 @@ export default function ContactoPage() {
     const body = "Hola,\n\nMe interesa obtener más información sobre el plan de negocios para La Lora Surf Cam.\n\nSaludos cordiales.";
     const mailtoUrl = `mailto:josephquesada92@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     window.open(mailtoUrl);
-  };
-
-  const handleDeveloperContact = (type: 'email' | 'whatsapp') => {
-    if (type === 'whatsapp') {
-      const message = "Hola! Me interesa obtener más información sobre servicios de desarrollo web y aplicaciones. ¿Podrían proporcionarme más detalles sobre sus servicios?";
-      const whatsappUrl = `https://wa.me/50662765617?text=${encodeURIComponent(message)}`;
-      window.open(whatsappUrl, '_blank');
-    } else {
-      const subject = "Consulta Servicios de Desarrollo - La Lora Surf Cam";
-      const body = "Hola,\n\nMe interesa obtener más información sobre sus servicios de desarrollo web y aplicaciones.\n\nMe gustaría conocer:\n- Tipos de proyectos que desarrollan\n- Tecnologías que utilizan\n- Proceso de trabajo\n- Estimados de precios\n\nSaludos cordiales.";
-      const mailtoUrl = `mailto:josephquesada92@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-      window.open(mailtoUrl);
-    }
   };
 
   return (
@@ -257,117 +243,20 @@ export default function ContactoPage() {
              </CardContent>
            </Card>
 
-           {/* Developer Services */}
-           <Card>
-             <CardHeader>
-               <CardTitle className="flex items-center">
-                 <Code className="h-5 w-5 mr-2" />
-                 Servicios de Desarrollo
-               </CardTitle>
-               <CardDescription>
-                 ¿Necesitas una aplicación web o móvil como esta? ¡Te ayudo a crear tu proyecto!
-               </CardDescription>
-             </CardHeader>
-             <CardContent>
-               <div className="space-y-6">
-                 {/* Services Overview */}
-                 <div className="grid md:grid-cols-3 gap-4 mb-6">
-                   <div className="text-center p-4 bg-primary/5 rounded-lg">
-                     <Globe className="h-8 w-8 text-primary mx-auto mb-2" />
-                     <h4 className="font-semibold">Sitios Web</h4>
-                     <p className="text-sm text-muted-foreground">
-                       Páginas web modernas y responsivas
-                     </p>
-                   </div>
-                   <div className="text-center p-4 bg-primary/5 rounded-lg">
-                     <Smartphone className="h-8 w-8 text-primary mx-auto mb-2" />
-                     <h4 className="font-semibold">Aplicaciones Móviles</h4>
-                     <p className="text-sm text-muted-foreground">
-                       Apps nativas y multiplataforma
-                     </p>
-                   </div>
-                   <div className="text-center p-4 bg-primary/5 rounded-lg">
-                     <Database className="h-8 w-8 text-primary mx-auto mb-2" />
-                     <h4 className="font-semibold">Sistemas Web</h4>
-                     <p className="text-sm text-muted-foreground">
-                       Aplicaciones web complejas
-                     </p>
-                   </div>
-                 </div>
-
-                 {/* Technologies */}
-                 <div className="space-y-3">
-                   <h4 className="font-semibold">Tecnologías que utilizo:</h4>
-                   <div className="flex flex-wrap gap-2">
-                     <Badge variant="secondary">React</Badge>
-                     <Badge variant="secondary">Next.js</Badge>
-                     <Badge variant="secondary">TypeScript</Badge>
-                     <Badge variant="secondary">Node.js</Badge>
-                     <Badge variant="secondary">Firebase</Badge>
-                     <Badge variant="secondary">Tailwind CSS</Badge>
-                     <Badge variant="secondary">React Native</Badge>
-                     <Badge variant="secondary">PostgreSQL</Badge>
-                     <Badge variant="secondary">MongoDB</Badge>
-                     <Badge variant="secondary">AWS</Badge>
-                   </div>
-                 </div>
-
-                 {/* What I can build */}
-                 <div className="space-y-3">
-                   <h4 className="font-semibold">Tipos de proyectos que desarrollo:</h4>
-                   <ul className="space-y-2 text-sm text-muted-foreground">
-                     <li className="flex items-center">
-                       <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
-                       <span>Sitios web corporativos y landing pages</span>
-                     </li>
-                     <li className="flex items-center">
-                       <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
-                       <span>E-commerce y tiendas online</span>
-                     </li>
-                     <li className="flex items-center">
-                       <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
-                       <span>Aplicaciones de streaming y multimedia</span>
-                     </li>
-                     <li className="flex items-center">
-                       <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
-                       <span>Sistemas de gestión y dashboards</span>
-                     </li>
-                     <li className="flex items-center">
-                       <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
-                       <span>Aplicaciones móviles nativas</span>
-                     </li>
-                     <li className="flex items-center">
-                       <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
-                       <span>APIs y servicios backend</span>
-                     </li>
-                   </ul>
-                 </div>
-
-                 {/* Contact Buttons */}
-                 <div className="grid md:grid-cols-2 gap-4 pt-4 border-t">
-                   <Button 
-                     onClick={() => handleDeveloperContact('whatsapp')}
-                     className="w-full"
-                   >
-                     <MessageCircle className="h-4 w-4 mr-2" />
-                     Consultar por WhatsApp
-                   </Button>
-                   <Button 
-                     variant="outline"
-                     onClick={() => handleDeveloperContact('email')}
-                     className="w-full"
-                   >
-                     <Mail className="h-4 w-4 mr-2" />
-                     Consultar por Email
-                   </Button>
-                 </div>
-
-                 <div className="text-center text-sm text-muted-foreground">
-                   <p>¡Este sitio web es un ejemplo de mi trabajo! Contáctame para crear algo similar para tu negocio.</p>
-                 </div>
-               </div>
-             </CardContent>
-           </Card>
+           {/* Powered By */}
+           <div className="text-center text-sm text-muted-foreground mt-8">
+             <p>
+               Desarrollado por{' '}
+               <a
+                 href="https://www.wedoitwithai.com"
+                 target="_blank"
+                 rel="noopener noreferrer"
+                 className="text-primary hover:underline font-semibold"
+               >
+                 We Do It With AI
+               </a>
+             </p>
+           </div>
         </div>
       </main>
     </div>

@@ -62,12 +62,14 @@ export default function Footer() {
           </p>
           <p className="text-sm text-white/60 text-center md:text-right">
             {t('poweredBy')}{' '}
-            <Link
-              href="/Aiservices"
-              className="text-[#3366BB] hover:text-[#4477CC] transition-colors font-semibold"
+            <a
+              href="https://www.wedoitwithai.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#06B6D4] hover:text-[#22D3EE] transition-colors font-semibold"
             >
-              {t('aiservices')}
-            </Link>
+              We Do It With AI
+            </a>
           </p>
         </div>
       </div>

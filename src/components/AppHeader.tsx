@@ -32,11 +32,6 @@ export default function AppHeader() {
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-1">
-            <Link href="/Aiservices">
-              <Button variant="ghost" className="text-sm text-white/70 hover:text-white hover:bg-white/5 transition-all duration-300 font-medium">
-                AI Services
-              </Button>
-            </Link>
             <Link href="/surf-lessons">
               <Button variant="ghost" className="text-sm text-white/70 hover:text-white hover:bg-white/5 transition-all duration-300 font-medium">
                 Clases de Surf
@@ -60,11 +55,6 @@ export default function AppHeader() {
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
           <div className="md:hidden mt-4 pb-4 border-t border-white/10 pt-4 space-y-2 animate-in fade-in-up duration-300">
-            <Link href="/Aiservices">
-              <Button variant="ghost" className="w-full justify-start text-left text-white/70 hover:text-white hover:bg-white/5">
-                AI Services
-              </Button>
-            </Link>
             <Link href="/surf-lessons">
               <Button variant="ghost" className="w-full justify-start text-left text-white/70 hover:text-white hover:bg-white/5">
                 Clases de Surf

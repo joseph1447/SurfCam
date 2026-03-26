@@ -10,16 +10,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { 
-  Plus, 
-  Edit, 
-  Trash2, 
+import {
+  Plus,
+  Edit,
+  Trash2,
   Eye,
   EyeOff,
   LogOut,
   Monitor,
   Calendar,
-  MousePointer
+  MousePointer,
+  Globe,
+  Code,
+  Copy,
+  Check
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import AdminLogin from '@/components/AdminLogin';
@@ -38,14 +42,30 @@ interface AdOverlay {
   updatedAt: string;
 }
 
+interface EmbedDomain {
+  _id: string;
+  domain: string;
+  label: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export default function AdminPage() {
   // Authentication state
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [adminInfo, setAdminInfo] = useState<{ email: string; role: string } | null>(null);
-  
+
   const [overlays, setOverlays] = useState<AdOverlay[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Embed domains state
+  const [embedDomains, setEmbedDomains] = useState<EmbedDomain[]>([]);
+  const [embedLoading, setEmbedLoading] = useState(false);
+  const [newDomain, setNewDomain] = useState('');
+  const [newDomainLabel, setNewDomainLabel] = useState('');
+  const [copiedEmbed, setCopiedEmbed] = useState(false);
 
   // Site configuration state
   const [youtubeVideoId, setYoutubeVideoId] = useState('');
@@ -80,6 +100,7 @@ export default function AdminPage() {
     if (isAuthenticated) {
       fetchOverlays();
       fetchSiteConfig();
+      fetchEmbedDomains();
     }
   }, [isAuthenticated]);
 
@@ -218,6 +239,100 @@ export default function AdminPage() {
     } finally {
       setIsSavingConfig(false);
     }
+  };
+
+  // === Embed Domains ===
+  const fetchEmbedDomains = async () => {
+    setEmbedLoading(true);
+    try {
+      const response = await fetch('/api/admin/embed-domains', { credentials: 'include' });
+      if (response.ok) {
+        const data = await response.json();
+        setEmbedDomains(data);
+      }
+    } catch (error) {
+      console.error('Error fetching embed domains:', error);
+    } finally {
+      setEmbedLoading(false);
+    }
+  };
+
+  const handleAddDomain = async () => {
+    if (!newDomain.trim() || !newDomainLabel.trim()) {
+      toast({ title: "Error", description: "Dominio y nombre son requeridos", variant: "destructive" });
+      return;
+    }
+    try {
+      const response = await fetch('/api/admin/embed-domains', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain: newDomain.trim(), label: newDomainLabel.trim() }),
+        credentials: 'include'
+      });
+      if (response.ok) {
+        toast({ title: "Dominio agregado", description: `${newDomain.trim()} autorizado para embed` });
+        setNewDomain('');
+        setNewDomainLabel('');
+        fetchEmbedDomains();
+      } else {
+        const data = await response.json();
+        toast({ title: "Error", description: data.error || "Error al agregar dominio", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Error", description: "Error al agregar dominio", variant: "destructive" });
+    }
+  };
+
+  const handleToggleDomain = async (domain: EmbedDomain) => {
+    try {
+      const response = await fetch('/api/admin/embed-domains', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: domain._id, isActive: !domain.isActive }),
+        credentials: 'include'
+      });
+      if (response.ok) {
+        toast({ title: domain.isActive ? "Dominio desactivado" : "Dominio activado" });
+        fetchEmbedDomains();
+      }
+    } catch {
+      toast({ title: "Error", description: "Error al actualizar dominio", variant: "destructive" });
+    }
+  };
+
+  const handleDeleteDomain = async (domain: EmbedDomain) => {
+    if (!confirm(`¿Eliminar el dominio "${domain.domain}"?`)) return;
+    try {
+      const response = await fetch(`/api/admin/embed-domains?id=${domain._id}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      if (response.ok) {
+        toast({ title: "Dominio eliminado" });
+        fetchEmbedDomains();
+      }
+    } catch {
+      toast({ title: "Error", description: "Error al eliminar dominio", variant: "destructive" });
+    }
+  };
+
+  const getEmbedCode = () => {
+    const baseUrl = 'https://santateresasurfcam.com';
+    return `<iframe
+  src="${baseUrl}/embed/stream"
+  width="100%"
+  height="480"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+  allowfullscreen
+  style="border: none; border-radius: 8px;"
+></iframe>`;
+  };
+
+  const handleCopyEmbed = () => {
+    navigator.clipboard.writeText(getEmbedCode());
+    setCopiedEmbed(true);
+    setTimeout(() => setCopiedEmbed(false), 2000);
   };
 
   const handleCreateOverlay = async () => {
@@ -444,6 +559,128 @@ export default function AdminPage() {
                 </p>
               )}
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Embed Widget - Domain Management */}
+      <Card className="mb-6">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Globe className="w-5 h-5 text-teal-500" />
+            <CardTitle>Widget Embed - Dominios Autorizados</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Embed Code */}
+          <div className="p-4 bg-gray-900 rounded-lg relative">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Code className="w-4 h-4 text-teal-400" />
+                <span className="text-sm font-medium text-teal-400">Código de Embed</span>
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleCopyEmbed}
+                className="text-white hover:text-teal-400"
+              >
+                {copiedEmbed ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                {copiedEmbed ? 'Copiado' : 'Copiar'}
+              </Button>
+            </div>
+            <pre className="text-xs text-gray-300 overflow-x-auto whitespace-pre-wrap font-mono">
+              {getEmbedCode()}
+            </pre>
+            <p className="text-xs text-gray-500 mt-3">
+              El sitio que use este código debe estar en la lista de dominios autorizados.
+            </p>
+          </div>
+
+          {/* Add Domain */}
+          <div className="flex gap-2 items-end">
+            <div className="flex-1">
+              <Label htmlFor="new-domain">Dominio</Label>
+              <Input
+                id="new-domain"
+                value={newDomain}
+                onChange={(e) => setNewDomain(e.target.value)}
+                placeholder="www.malpaisurfcam.com"
+              />
+            </div>
+            <div className="flex-1">
+              <Label htmlFor="new-domain-label">Nombre / Cliente</Label>
+              <Input
+                id="new-domain-label"
+                value={newDomainLabel}
+                onChange={(e) => setNewDomainLabel(e.target.value)}
+                placeholder="Mal Pais Surf Cam"
+              />
+            </div>
+            <Button onClick={handleAddDomain} disabled={!newDomain.trim() || !newDomainLabel.trim()}>
+              <Plus className="w-4 h-4 mr-1" />
+              Agregar
+            </Button>
+          </div>
+
+          {/* Domains Table */}
+          <div className="border rounded-lg overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Dominio</TableHead>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead>Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {embedDomains.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-6 text-gray-500">
+                      {embedLoading ? 'Cargando...' : 'No hay dominios autorizados'}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  embedDomains.map((domain) => (
+                    <TableRow key={domain._id}>
+                      <TableCell className="font-mono text-sm">{domain.domain}</TableCell>
+                      <TableCell>{domain.label}</TableCell>
+                      <TableCell>
+                        <Badge variant={domain.isActive ? 'default' : 'secondary'}>
+                          {domain.isActive ? 'Activo' : 'Inactivo'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {formatDate(domain.createdAt)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleToggleDomain(domain)}
+                            title={domain.isActive ? 'Desactivar' : 'Activar'}
+                          >
+                            {domain.isActive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteDomain(domain)}
+                            title="Eliminar"
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
           </div>
         </CardContent>
       </Card>
