@@ -9,7 +9,7 @@ import ServerTabs from "./ServerTabs";
 import { usePWA } from "@/hooks/usePWA";
 
 // Lazy load components with different priorities
-const RadioWidget = lazy(() => import("./RadioWidget"));
+// const RadioWidget = lazy(() => import("./RadioWidget")); // Hidden: causes more problems than benefits
 const SurfLessonQuote = lazy(() => import("./SurfLessonQuote"));
 const RecentSurfReports = lazy(() => import("./RecentSurfReports"));
 
@@ -29,18 +29,6 @@ function useProgressiveLoading() {
 }
 
 // Skeleton components for loading states
-const RadioWidgetSkeleton = () => (
-  <div className="w-full backdrop-blur-md bg-[#121419]/80 border border-white/10 rounded-2xl p-3 sm:p-4">
-    <div className="flex items-center gap-3 animate-pulse">
-      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10"></div>
-      <div className="flex-1 space-y-2">
-        <div className="h-4 bg-white/10 rounded w-32"></div>
-        <div className="h-3 bg-white/10 rounded w-20"></div>
-      </div>
-    </div>
-  </div>
-);
-
 const SurfLessonQuoteSkeleton = () => (
   <div className="w-full backdrop-blur-md bg-[#121419]/80 border border-white/10 rounded-2xl p-4 animate-pulse">
     <div className="space-y-3">
@@ -200,7 +188,7 @@ export default function SurfCamTwitch() {
               </Suspense>
             ) : null}
 
-            {/* Radio Widget - Below video, horizontal layout */}
+            {/* Radio Widget - Hidden: causes more problems than benefits
             {loadWidgets ? (
               <Suspense fallback={<RadioWidgetSkeleton />}>
                 <RadioWidget />
@@ -208,6 +196,7 @@ export default function SurfCamTwitch() {
             ) : (
               <RadioWidgetSkeleton />
             )}
+            */}
 
             {/* Surf Lesson Quote - Compact version */}
             {loadWidgets ? (
