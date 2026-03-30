@@ -16,7 +16,8 @@ import {
   Minus,
   Plus,
   Waves,
-  Sparkles
+  Sparkles,
+  MessageCircle
 } from 'lucide-react';
 
 interface SurfLessonQuoteProps {
@@ -127,36 +128,65 @@ export default function SurfLessonQuote({ compact = false, className = '' }: Sur
     setIsSending(true);
     setSendStatus('idle');
 
+    const quoteData = {
+      lessonType,
+      people,
+      days,
+      pricePerPerson: calculation.pricePerPerson.toFixed(0),
+      totalPrice: calculation.totalPrice,
+      savings: calculation.savings,
+      customerName: customerName.trim() || undefined,
+      customerEmail: customerEmail.trim() || undefined
+    };
+
     try {
       const response = await fetch('/api/send-quote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          lessonType,
-          people,
-          days,
-          pricePerPerson: calculation.pricePerPerson.toFixed(0),
-          totalPrice: calculation.totalPrice,
-          savings: calculation.savings,
-          customerName: customerName.trim() || undefined,
-          customerEmail: customerEmail.trim() || undefined
-        })
+        body: JSON.stringify(quoteData)
       });
+
+      const data = await response.json();
 
       if (response.ok) {
         setSendStatus('success');
-        // Reset form after 3 seconds
+
+        // Open WhatsApp with pre-filled message
+        if (data.whatsappUrl) {
+          window.open(data.whatsappUrl, '_blank');
+        }
+
+        // Reset form after 5 seconds (longer to let user see success)
         setTimeout(() => {
           setSendStatus('idle');
           setCustomerName('');
           setCustomerEmail('');
-        }, 3000);
+        }, 5000);
       } else {
         setSendStatus('error');
         setTimeout(() => setSendStatus('idle'), 3000);
       }
     } catch (error) {
       console.error('Error sending quote:', error);
+      // Even if API fails, try to open WhatsApp as fallback
+      const tipoClase = lessonType === 'private' ? 'Privada' : 'Grupal';
+      const fallbackMsg = [
+        `🏄 *Nueva Cotización - Santa Teresa Surf Cam*`,
+        ``,
+        `👤 *Cliente:* ${customerName || 'No proporcionado'}`,
+        customerEmail ? `📧 *Email:* ${customerEmail}` : '',
+        ``,
+        `📋 *Detalles:*`,
+        `• Tipo: ${tipoClase}`,
+        `• Personas: ${people}`,
+        `• Días: ${days}`,
+        `• Precio/persona/día: $${calculation.pricePerPerson.toFixed(0)}`,
+        calculation.savings > 0 ? `• Ahorro: $${calculation.savings}` : '',
+        ``,
+        `💰 *Total: $${calculation.totalPrice} USD*`,
+      ].filter(Boolean).join('\n');
+      window.open(`https://wa.me/50662681168?text=${encodeURIComponent(fallbackMsg)}`, '_blank');
+
       setSendStatus('error');
       setTimeout(() => setSendStatus('idle'), 3000);
     } finally {
@@ -291,7 +321,7 @@ export default function SurfLessonQuote({ compact = false, className = '' }: Sur
           <Button
             onClick={handleReservation}
             disabled={isSending || !customerName.trim() || !customerEmail.trim()}
-            className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 disabled:opacity-50"
+            className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 disabled:opacity-50"
           >
             {isSending ? (
               <>
@@ -301,22 +331,22 @@ export default function SurfLessonQuote({ compact = false, className = '' }: Sur
             ) : sendStatus === 'success' ? (
               <>
                 <CheckCircle2 className="h-4 w-4 mr-2" />
-                ¡Enviado!
+                ¡Enviado por WhatsApp!
               </>
             ) : sendStatus === 'error' ? (
               <>
-                <Mail className="h-4 w-4 mr-2" />
+                <MessageCircle className="h-4 w-4 mr-2" />
                 Reintentar
               </>
             ) : (
               <>
-                <Mail className="h-4 w-4 mr-2" />
-                Enviar Cotización
+                <MessageCircle className="h-4 w-4 mr-2" />
+                Cotizar por WhatsApp
               </>
             )}
           </Button>
           {sendStatus === 'error' && (
-            <p className="text-xs text-red-400 text-center">Error al enviar. Por favor intenta de nuevo.</p>
+            <p className="text-xs text-red-400 text-center">Error al enviar email, pero se abrió WhatsApp.</p>
           )}
         </CardContent>
       </Card>
@@ -545,7 +575,7 @@ export default function SurfLessonQuote({ compact = false, className = '' }: Sur
           onClick={handleReservation}
           disabled={isSending}
           size="lg"
-          className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-lg h-14 disabled:opacity-50"
+          className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-lg h-14 disabled:opacity-50"
         >
           {isSending ? (
             <>
@@ -555,17 +585,17 @@ export default function SurfLessonQuote({ compact = false, className = '' }: Sur
           ) : sendStatus === 'success' ? (
             <>
               <CheckCircle2 className="h-5 w-5 mr-2" />
-              ¡Cotización enviada!
+              ¡Enviado por WhatsApp!
             </>
           ) : sendStatus === 'error' ? (
             <>
-              <Mail className="h-5 w-5 mr-2" />
+              <MessageCircle className="h-5 w-5 mr-2" />
               Reintentar envío
             </>
           ) : (
             <>
-              <Mail className="h-5 w-5 mr-2" />
-              Enviar Cotización
+              <MessageCircle className="h-5 w-5 mr-2" />
+              Cotizar por WhatsApp
             </>
           )}
         </Button>
@@ -573,15 +603,15 @@ export default function SurfLessonQuote({ compact = false, className = '' }: Sur
         {sendStatus === 'success' && (
           <div className="bg-green-500/20 border border-green-500/30 rounded-lg p-3 text-center">
             <p className="text-sm text-green-400">
-              ¡Cotización enviada exitosamente! Te contactaremos pronto.
+              ¡Cotización enviada! Se abrió WhatsApp para continuar la conversación.
             </p>
           </div>
         )}
 
         {sendStatus === 'error' && (
-          <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-3 text-center">
-            <p className="text-sm text-red-400">
-              Error al enviar la cotización. Por favor intenta de nuevo.
+          <div className="bg-yellow-500/20 border border-yellow-500/30 rounded-lg p-3 text-center">
+            <p className="text-sm text-yellow-400">
+              Error al enviar email de respaldo, pero se abrió WhatsApp para tu cotización.
             </p>
           </div>
         )}

@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
 
             <p style="color: #666; font-size: 14px;">
               <strong>Contacto:</strong><br>
-              WhatsApp: +506 8316-1976<br>
+              WhatsApp: +506 6268-1168<br>
               Email: josephquesada92@gmail.com
             </p>
 
@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
       };
     }
 
-    // Enviar email al administrador
+    // Enviar email al administrador (siempre, como respaldo)
     await transporter.sendMail(adminMailOptions);
 
     // Enviar email de confirmación al cliente si proporcionó email
@@ -144,9 +144,30 @@ export async function POST(request: NextRequest) {
       await transporter.sendMail(customerMailOptions);
     }
 
+    // Build WhatsApp message
+    const tipoClase = lessonType === 'private' ? 'Privada' : 'Grupal';
+    const whatsappMessage = [
+      `🏄 *Nueva Cotización - Santa Teresa Surf Cam*`,
+      ``,
+      `👤 *Cliente:* ${customerName || 'No proporcionado'}`,
+      customerEmail ? `📧 *Email:* ${customerEmail}` : '',
+      ``,
+      `📋 *Detalles:*`,
+      `• Tipo: ${tipoClase}`,
+      `• Personas: ${people}`,
+      `• Días: ${days}`,
+      `• Precio/persona/día: $${pricePerPerson}`,
+      savings > 0 ? `• Ahorro: $${savings}` : '',
+      ``,
+      `💰 *Total: $${totalPrice} USD*`,
+    ].filter(Boolean).join('\n');
+
+    const whatsappUrl = `https://wa.me/50662681168?text=${encodeURIComponent(whatsappMessage)}`;
+
     return NextResponse.json({
       success: true,
-      message: 'Cotización enviada correctamente'
+      message: 'Cotización enviada correctamente',
+      whatsappUrl,
     });
 
   } catch (error) {
