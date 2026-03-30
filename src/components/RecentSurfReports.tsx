@@ -352,7 +352,7 @@ export default function RecentSurfReports() {
         </div>
 
         <a
-          href={`https://www.youtube.com/@josephquesada/shorts`}
+          href={`https://www.youtube.com/@QuesadaJoseph/videos`}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-1 text-[11px] text-cyan-400/80 hover:text-cyan-400 transition-colors"
