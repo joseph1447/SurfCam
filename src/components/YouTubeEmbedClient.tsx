@@ -117,7 +117,7 @@ export default function YouTubeEmbedClient({
     <div className="w-full relative">
       <div
         className="w-full flex items-center justify-center relative"
-        style={{ height: typeof height === 'number' ? `${height}px` : height, backgroundColor: '#0f0f23' }}
+        style={{ aspectRatio: '16/9', backgroundColor: '#0f0f23' }}
       >
         {!isLoaded && !hasError && (
           <div className="text-white text-center">
