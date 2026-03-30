@@ -10,9 +10,10 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        body: ['"Open Sans"', 'sans-serif'],
-        headline: ['"PT Serif"', 'serif'],
-        mono: ['"JetBrains Mono"', 'monospace'],
+        sans: ['var(--font-open-sans)', '"Open Sans"', 'sans-serif'],
+        body: ['var(--font-open-sans)', '"Open Sans"', 'sans-serif'],
+        headline: ['var(--font-pt-serif)', '"PT Serif"', 'serif'],
+        mono: ['var(--font-jetbrains-mono)', '"JetBrains Mono"', 'monospace'],
       },
       colors: {
         background: 'hsl(var(--background))',

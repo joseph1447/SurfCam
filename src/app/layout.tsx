@@ -1,6 +1,28 @@
 // Root layout - provides HTML structure for all routes
 import './globals.css';
 import type { Metadata } from 'next';
+import { Open_Sans, PT_Serif, JetBrains_Mono } from 'next/font/google';
+
+const openSans = Open_Sans({
+  subsets: ['latin'],
+  weight: ['400', '600', '700'],
+  display: 'swap',
+  variable: '--font-open-sans',
+});
+
+const ptSerif = PT_Serif({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  display: 'swap',
+  variable: '--font-pt-serif',
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  weight: ['400', '600'],
+  display: 'swap',
+  variable: '--font-jetbrains-mono',
+});
 
 export const metadata: Metadata = {
   title: 'Santa Teresa Surf Cam | Live Stream 24/7',
@@ -13,21 +35,16 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es" suppressHydrationWarning>
+    <html lang="es" suppressHydrationWarning className={`${openSans.variable} ${ptSerif.variable} ${jetbrainsMono.variable}`}>
       <head>
-        {/* Preconnect to critical origins for faster loading */}
-        <link rel="preconnect" href="https://www.youtube.com" />
-        <link rel="preconnect" href="https://i.ytimg.com" />
+        {/* DNS prefetch for YouTube (loaded lazily, no preconnect needed) */}
         <link rel="dns-prefetch" href="https://www.youtube.com" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        {/* Optimized font loading with display=swap for better performance */}
-        <link href="https://fonts.googleapis.com/css2?family=PT+Serif:wght@400;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+        <link rel="dns-prefetch" href="https://i.ytimg.com" />
         <link rel="icon" type="image/png" sizes="16x16" href="/wave-16.png" />
         <link rel="icon" type="image/png" sizes="32x32" href="/wave-32.png" />
         <link rel="shortcut icon" href="/wave-16.png" />
       </head>
-      <body suppressHydrationWarning>
+      <body className={openSans.className} suppressHydrationWarning>
         {children}
       </body>
     </html>

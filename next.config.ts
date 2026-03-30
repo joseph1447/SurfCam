@@ -45,17 +45,27 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        source: '/',
+        // Static assets: long cache (images, icons)
+        source: '/:path(.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico)$)',
         headers: [
           {
             key: 'Cache-Control',
-            value: 'no-cache, no-store, must-revalidate',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        // Next.js static chunks: immutable cache
+        source: '/_next/static/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
           },
         ],
       },
       {
         // Allow the embed page to be loaded in iframes
-        // Domain validation is handled by the embed page + /api/embed/verify
         source: '/embed/:path*',
         headers: [
           {
