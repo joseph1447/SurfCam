@@ -11,6 +11,7 @@ import { usePWA } from "@/hooks/usePWA";
 // Lazy load components with different priorities
 const RadioWidget = lazy(() => import("./RadioWidget"));
 const SurfLessonQuote = lazy(() => import("./SurfLessonQuote"));
+const RecentSurfReports = lazy(() => import("./RecentSurfReports"));
 
 // Progressive loading hook
 function useProgressiveLoading() {
@@ -179,6 +180,25 @@ export default function SurfCamTwitch() {
                 />
               )}
             </div>
+
+            {/* Recent Surf Reports - Below video */}
+            {loadWidgets ? (
+              <Suspense fallback={
+                <div className="w-full backdrop-blur-md bg-[#121419]/80 border border-white/10 rounded-2xl p-4">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="h-5 w-5 bg-red-500/30 rounded animate-pulse" />
+                    <div className="h-5 bg-white/10 rounded w-48 animate-pulse" />
+                  </div>
+                  <div className="flex gap-3 overflow-hidden">
+                    {[...Array(4)].map((_, i) => (
+                      <div key={i} className="flex-shrink-0 w-[160px] sm:w-[180px] aspect-[9/16] bg-white/5 rounded-xl animate-pulse" />
+                    ))}
+                  </div>
+                </div>
+              }>
+                <RecentSurfReports />
+              </Suspense>
+            ) : null}
 
             {/* Radio Widget - Below video, horizontal layout */}
             {loadWidgets ? (

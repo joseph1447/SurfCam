@@ -33,7 +33,7 @@ export default function SurfLessonsClient() {
         quoterSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     } else {
-      window.open('https://wa.me/50683161976?text=Hola! Me interesan las clases de surf en Santa Teresa', '_blank');
+      window.open('https://wa.me/50662681168?text=Hola! Me interesan las clases de surf en Santa Teresa', '_blank');
     }
   };
 
@@ -68,25 +68,6 @@ export default function SurfLessonsClient() {
                 <Shield className="h-4 w-4 text-cyan-400" />
                 <span>Seguridad garantizada</span>
               </div>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-              <Button
-                onClick={() => handleContact('whatsapp')}
-                size="lg"
-                className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white"
-              >
-                <Phone className="mr-2 h-5 w-5" />
-                WhatsApp: +506 8316-1976
-              </Button>
-              <Button
-                onClick={() => handleContact('email')}
-                variant="outline"
-                size="lg"
-                className="border-cyan-500/50 text-cyan-300 hover:bg-cyan-500/10"
-              >
-                <Mail className="mr-2 h-5 w-5" />
-                Enviar Email
-              </Button>
             </div>
           </div>
         </div>
@@ -334,7 +315,7 @@ export default function SurfLessonsClient() {
                 <ul className="text-left space-y-2 text-sm">
                   <li className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-cyan-400" />
-                    <span>Transporte incluido*</span>
+                    <span>Fotos y videos de tu sesión</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-cyan-400" />
@@ -348,9 +329,6 @@ export default function SurfLessonsClient() {
               </CardContent>
             </Card>
           </div>
-          <p className="text-center text-sm text-muted-foreground mt-6">
-            *Transporte disponible desde hoteles cercanos a Santa Teresa
-          </p>
         </div>
       </section>
 
@@ -519,21 +497,10 @@ export default function SurfLessonsClient() {
                         <Phone className="h-5 w-5 text-green-400" />
                       </div>
                       <div>
-                        <a href="https://wa.me/50683161976" target="_blank" rel="noopener noreferrer" className="font-semibold text-green-400 hover:text-green-300 transition-colors">
-                          +506 8316-1976
+                        <a href="https://wa.me/50662681168" target="_blank" rel="noopener noreferrer" className="font-semibold text-green-400 hover:text-green-300 transition-colors">
+                          +506 6268-1168
                         </a>
                         <p className="text-xs text-muted-foreground">WhatsApp disponible</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 rounded-lg flex items-center justify-center">
-                        <Mail className="h-5 w-5 text-cyan-400" />
-                      </div>
-                      <div>
-                        <a href="mailto:josephquesada92@gmail.com" className="font-semibold text-cyan-400 hover:text-cyan-300 transition-colors">
-                          josephquesada92@gmail.com
-                        </a>
-                        <p className="text-xs text-muted-foreground">Respuesta rápida garantizada</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
@@ -555,32 +522,13 @@ export default function SurfLessonsClient() {
                       </div>
                     </div>
                   </div>
-                </div>
-
-                <div className="space-y-6">
-                  <h3 className="text-lg font-semibold">Reservar Ahora</h3>
-                  <div className="space-y-4">
-                    <Button
-                      onClick={() => handleContact('whatsapp')}
-                      className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white"
-                      size="lg"
-                    >
-                      <Phone className="h-5 w-5 mr-2" />
-                      Reservar por WhatsApp
-                    </Button>
-                    <Button
-                      onClick={() => handleContact('email')}
-                      variant="outline"
-                      className="w-full border-cyan-500/50 text-cyan-300 hover:bg-cyan-500/10"
-                      size="lg"
-                    >
-                      <Mail className="h-5 w-5 mr-2" />
-                      Enviar Email
-                    </Button>
-                  </div>
-                  <p className="text-sm text-muted-foreground text-center">
+                  <p className="text-sm text-muted-foreground">
                     Te respondemos en menos de 24 horas
                   </p>
+                </div>
+
+                <div>
+                  <SurfLessonQuote compact />
                 </div>
               </div>
             </CardContent>
@@ -598,7 +546,7 @@ export default function SurfLessonsClient() {
             "name": "Santa Teresa Surf Lessons",
             "description": "Clases de surf en Santa Teresa, Costa Rica para todos los niveles",
             "url": "https://santateresasurfcam.com/surf-lessons",
-            "telephone": "+506-8316-1976",
+            "telephone": "+506-6268-1168",
             "email": "josephquesada92@gmail.com",
             "address": {
               "@type": "PostalAddress",
