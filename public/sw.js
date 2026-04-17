@@ -23,7 +23,7 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Fetch event - serve from cache, fallback to network
+// Fetch event - different strategies for different resource types
 self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (event.request.method !== 'GET') {
@@ -37,7 +37,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Skip YouTube and external video/streaming services - let browser handle them directly
-  if (url.hostname.includes('youtube.com') || 
+  if (url.hostname.includes('youtube.com') ||
       url.hostname.includes('youtubei.googleapis.com') ||
       url.hostname.includes('ytimg.com') ||
       url.hostname.includes('googlevideo.com') ||
@@ -46,64 +46,73 @@ self.addEventListener('fetch', (event) => {
     return; // Don't intercept - let browser handle directly
   }
 
-  event.respondWith(
-    (async () => {
-      try {
-        // Try to use preloadResponse if available (for navigation requests)
-        const preloadResponse = event.preloadResponse;
-        if (preloadResponse) {
-          try {
-            const response = await preloadResponse;
-            if (response) {
-              return response;
-            }
-          } catch (err) {
-            console.log('[SW] PreloadResponse failed, falling back to cache/network:', err);
-          }
-        }
+  // Determine if this is a request that should use network-first strategy
+  const isNavigationRequest = event.request.mode === 'navigate';
+  const isApiRequest = url.pathname.startsWith('/api/');
+  const isNextData = url.pathname.startsWith('/_next/data/');
+  const isHtmlRequest = event.request.headers.get('accept')?.includes('text/html');
+  const useNetworkFirst = isNavigationRequest || isApiRequest || isNextData || isHtmlRequest;
 
-        // Try cache first
-        const cachedResponse = await caches.match(event.request);
-        if (cachedResponse) {
-          return cachedResponse;
-        }
-
-        // Fallback to network
+  if (useNetworkFirst) {
+    // NETWORK-FIRST: Always get fresh HTML, API responses, and Next.js data
+    event.respondWith(
+      (async () => {
         try {
           const networkResponse = await fetch(event.request);
-          
-          // Cache successful responses (but not for streaming or large files)
-          if (networkResponse.ok && networkResponse.status === 200) {
-            const contentType = networkResponse.headers.get('content-type');
-            // Don't cache streaming content, videos, or very large files
-            if (contentType && 
-                !contentType.includes('video') && 
-                !contentType.includes('stream') &&
-                !contentType.includes('application/octet-stream')) {
-              const cache = await caches.open(CACHE_NAME);
-              // Clone the response before caching (responses can only be read once)
-              cache.put(event.request, networkResponse.clone()).catch(err => {
-                console.log('[SW] Failed to cache response:', err);
-              });
-            }
+          // Cache the fresh response for offline fallback
+          if (networkResponse.ok) {
+            const cache = await caches.open(CACHE_NAME);
+            cache.put(event.request, networkResponse.clone()).catch(() => {});
           }
-          
           return networkResponse;
         } catch (fetchError) {
-          console.log('[SW] Network fetch failed:', fetchError);
-          // Return a basic offline page or error response
-          if (event.request.destination === 'document') {
+          // Network failed - try cache as fallback (offline support)
+          const cachedResponse = await caches.match(event.request);
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          if (isNavigationRequest || isHtmlRequest) {
             return new Response('Offline', {
               status: 503,
               statusText: 'Service Unavailable',
               headers: { 'Content-Type': 'text/plain' }
             });
           }
-          throw fetchError;
+          return new Response('Network error', {
+            status: 408,
+            statusText: 'Request Timeout',
+            headers: { 'Content-Type': 'text/plain' }
+          });
         }
+      })()
+    );
+    return;
+  }
+
+  // CACHE-FIRST: For static assets (images, fonts, JS/CSS bundles)
+  event.respondWith(
+    (async () => {
+      try {
+        const cachedResponse = await caches.match(event.request);
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+
+        const networkResponse = await fetch(event.request);
+
+        if (networkResponse.ok && networkResponse.status === 200) {
+          const contentType = networkResponse.headers.get('content-type');
+          if (contentType &&
+              !contentType.includes('video') &&
+              !contentType.includes('stream') &&
+              !contentType.includes('application/octet-stream')) {
+            const cache = await caches.open(CACHE_NAME);
+            cache.put(event.request, networkResponse.clone()).catch(() => {});
+          }
+        }
+
+        return networkResponse;
       } catch (error) {
-        console.error('[SW] Fetch handler error:', error);
-        // Return a basic error response instead of failing completely
         return new Response('Network error', {
           status: 408,
           statusText: 'Request Timeout',
@@ -114,10 +123,11 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Activate event - clean up old caches
+// Activate event - clean up old caches and notify clients to refresh
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
+      const hasOldCaches = cacheNames.some(name => name !== CACHE_NAME);
       return Promise.all(
         cacheNames.map((cacheName) => {
           if (cacheName !== CACHE_NAME) {
@@ -125,7 +135,16 @@ self.addEventListener('activate', (event) => {
             return caches.delete(cacheName);
           }
         })
-      );
+      ).then(() => {
+        // If there were old caches, a new version was deployed - notify all clients
+        if (hasOldCaches) {
+          return self.clients.matchAll({ type: 'window' }).then((clients) => {
+            clients.forEach((client) => {
+              client.postMessage({ type: 'SW_UPDATED', version: CACHE_NAME });
+            });
+          });
+        }
+      });
     }).then(() => self.clients.claim())
   );
 });

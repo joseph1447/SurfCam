@@ -38,9 +38,11 @@ export default function YouTubeEmbedClient({
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const [overlays, setOverlays] = useState<AdOverlayData[]>([]);
   const [origin, setOrigin] = useState('');
   const resolvedChannelId = channelId || process.env.NEXT_PUBLIC_YT_CHANNEL_ID;
+  const MAX_RETRIES = 3;
 
   useEffect(() => {
     setOrigin(window.location.origin);
@@ -49,11 +51,17 @@ export default function YouTubeEmbedClient({
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (!isLoaded && !hasError) {
-        setHasError(true);
+        if (retryCount < MAX_RETRIES) {
+          // Auto-retry: reset state and increment counter to force iframe reload
+          console.log(`[YouTube] Load timeout, retrying (${retryCount + 1}/${MAX_RETRIES})...`);
+          setRetryCount(prev => prev + 1);
+        } else {
+          setHasError(true);
+        }
       }
-    }, 15000);
+    }, 12000);
     return () => clearTimeout(timeout);
-  }, [isLoaded, hasError]);
+  }, [isLoaded, hasError, retryCount]);
 
   useEffect(() => {
     const fetchOverlays = async () => {
@@ -135,6 +143,15 @@ export default function YouTubeEmbedClient({
             </div>
             <p className="text-lg mb-2">No se pudo cargar el video</p>
             <p className="text-sm text-gray-400 mb-6">La transmisión puede no estar disponible en este momento</p>
+            <button
+              onClick={() => { setHasError(false); setIsLoaded(false); setRetryCount(0); }}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-lg transition-colors mb-3"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Reintentar
+            </button>
             <a
               href={youtubeChannelLiveUrl}
               target="_blank"
@@ -151,6 +168,7 @@ export default function YouTubeEmbedClient({
 
         {embedUrl && !hasError && (
           <iframe
+            key={`yt-embed-${retryCount}`}
             ref={iframeRef}
             width={width}
             height={height}

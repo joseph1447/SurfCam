@@ -26,7 +26,7 @@ export function usePWA() {
         const isInApp = typeof window.navigator.standalone !== 'undefined' && window.navigator.standalone === true;
         const isInstalled = isStandalone || isInApp;
         setIsInstalled(isInstalled);
-  
+
       }
     };
 
@@ -38,14 +38,39 @@ export function usePWA() {
       // Stash the event so it can be triggered later
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       setIsInstallable(true);
-      
+
     };
 
     const handleAppInstalled = () => {
       setIsInstalled(true);
       setIsInstallable(false);
       setDeferredPrompt(null);
-      
+
+    };
+
+    // Listen for SW update messages - auto-refresh when new version is deployed
+    const handleSWMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'SW_UPDATED') {
+        console.log('[PWA] New version detected, refreshing...');
+        window.location.reload();
+      }
+    };
+    navigator.serviceWorker?.addEventListener('message', handleSWMessage);
+
+    // Proactively check for SW updates every 5 minutes
+    const checkForUpdates = () => {
+      navigator.serviceWorker?.getRegistration().then((reg) => {
+        reg?.update().catch(() => {});
+      });
+    };
+    const updateInterval = setInterval(checkForUpdates, 5 * 60 * 1000);
+
+    // Also check for updates when tab becomes visible again (user returns to tab)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        checkInstallation();
+        checkForUpdates();
+      }
     };
 
     // Check for installation status periodically
@@ -53,20 +78,15 @@ export function usePWA() {
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
-
-    // Also check on page visibility change
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        checkInstallation();
-      }
-    };
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       clearInterval(interval);
+      clearInterval(updateInterval);
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      navigator.serviceWorker?.removeEventListener('message', handleSWMessage);
     };
   }, []);
 
