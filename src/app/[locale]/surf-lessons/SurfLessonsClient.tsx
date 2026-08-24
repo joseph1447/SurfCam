@@ -156,7 +156,7 @@ export default function SurfLessonsClient() {
                   <CardDescription>Atención 100% personalizada</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-4xl font-bold text-cyan-400 mb-2">$80 <span className="text-base font-normal text-muted-foreground">USD</span></div>
+                  <div className="text-4xl font-bold text-cyan-400 mb-2">$70 <span className="text-base font-normal text-muted-foreground">USD</span></div>
                   <p className="text-sm text-muted-foreground">Por persona, 1.5 horas de clase</p>
                 </CardContent>
               </Card>
@@ -168,7 +168,7 @@ export default function SurfLessonsClient() {
                     <Users className="h-5 w-5 text-cyan-400" />
                     Lecciones Grupales
                   </CardTitle>
-                  <CardDescription>Mejor precio por persona en grupo</CardDescription>
+                  <CardDescription>Mismo precio por persona, sin importar el tamaño del grupo</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Table>
@@ -187,47 +187,46 @@ export default function SurfLessonsClient() {
                       </TableRow>
                       <TableRow>
                         <TableCell>2 personas</TableCell>
-                        <TableCell className="font-semibold">$120</TableCell>
-                        <TableCell className="text-cyan-400">$60 c/u</TableCell>
+                        <TableCell className="font-semibold">$140</TableCell>
+                        <TableCell className="text-cyan-400">$70 c/u</TableCell>
                       </TableRow>
                       <TableRow>
                         <TableCell>3 personas</TableCell>
-                        <TableCell className="font-semibold">$180</TableCell>
-                        <TableCell className="text-cyan-400">$60 c/u</TableCell>
+                        <TableCell className="font-semibold">$210</TableCell>
+                        <TableCell className="text-cyan-400">$70 c/u</TableCell>
                       </TableRow>
                       <TableRow className="bg-cyan-500/10">
                         <TableCell>4+ personas</TableCell>
-                        <TableCell className="font-semibold">-</TableCell>
-                        <TableCell className="text-cyan-400 font-bold">$60 c/u</TableCell>
+                        <TableCell className="font-semibold">$70 x persona</TableCell>
+                        <TableCell className="text-cyan-400 font-bold">$70 c/u</TableCell>
                       </TableRow>
                     </TableBody>
                   </Table>
                 </CardContent>
               </Card>
 
-              {/* Package Discounts */}
-              <Card className="border-green-500/30 bg-gradient-to-br from-green-500/10 to-emerald-500/10 backdrop-blur-sm">
+              {/* Fixed Rate */}
+              <Card className="border-cyan-500/30 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 backdrop-blur-sm">
                 <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-green-400">
+                  <CardTitle className="flex items-center gap-2 text-cyan-400">
                     <Calendar className="h-5 w-5" />
-                    Paquetes con Descuento
+                    Tarifa Unica
                   </CardTitle>
-                  <CardDescription>Ahorra más con paquetes de varios días</CardDescription>
+                  <CardDescription>Un solo precio, sin letra pequena</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
+                  <div className="space-y-3 text-sm">
                     <div className="flex justify-between items-center">
-                      <span>2-3 días</span>
-                      <Badge className="bg-green-500/20 text-green-400">desde $65/persona/día</Badge>
+                      <span>Cualquier cantidad de personas</span>
+                      <Badge className="bg-cyan-500/20 text-cyan-400">$70/persona/día</Badge>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span>4 días</span>
-                      <Badge className="bg-green-500/20 text-green-400">desde $60/persona/día</Badge>
+                      <span>Cualquier cantidad de días</span>
+                      <Badge className="bg-cyan-500/20 text-cyan-400">$70/persona/día</Badge>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span>5+ días</span>
-                      <Badge className="bg-green-500/30 text-green-300 border-green-500/50">desde $55/persona/día</Badge>
-                    </div>
+                    <p className="text-muted-foreground pt-1">
+                      El equipo completo y el instructor están incluidos en el precio.
+                    </p>
                   </div>
                 </CardContent>
               </Card>
@@ -465,11 +464,11 @@ export default function SurfLessonsClient() {
 
             <Card className="border-cyan-500/20 bg-card/50 backdrop-blur-sm">
               <CardHeader>
-                <CardTitle className="text-lg">¿Hay descuentos para grupos?</CardTitle>
+                <CardTitle className="text-lg">¿El precio cambia según el grupo o los días?</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">
-                  Sí, los grupos grandes obtienen mejor precio por persona. Además, ofrecemos descuentos especiales para paquetes de múltiples días. Consulta nuestra tabla de precios arriba para más detalles.
+                  No. Manejamos una tarifa única de $70 por persona por día, sin importar cuántas personas sean ni cuántos días tomen clases. El equipo completo y el instructor van incluidos.
                 </p>
               </CardContent>
             </Card>
@@ -559,22 +558,22 @@ export default function SurfLessonsClient() {
               "latitude": "9.6428",
               "longitude": "-85.1686"
             },
-            "priceRange": "$55-$80",
+            "priceRange": "$70",
             "openingHours": "Mo-Su 06:00-18:00",
             "offers": [
               {
                 "@type": "Offer",
                 "name": "Private Surf Lesson",
-                "price": "80",
+                "price": "70",
                 "priceCurrency": "USD",
                 "description": "1.5 hour private surf lesson with experienced instructor"
               },
               {
                 "@type": "Offer",
                 "name": "Group Surf Lesson",
-                "price": "55",
+                "price": "70",
                 "priceCurrency": "USD",
-                "description": "1.5 hour group surf lesson, starting from $55/person"
+                "description": "1.5 hour group surf lesson, flat rate of $70/person"
               }
             ]
           })

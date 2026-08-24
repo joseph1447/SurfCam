@@ -3,7 +3,6 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import {
@@ -16,7 +15,7 @@ import {
   Minus,
   Plus,
   Waves,
-  Sparkles,
+  AlertCircle,
   MessageCircle
 } from 'lucide-react';
 
@@ -25,106 +24,61 @@ interface SurfLessonQuoteProps {
   className?: string;
 }
 
-// Pricing structure - rounded prices
-const PRICING = {
-  private: {
-    perPerson: 80,
-    maxPeople: 1,
-  },
-  group: {
-    // Price per lesson based on number of people (rounded)
-    1: 70,    // $70
-    2: 120,   // total ($60 c/u)
-    3: 180,   // total ($60 c/u)
-    4: 240,   // 4 x $60
-  },
-  // Package discounts (price per person per day) - rounded
-  packages: {
-    1: null,  // no discount for single day
-    2: 65,    // $65/person/day
-    3: 65,    // $65/person/day
-    4: 60,    // $60/person/day
-    5: 55,    // $55/person/day
-  }
-};
+// Precio fijo por persona por día. Sin descuentos por grupo ni por paquete de días.
+const PRICE_PER_PERSON_PER_DAY = 70;
+
+const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value);
+// Acepta formatos internacionales: se valida solo la cantidad de dígitos.
+const isValidPhone = (value: string) => value.replace(/\D/g, '').length >= 8;
 
 export default function SurfLessonQuote({ compact = false, className = '' }: SurfLessonQuoteProps) {
   const [lessonType, setLessonType] = useState<'private' | 'group'>('group');
-  const [people, setPeople] = useState(2);
+  const [people, setPeople] = useState(1);
   const [days, setDays] = useState(1);
   const [customerName, setCustomerName] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [showErrors, setShowErrors] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [sendStatus, setSendStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
-  const calculation = useMemo(() => {
-    let pricePerDay = 0;
-    let totalPrice = 0;
-    let pricePerPerson = 0;
-    let savings = 0;
-    let originalPrice = 0;
+  const calculation = useMemo(() => ({
+    pricePerPerson: PRICE_PER_PERSON_PER_DAY,
+    totalPrice: PRICE_PER_PERSON_PER_DAY * people * days,
+  }), [people, days]);
 
-    if (lessonType === 'private') {
-      // Private lessons: $80 per person per day
-      pricePerDay = PRICING.private.perPerson;
-      pricePerPerson = PRICING.private.perPerson;
-
-      // Calculate with package discount
-      if (days >= 5) {
-        pricePerPerson = PRICING.packages[5]!;
-      } else if (days >= 4) {
-        pricePerPerson = PRICING.packages[4]!;
-      } else if (days >= 2) {
-        pricePerPerson = PRICING.packages[2]!;
-      }
-
-      originalPrice = PRICING.private.perPerson * days;
-      totalPrice = pricePerPerson * days;
-      savings = originalPrice - totalPrice;
-    } else {
-      // Group lessons
-      const peopleKey = Math.min(people, 4) as 1 | 2 | 3 | 4;
-
-      if (people <= 3) {
-        pricePerDay = PRICING.group[peopleKey];
-      } else {
-        // 4+ people: $60 per person
-        pricePerDay = people * 60;
-      }
-
-      pricePerPerson = pricePerDay / people;
-
-      // Apply package discount for multiple days
-      if (days >= 2) {
-        let discountedPricePerPerson: number;
-        if (days >= 5) {
-          discountedPricePerPerson = PRICING.packages[5]!;
-        } else if (days >= 4) {
-          discountedPricePerPerson = PRICING.packages[4]!;
-        } else {
-          discountedPricePerPerson = PRICING.packages[2]!;
-        }
-
-        originalPrice = pricePerDay * days;
-        totalPrice = discountedPricePerPerson * people * days;
-        pricePerPerson = discountedPricePerPerson;
-        savings = originalPrice - totalPrice;
-      } else {
-        originalPrice = pricePerDay;
-        totalPrice = pricePerDay;
-      }
-    }
+  const validation = useMemo(() => {
+    const name = customerName.trim();
+    const email = customerEmail.trim();
+    const phone = customerPhone.trim();
 
     return {
-      pricePerDay,
-      totalPrice,
-      pricePerPerson,
-      savings,
-      originalPrice,
+      nameOk: name.length >= 2,
+      emailFormatOk: email.length === 0 || isValidEmail(email),
+      phoneFormatOk: phone.length === 0 || isValidPhone(phone),
+      hasContact: (email.length > 0 && isValidEmail(email)) || (phone.length > 0 && isValidPhone(phone)),
     };
-  }, [lessonType, people, days]);
+  }, [customerName, customerEmail, customerPhone]);
+
+  const canSubmit = validation.nameOk && validation.hasContact;
+
+  const errorMessage = !validation.nameOk
+    ? 'Escribe tu nombre para poder identificar tu reserva.'
+    : !validation.emailFormatOk
+      ? 'El correo no tiene un formato válido.'
+      : !validation.phoneFormatOk
+        ? 'El teléfono debe tener al menos 8 dígitos.'
+        : !validation.hasContact
+          ? 'Necesitamos un correo o un número de teléfono para contactarte.'
+          : '';
 
   const handleReservation = async () => {
+    if (!canSubmit) {
+      setShowErrors(true);
+      return;
+    }
+
+    setShowErrors(false);
     setIsSending(true);
     setSendStatus('idle');
 
@@ -132,11 +86,11 @@ export default function SurfLessonQuote({ compact = false, className = '' }: Sur
       lessonType,
       people,
       days,
-      pricePerPerson: calculation.pricePerPerson.toFixed(0),
+      pricePerPerson: calculation.pricePerPerson,
       totalPrice: calculation.totalPrice,
-      savings: calculation.savings,
-      customerName: customerName.trim() || undefined,
-      customerEmail: customerEmail.trim() || undefined
+      customerName: customerName.trim(),
+      customerEmail: customerEmail.trim() || undefined,
+      customerPhone: customerPhone.trim() || undefined
     };
 
     try {
@@ -161,6 +115,7 @@ export default function SurfLessonQuote({ compact = false, className = '' }: Sur
           setSendStatus('idle');
           setCustomerName('');
           setCustomerEmail('');
+          setCustomerPhone('');
         }, 5000);
       } else {
         setSendStatus('error');
@@ -173,15 +128,15 @@ export default function SurfLessonQuote({ compact = false, className = '' }: Sur
       const fallbackMsg = [
         `🏄 *Nueva Cotización - Santa Teresa Surf Cam*`,
         ``,
-        `👤 *Cliente:* ${customerName || 'No proporcionado'}`,
-        customerEmail ? `📧 *Email:* ${customerEmail}` : '',
+        `👤 *Cliente:* ${customerName.trim()}`,
+        customerEmail.trim() ? `📧 *Email:* ${customerEmail.trim()}` : '',
+        customerPhone.trim() ? `📱 *Teléfono:* ${customerPhone.trim()}` : '',
         ``,
         `📋 *Detalles:*`,
         `• Tipo: ${tipoClase}`,
         `• Personas: ${people}`,
         `• Días: ${days}`,
-        `• Precio/persona/día: $${calculation.pricePerPerson.toFixed(0)}`,
-        calculation.savings > 0 ? `• Ahorro: $${calculation.savings}` : '',
+        `• Precio/persona/día: $${calculation.pricePerPerson}`,
         ``,
         `💰 *Total: $${calculation.totalPrice} USD*`,
       ].filter(Boolean).join('\n');
@@ -286,16 +241,8 @@ export default function SurfLessonQuote({ compact = false, className = '' }: Sur
             <div className="text-3xl font-bold text-cyan-400">
               ${calculation.totalPrice}
             </div>
-            {calculation.savings > 0 && (
-              <div className="flex items-center justify-center gap-2 mt-1">
-                <span className="text-xs line-through text-muted-foreground">${calculation.originalPrice}</span>
-                <Badge className="bg-green-500/20 text-green-400 text-xs">
-                  Ahorras ${calculation.savings}
-                </Badge>
-              </div>
-            )}
             <div className="text-xs text-muted-foreground mt-1">
-              ${calculation.pricePerPerson.toFixed(0)}/persona/día
+              ${calculation.pricePerPerson}/persona/día · precio fijo
             </div>
           </div>
 
@@ -303,24 +250,46 @@ export default function SurfLessonQuote({ compact = false, className = '' }: Sur
           <div className="space-y-2">
             <Input
               type="text"
-              placeholder="Tu nombre"
+              placeholder="Tu nombre *"
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
+              aria-invalid={showErrors && !validation.nameOk}
               className="bg-white/5 border-white/10 focus:border-cyan-500 text-sm"
             />
             <Input
               type="email"
+              inputMode="email"
               placeholder="tu@email.com"
               value={customerEmail}
               onChange={(e) => setCustomerEmail(e.target.value)}
+              aria-invalid={showErrors && !validation.emailFormatOk}
               className="bg-white/5 border-white/10 focus:border-cyan-500 text-sm"
             />
+            <Input
+              type="tel"
+              inputMode="tel"
+              placeholder="+506 8888 8888"
+              value={customerPhone}
+              onChange={(e) => setCustomerPhone(e.target.value)}
+              aria-invalid={showErrors && !validation.phoneFormatOk}
+              className="bg-white/5 border-white/10 focus:border-cyan-500 text-sm"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Obligatorio: correo <span className="text-cyan-400">o</span> teléfono para contactarte.
+            </p>
           </div>
+
+          {showErrors && errorMessage && (
+            <p role="alert" className="flex items-start gap-2 text-xs text-red-400">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              {errorMessage}
+            </p>
+          )}
 
           {/* CTA Button */}
           <Button
             onClick={handleReservation}
-            disabled={isSending || !customerName.trim() || !customerEmail.trim()}
+            disabled={isSending}
             className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 disabled:opacity-50"
           >
             {isSending ? (
@@ -385,7 +354,7 @@ export default function SurfLessonQuote({ compact = false, className = '' }: Sur
             >
               <Users className={`h-6 w-6 mx-auto mb-2 ${lessonType === 'group' ? 'text-cyan-400' : 'text-muted-foreground'}`} />
               <div className={`font-semibold ${lessonType === 'group' ? 'text-cyan-400' : ''}`}>Grupal</div>
-              <div className="text-xs text-muted-foreground">Desde $55/persona</div>
+              <div className="text-xs text-muted-foreground">$70/persona</div>
             </button>
             <button
               onClick={() => { setLessonType('private'); setPeople(1); }}
@@ -397,7 +366,7 @@ export default function SurfLessonQuote({ compact = false, className = '' }: Sur
             >
               <Waves className={`h-6 w-6 mx-auto mb-2 ${lessonType === 'private' ? 'text-cyan-400' : 'text-muted-foreground'}`} />
               <div className={`font-semibold ${lessonType === 'private' ? 'text-cyan-400' : ''}`}>Privada</div>
-              <div className="text-xs text-muted-foreground">$80/clase</div>
+              <div className="text-xs text-muted-foreground">$70/clase</div>
             </button>
           </div>
         </div>
@@ -434,12 +403,6 @@ export default function SurfLessonQuote({ compact = false, className = '' }: Sur
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
-            {people >= 4 && (
-              <div className="flex items-center justify-center gap-2 text-sm text-green-400">
-                <Sparkles className="h-4 w-4" />
-                <span>Precio especial para grupos de 4+</span>
-              </div>
-            )}
           </div>
         )}
 
@@ -474,16 +437,6 @@ export default function SurfLessonQuote({ compact = false, className = '' }: Sur
               <Plus className="h-4 w-4" />
             </Button>
           </div>
-          {days >= 2 && (
-            <div className="flex items-center justify-center gap-2 text-sm text-green-400">
-              <Sparkles className="h-4 w-4" />
-              <span>
-                {days >= 5 ? 'Máximo descuento: $55/persona/día' :
-                 days >= 4 ? 'Descuento aplicado: $60/persona/día' :
-                 'Descuento aplicado: $65/persona/día'}
-              </span>
-            </div>
-          )}
         </div>
 
         {/* Price Summary */}
@@ -493,19 +446,14 @@ export default function SurfLessonQuote({ compact = false, className = '' }: Sur
             <div className="text-5xl font-bold text-cyan-400">
               ${calculation.totalPrice}
             </div>
-            {calculation.savings > 0 && (
-              <div className="flex items-center justify-center gap-3 mt-2">
-                <span className="text-lg line-through text-muted-foreground">${calculation.originalPrice}</span>
-                <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-                  Ahorras ${calculation.savings}
-                </Badge>
-              </div>
-            )}
+            <p className="text-xs text-muted-foreground mt-2">
+              Tarifa única de ${PRICE_PER_PERSON_PER_DAY} por persona, por día
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/10">
             <div className="text-center">
-              <div className="text-2xl font-bold text-white">${calculation.pricePerPerson.toFixed(0)}</div>
+              <div className="text-2xl font-bold text-white">${calculation.pricePerPerson}</div>
               <div className="text-xs text-muted-foreground">por persona/día</div>
             </div>
             <div className="text-center">
@@ -538,36 +486,65 @@ export default function SurfLessonQuote({ compact = false, className = '' }: Sur
           </div>
         </div>
 
-        {/* Customer Contact Info (Optional) */}
+        {/* Customer Contact Info (required) */}
         <div className="space-y-3 bg-white/5 rounded-xl p-4">
-          <Label className="text-sm font-semibold">Tu información (opcional)</Label>
+          <Label className="text-sm font-semibold">Tus datos de contacto</Label>
           <p className="text-xs text-muted-foreground">
-            Déjanos tu contacto para enviarte una confirmación
+            Déjanos tu <span className="text-cyan-400">correo o tu teléfono</span> (al menos uno) para confirmarte la reserva.
           </p>
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <Label htmlFor="customer-name" className="text-xs">Nombre</Label>
+              <Label htmlFor="customer-name" className="text-xs">Nombre *</Label>
               <Input
                 id="customer-name"
                 type="text"
                 placeholder="Tu nombre"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
+                aria-invalid={showErrors && !validation.nameOk}
                 className="bg-white/5 border-white/10 focus:border-cyan-500"
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="customer-email" className="text-xs">Email</Label>
+              <Label htmlFor="customer-email" className="text-xs flex items-center gap-1.5">
+                <Mail className="h-3.5 w-3.5 text-cyan-400" />
+                Email
+              </Label>
               <Input
                 id="customer-email"
                 type="email"
+                inputMode="email"
                 placeholder="tu@email.com"
                 value={customerEmail}
                 onChange={(e) => setCustomerEmail(e.target.value)}
+                aria-invalid={showErrors && !validation.emailFormatOk}
+                className="bg-white/5 border-white/10 focus:border-cyan-500"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="customer-phone" className="text-xs flex items-center gap-1.5">
+                <Phone className="h-3.5 w-3.5 text-cyan-400" />
+                Teléfono / WhatsApp
+              </Label>
+              <Input
+                id="customer-phone"
+                type="tel"
+                inputMode="tel"
+                placeholder="+506 8888 8888"
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value)}
+                aria-invalid={showErrors && !validation.phoneFormatOk}
                 className="bg-white/5 border-white/10 focus:border-cyan-500"
               />
             </div>
           </div>
+
+          {showErrors && errorMessage && (
+            <p role="alert" className="flex items-start gap-2 text-sm text-red-400">
+              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+              {errorMessage}
+            </p>
+          )}
         </div>
 
         {/* CTA Button */}

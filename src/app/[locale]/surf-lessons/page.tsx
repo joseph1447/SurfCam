@@ -19,8 +19,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const metadataMap: Record<string, Metadata> = {
     es: {
-      title: 'Clases de Surf Santa Teresa Costa Rica | Desde $55 por día',
-      description: 'Aprende a surfear en Santa Teresa con instructores locales experimentados. Clases privadas $80, grupales desde $55/persona. Equipo incluido, transporte disponible, todos los niveles. ¡Reserva tu clase hoy!',
+      title: 'Clases de Surf Santa Teresa Costa Rica | $70 por persona',
+      description: 'Aprende a surfear en Santa Teresa con instructores locales experimentados. Tarifa única de $70 por persona, clases privadas y grupales. Equipo incluido, transporte disponible, todos los niveles. ¡Reserva tu clase hoy!',
       keywords: [
         'clases de surf Santa Teresa',
         'surf lessons Santa Teresa Costa Rica',
@@ -39,8 +39,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         'aprender surf Costa Rica'
       ],
       openGraph: {
-        title: 'Clases de Surf Santa Teresa | Desde $55/persona',
-        description: 'Aprende a surfear en Santa Teresa con instructores locales. Clases privadas $80, grupales desde $55. Equipo incluido, todos los niveles.',
+        title: 'Clases de Surf Santa Teresa | $70/persona',
+        description: 'Aprende a surfear en Santa Teresa con instructores locales. Tarifa única de $70 por persona, privadas o grupales. Equipo incluido, todos los niveles.',
         url: `${baseUrl}/surf-lessons`,
         siteName: 'Santa Teresa Surf Cam',
         locale: 'es_CR',
@@ -56,8 +56,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       },
     },
     en: {
-      title: 'Surf Lessons Santa Teresa Costa Rica | From $55 per day',
-      description: 'Learn to surf in Santa Teresa with experienced local instructors. Private lessons $80, group from $55/person. Equipment included, transportation available, all levels. Book your lesson today!',
+      title: 'Surf Lessons Santa Teresa Costa Rica | $70 per person',
+      description: 'Learn to surf in Santa Teresa with experienced local instructors. Flat rate of $70 per person, private or group lessons. Equipment included, transportation available, all levels. Book your lesson today!',
       keywords: [
         'surf lessons Santa Teresa',
         'Costa Rica surf lessons',
@@ -76,8 +76,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         'Puntarenas surf lessons'
       ],
       openGraph: {
-        title: 'Surf Lessons Santa Teresa | From $55/person',
-        description: 'Learn to surf in Santa Teresa with local instructors. Private $80, group from $55. Equipment included, all levels.',
+        title: 'Surf Lessons Santa Teresa | $70/person',
+        description: 'Learn to surf in Santa Teresa with local instructors. Flat $70 per person, private or group. Equipment included, all levels.',
         url: `${baseUrl}/en/surf-lessons`,
         siteName: 'Santa Teresa Surf Cam',
         locale: 'en_US',

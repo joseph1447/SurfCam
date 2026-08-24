@@ -1,10 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 
+const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value);
+const isValidPhone = (value: string) => value.replace(/\D/g, '').length >= 8;
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { lessonType, people, days, pricePerPerson, totalPrice, savings, customerEmail, customerName } = body;
+    const { lessonType, people, days, pricePerPerson, totalPrice, customerEmail, customerPhone, customerName } = body;
+
+    const name = typeof customerName === 'string' ? customerName.trim() : '';
+    const email = typeof customerEmail === 'string' ? customerEmail.trim() : '';
+    const phone = typeof customerPhone === 'string' ? customerPhone.trim() : '';
+
+    const emailOk = email.length > 0 && isValidEmail(email);
+    const phoneOk = phone.length > 0 && isValidPhone(phone);
+
+    if (!name) {
+      return NextResponse.json(
+        { error: 'El nombre es obligatorio' },
+        { status: 400 }
+      );
+    }
+
+    if (!emailOk && !phoneOk) {
+      return NextResponse.json(
+        { error: 'Debes proporcionar un correo o un número de teléfono válido para poder contactarte' },
+        { status: 400 }
+      );
+    }
 
     // Configurar el transporter con Gmail
     const transporter = nodemailer.createTransport({
@@ -29,12 +53,18 @@ export async function POST(request: NextRequest) {
             <table style="width: 100%; border-collapse: collapse;">
               <tr>
                 <td style="padding: 8px 0; font-weight: bold;">Cliente:</td>
-                <td style="padding: 8px 0;">${customerName || 'No proporcionado'}</td>
+                <td style="padding: 8px 0;">${name}</td>
               </tr>
-              ${customerEmail ? `
+              ${emailOk ? `
               <tr>
                 <td style="padding: 8px 0; font-weight: bold;">Email del cliente:</td>
-                <td style="padding: 8px 0;">${customerEmail}</td>
+                <td style="padding: 8px 0;">${email}</td>
+              </tr>
+              ` : ''}
+              ${phoneOk ? `
+              <tr>
+                <td style="padding: 8px 0; font-weight: bold;">Teléfono del cliente:</td>
+                <td style="padding: 8px 0;">${phone}</td>
               </tr>
               ` : ''}
               <tr>
@@ -53,12 +83,6 @@ export async function POST(request: NextRequest) {
                 <td style="padding: 8px 0; font-weight: bold;">Precio por persona/día:</td>
                 <td style="padding: 8px 0;">$${pricePerPerson}</td>
               </tr>
-              ${savings > 0 ? `
-              <tr>
-                <td style="padding: 8px 0; font-weight: bold; color: #10B981;">Ahorro por paquete:</td>
-                <td style="padding: 8px 0; color: #10B981;">$${savings}</td>
-              </tr>
-              ` : ''}
               <tr style="background-color: #06B6D4; color: white;">
                 <td style="padding: 12px 8px; font-weight: bold; font-size: 18px;">TOTAL:</td>
                 <td style="padding: 12px 8px; font-weight: bold; font-size: 18px;">$${totalPrice} USD</td>
@@ -73,18 +97,18 @@ export async function POST(request: NextRequest) {
       `,
     };
 
-    // Email de confirmación para el cliente (opcional)
+    // Email de confirmación para el cliente (solo si dejó correo)
     let customerMailOptions = null;
-    if (customerEmail) {
+    if (emailOk) {
       customerMailOptions = {
         from: process.env.GMAIL_USER,
-        to: customerEmail,
+        to: email,
         subject: 'Cotización Recibida - Clases de Surf Santa Teresa',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #06B6D4;">¡Gracias por tu interés!</h2>
 
-            <p>Hola${customerName ? ` ${customerName}` : ''},</p>
+            <p>Hola ${name},</p>
 
             <p>Hemos recibido tu solicitud de cotización para clases de surf. Aquí está el resumen:</p>
 
@@ -106,12 +130,6 @@ export async function POST(request: NextRequest) {
                   <td style="padding: 8px 0; font-weight: bold;">Precio por persona/día:</td>
                   <td style="padding: 8px 0;">$${pricePerPerson}</td>
                 </tr>
-                ${savings > 0 ? `
-                <tr>
-                  <td style="padding: 8px 0; font-weight: bold; color: #10B981;">Ahorro:</td>
-                  <td style="padding: 8px 0; color: #10B981;">$${savings}</td>
-                </tr>
-                ` : ''}
                 <tr style="background-color: #06B6D4; color: white;">
                   <td style="padding: 12px 8px; font-weight: bold; font-size: 18px;">TOTAL:</td>
                   <td style="padding: 12px 8px; font-weight: bold; font-size: 18px;">$${totalPrice} USD</td>
@@ -149,15 +167,15 @@ export async function POST(request: NextRequest) {
     const whatsappMessage = [
       `🏄 *Nueva Cotización - Santa Teresa Surf Cam*`,
       ``,
-      `👤 *Cliente:* ${customerName || 'No proporcionado'}`,
-      customerEmail ? `📧 *Email:* ${customerEmail}` : '',
+      `👤 *Cliente:* ${name}`,
+      emailOk ? `📧 *Email:* ${email}` : '',
+      phoneOk ? `📱 *Teléfono:* ${phone}` : '',
       ``,
       `📋 *Detalles:*`,
       `• Tipo: ${tipoClase}`,
       `• Personas: ${people}`,
       `• Días: ${days}`,
       `• Precio/persona/día: $${pricePerPerson}`,
-      savings > 0 ? `• Ahorro: $${savings}` : '',
       ``,
       `💰 *Total: $${totalPrice} USD*`,
     ].filter(Boolean).join('\n');
