@@ -20,6 +20,14 @@
     {
       "path": "/api/restream-toggle/off",
       "schedule": "0 1 * * *"
+    },
+    {
+      "path": "/api/short-from-twitch",
+      "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/short-from-twitch",
+      "schedule": "46 23 * * *"
     }
   ]
 }
