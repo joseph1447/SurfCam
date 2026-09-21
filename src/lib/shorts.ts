@@ -28,9 +28,14 @@ function ffmpegPath(): string {
   return found;
 }
 
-// 16:9 → 1080x1920. The 9:16 window sits a bit right of center: the cam burns a watermark
-// bottom-left and a timestamp top-right, and this offset (~14% of frame height) lands the
-// window in the gap between them so neither gets sliced mid-word.
+// 16:9 → 9:16 at native height (608x1080 from a 1080p clip). No upscale: YouTube does
+// that itself, and encoding 1080x1920 timed out on Vercel's function CPU. ultrafast +
+// audio passthrough are the settings the old promote-to-shorts route shipped 66 Shorts
+// with from the same runtime.
+//
+// The window sits a bit right of center: the cam burns a watermark bottom-left and a
+// timestamp top-right, and this offset (~14% of frame height) lands the window in the
+// gap between them so neither gets sliced mid-word.
 export function cropToVertical(input: Buffer): Buffer {
   const stamp = Date.now();
   const inPath = join(tmpdir(), `short-in-${stamp}.mp4`);
@@ -40,12 +45,12 @@ export function cropToVertical(input: Buffer): Buffer {
     execFileSync(ffmpegPath(), [
       '-hide_banner', '-loglevel', 'error',
       '-i', inPath,
-      '-vf', 'crop=ih*9/16:ih:(iw-ih*9/16)/2+ih*0.143:0,scale=1080:1920:flags=lanczos',
-      '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20', '-pix_fmt', 'yuv420p',
-      '-c:a', 'aac', '-b:a', '128k',
+      '-vf', 'crop=ih*9/16:ih:(iw-ih*9/16)/2+ih*0.143:0',
+      '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '23', '-pix_fmt', 'yuv420p',
+      '-c:a', 'copy',
       '-movflags', '+faststart',
       '-y', outPath,
-    ], { timeout: 45_000, stdio: 'pipe' });
+    ], { timeout: 120_000, stdio: 'pipe' });
     return readFileSync(outPath);
   } finally {
     for (const p of [inPath, outPath]) if (existsSync(p)) unlinkSync(p);

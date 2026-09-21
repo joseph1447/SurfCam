@@ -6,9 +6,10 @@ import { cropToVertical, uploadShort, surfCheckMeta, type Privacy } from '@/lib/
 
 const CRON_SECRET = process.env.CRON_SECRET;
 
-// Clip creation → Twitch processing (~15s) → download → ffmpeg → YouTube upload.
-// Comfortably under a minute in practice; the headroom is for a slow Twitch encode.
-export const maxDuration = 120;
+// Clip creation → Twitch processing (up to 45s) → download (retries up to ~18s) →
+// ffmpeg (up to 120s on Vercel's CPU) → YouTube upload. Runs twice a day, so the
+// generous ceiling costs nothing unless a step is actually slow.
+export const maxDuration = 300;
 
 // Cuts a fresh clip from the live Twitch stream and uploads it straight to YouTube as a
 // vertical Short. Scheduled from vercel.json at 7:00am and 5:46pm Costa Rica. Replaces the
