@@ -20,10 +20,6 @@
     {
       "path": "/api/restream-toggle/off",
       "schedule": "0 1 * * *"
-    },
-    {
-      "path": "/api/promote-to-shorts",
-      "schedule": "0 14 * * *"
     }
   ]
 }
