@@ -35,10 +35,18 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
 
-      - name: Install deps
-        run: npm ci --omit=dev
+      # Installed in isolation on purpose: the repo's package-lock.json is out of sync
+      # with package.json so npm ci fails, and a full npm install would drag in the
+      # whole Next/Remotion tree for a script that needs two packages. The symlink is
+      # what lets ESM resolve the bare imports from scripts/.
+      - name: Install script deps
+        run: |
+          mkdir -p "$RUNNER_TEMP/deps"
+          cd "$RUNNER_TEMP/deps"
+          npm init -y > /dev/null
+          npm install --no-audit --no-fund googleapis mongoose
+          ln -s "$RUNNER_TEMP/deps/node_modules" "$GITHUB_WORKSPACE/node_modules"
 
       # Pulled fresh every run on purpose: YouTube breaks pinned yt-dlp versions regularly.
       - name: Install yt-dlp
