@@ -1,0 +1,77 @@
+name: Daily Shorts
+
+# Costa Rica is UTC-6 year round (no DST). Both slots fall inside the live window,
+# which restream-toggle opens at 5am CR and closes at 7pm CR.
+on:
+  schedule:
+    - cron: '0 13 * * *'   # 7:00 AM Costa Rica
+    - cron: '46 23 * * *'  # 5:46 PM Costa Rica
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Capture and crop but do not upload
+        type: boolean
+        default: false
+      seconds:
+        description: Clip length in seconds
+        default: '40'
+      privacy:
+        description: privacyStatus for the upload
+        type: choice
+        options: [public, unlisted, private]
+        default: public
+
+concurrency:
+  group: daily-shorts
+  cancel-in-progress: false
+
+jobs:
+  short:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install deps
+        run: npm ci --omit=dev
+
+      # Pulled fresh every run on purpose: YouTube breaks pinned yt-dlp versions regularly.
+      - name: Install yt-dlp
+        run: |
+          sudo curl -fsSL https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux -o /usr/local/bin/yt-dlp
+          sudo chmod +x /usr/local/bin/yt-dlp
+          yt-dlp --version
+
+      - name: Ensure ffmpeg
+        run: ffmpeg -version > /dev/null 2>&1 || (sudo apt-get update && sudo apt-get install -y ffmpeg)
+
+      # Only needed if YouTube starts rejecting the runner IP with "Sign in to confirm
+      # you're not a bot". Export cookies.txt from a logged-in browser into the secret.
+      - name: Write cookies if provided
+        env:
+          YT_COOKIES: ${{ secrets.YT_COOKIES }}
+        run: |
+          if [ -n "$YT_COOKIES" ]; then
+            printf '%s' "$YT_COOKIES" > "$RUNNER_TEMP/cookies.txt"
+            echo "YT_COOKIES_FILE=$RUNNER_TEMP/cookies.txt" >> "$GITHUB_ENV"
+            echo "Using cookies from secret"
+          else
+            echo "No YT_COOKIES secret - anonymous access"
+          fi
+
+      - name: Capture and upload Short
+        env:
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          NEXT_PUBLIC_YT_CHANNEL_ID: ${{ vars.NEXT_PUBLIC_YT_CHANNEL_ID }}
+          CLIP_SECONDS: ${{ inputs.seconds || '40' }}
+          SHORT_PRIVACY: ${{ inputs.privacy || 'public' }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: node scripts/capture-short.mjs

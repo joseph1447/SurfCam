@@ -285,11 +285,18 @@ export async function GET(request: NextRequest) {
       id: videoIds,
     });
 
-    // Step 4: Get already promoted video IDs from DB
-    const alreadyPromoted = await PromotedShort.find({
-      originalVideoId: { $in: videoIds },
-    }).select('originalVideoId');
-    const promotedSet = new Set(alreadyPromoted.map((p) => p.originalVideoId));
+    // Step 4: Get already promoted video IDs from DB. Matching on shortVideoId too
+    // guards the loop: an uploaded Short is <=60s and keeps the "Original clip:" line,
+    // so it would otherwise qualify as a candidate for promoting itself.
+    const alreadySeen = await PromotedShort.find({
+      $or: [
+        { originalVideoId: { $in: videoIds } },
+        { shortVideoId: { $in: videoIds } },
+      ],
+    }).select('originalVideoId shortVideoId');
+    const promotedSet = new Set(
+      alreadySeen.flatMap((p) => [p.originalVideoId, p.shortVideoId]).filter(Boolean)
+    );
 
     // Step 5: Filter candidates
     const candidates = (videosRes.data.items || [])
