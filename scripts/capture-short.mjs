@@ -98,6 +98,7 @@ function captureClip(videoId) {
     '-o', rawPath,
   ];
   if (process.env.FFMPEG_PATH) args.push('--ffmpeg-location', process.env.FFMPEG_PATH);
+  if (process.env.YTDLP_EXTRA_ARGS) args.push(...process.env.YTDLP_EXTRA_ARGS.split(' ').filter(Boolean));
   if (YT_COOKIES_FILE && existsSync(YT_COOKIES_FILE)) args.push('--cookies', YT_COOKIES_FILE);
   args.push(`https://www.youtube.com/watch?v=${videoId}`);
 

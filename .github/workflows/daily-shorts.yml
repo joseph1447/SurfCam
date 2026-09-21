@@ -20,6 +20,9 @@ on:
         type: choice
         options: [public, unlisted, private]
         default: public
+      extra_args:
+        description: Extra flags passed straight to yt-dlp (debugging)
+        default: ''
 
 concurrency:
   group: daily-shorts
@@ -88,4 +91,5 @@ jobs:
           CLIP_SECONDS: ${{ inputs.seconds || '40' }}
           SHORT_PRIVACY: ${{ inputs.privacy || 'public' }}
           DRY_RUN: ${{ inputs.dry_run }}
+          YTDLP_EXTRA_ARGS: ${{ inputs.extra_args }}
         run: node scripts/capture-short.mjs
