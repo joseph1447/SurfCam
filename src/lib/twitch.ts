@@ -91,9 +91,29 @@ export async function waitForClip(
   throw new Error(`Clip ${clipId} not ready after ${timeoutMs / 1000}s`);
 }
 
+// Helix lists a clip a few seconds before its MP4 lands on the CDN, so a download right
+// after waitForClip can 404 (seen in prod: Helix at ~8s, asset not there yet). Retry on
+// exactly the two failures that mean "not ready yet".
+export async function downloadClip(
+  slug: string,
+  { attempts = 6, intervalMs = 3_000 } = {},
+): Promise<Buffer> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await fetchClipMp4(slug);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const notReadyYet = msg.includes('404') || msg.includes('No video data');
+      if (!notReadyYet || attempt >= attempts) throw err;
+      console.log(`⏳ Clip asset not ready (attempt ${attempt}/${attempts}): ${msg}`);
+      await new Promise((r) => setTimeout(r, intervalMs));
+    }
+  }
+}
+
 // Twitch's undocumented GQL endpoint hands out a signed MP4 URL for any public clip.
 // Same query the web player uses; the client id is Twitch's own public web client.
-export async function downloadClip(slug: string): Promise<Buffer> {
+async function fetchClipMp4(slug: string): Promise<Buffer> {
   const gqlRes = await fetch('https://gql.twitch.tv/gql', {
     method: 'POST',
     headers: { 'Client-ID': 'kimne78kx3ncx6brgo4mv6wki5h1ko', 'Content-Type': 'application/json' },
