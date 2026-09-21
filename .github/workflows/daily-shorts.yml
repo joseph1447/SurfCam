@@ -55,6 +55,12 @@ jobs:
           sudo chmod +x /usr/local/bin/yt-dlp
           yt-dlp --version
 
+      # yt-dlp needs a JS runtime to solve YouTube's player challenge. Without it the
+      # runner gets "Sign in to confirm you're not a bot" on every extraction.
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
       - name: Ensure ffmpeg
         run: ffmpeg -version > /dev/null 2>&1 || (sudo apt-get update && sudo apt-get install -y ffmpeg)
 
