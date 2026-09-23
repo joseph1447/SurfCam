@@ -178,7 +178,7 @@ export default function TideWidget() {
   }, [selectedDate]);
 
   const formatTime = (timeStr: string) => {
-    // Convert Excel time (HH:MM) to AM/PM format
+    // Convert HH:MM to AM/PM format
     const [hours, minutes] = timeStr.split(':').map(Number);
     const date = new Date();
     date.setHours(hours, minutes, 0, 0);
@@ -259,7 +259,7 @@ export default function TideWidget() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Waves className="w-5 h-5" />
-            Mareas Puntarenas
+            Mareas Santa Teresa
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -277,7 +277,7 @@ export default function TideWidget() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Waves className="w-5 h-5" />
-            Mareas Puntarenas
+            Mareas Santa Teresa
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -315,7 +315,7 @@ export default function TideWidget() {
                  <div className="flex items-center justify-between">
            <CardTitle className="flex items-center gap-2">
              <Waves className="w-5 h-5" />
-             Mareas Puntarenas
+             Mareas Santa Teresa
            </CardTitle>
                        <div className="flex items-center gap-2">
               <button
@@ -438,7 +438,7 @@ export default function TideWidget() {
            </div>
          )}
 
-        {/* Raw Excel Data */}
+        {/* Today's tides */}
         {tideData.todayData && tideData.todayData.tides && (
           <div>
             <div className="space-y-2 max-h-64 overflow-y-auto">
@@ -491,7 +491,7 @@ export default function TideWidget() {
                  {/* Footer */}
          <div className="border-t pt-3">
            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-             <span>Fuente: IMN Costa Rica</span>
+             <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer" className="hover:underline">Fuente: Open-Meteo</a>
            </div>
          </div>
       </CardContent>

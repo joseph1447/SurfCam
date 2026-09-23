@@ -7,6 +7,10 @@ export interface TwitchShort extends Document {
   title?: string;
   status: 'processing' | 'completed' | 'failed' | 'skipped';
   error?: string;
+  // What the Short carried, for comparing hooks / music on vs off in YouTube Analytics.
+  hook?: string;
+  music?: string | null;
+  report?: Record<string, unknown> | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -22,6 +26,9 @@ const twitchShortSchema = new Schema<TwitchShort>({
     default: 'processing',
   },
   error: { type: String, trim: true },
+  hook: { type: String, trim: true },
+  music: { type: String, default: null },
+  report: { type: Schema.Types.Mixed, default: null },
 }, {
   timestamps: true,
 });
