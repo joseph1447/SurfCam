@@ -125,7 +125,7 @@ export default function YouTubeEmbedClient({
     <div className="w-full relative">
       <div
         className="w-full flex items-center justify-center relative"
-        style={{ aspectRatio: '16/9', backgroundColor: '#0f0f23' }}
+        style={{ aspectRatio: '16/9', backgroundColor: '#07121D' }}
       >
         {!isLoaded && !hasError && (
           <div className="text-white text-center">
@@ -182,7 +182,7 @@ export default function YouTubeEmbedClient({
             onLoad={handleLoad}
             onError={handleError}
             className={`w-full ${isLoaded ? 'opacity-100' : 'opacity-0'} transition-opacity duration-500`}
-            style={{ backgroundColor: '#0f0f23' }}
+            style={{ backgroundColor: '#07121D' }}
           />
         )}
 

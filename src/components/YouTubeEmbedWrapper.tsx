@@ -8,7 +8,7 @@ import { Suspense } from 'react';
 const YouTubeEmbedClient = dynamic(() => import('./YouTubeEmbedClient'), {
   ssr: false,
   loading: () => (
-    <div className="w-full flex items-center justify-center" style={{ aspectRatio: '16/9', backgroundColor: '#0f0f23' }}>
+    <div className="w-full flex items-center justify-center" style={{ aspectRatio: '16/9', backgroundColor: '#07121D' }}>
       <div className="text-white text-center">
         <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4" />
         <p>Cargando video de YouTube...</p>
@@ -49,7 +49,7 @@ function YouTubeFacade({
   return (
     <button
       onClick={onActivate}
-      className="w-full relative group cursor-pointer border-0 p-0 bg-[#0f0f23] focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
+      className="w-full relative group cursor-pointer border-0 p-0 bg-[#07121D] focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
       style={{ aspectRatio: '16/9' }}
       aria-label={`Play: ${title || 'Santa Teresa Live Surf Cam'}`}
     >
@@ -128,7 +128,7 @@ export default function YouTubeEmbedWrapper(props: YouTubeEmbedWrapperProps) {
 
   return (
     <Suspense fallback={
-      <div className="w-full flex items-center justify-center" style={{ aspectRatio: '16/9', backgroundColor: '#0f0f23' }}>
+      <div className="w-full flex items-center justify-center" style={{ aspectRatio: '16/9', backgroundColor: '#07121D' }}>
         <div className="text-white text-center">
           <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p>Cargando video de YouTube...</p>

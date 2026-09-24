@@ -308,7 +308,7 @@ export default function RecentSurfReports() {
 
   if (loading) {
     return (
-      <div className="w-full backdrop-blur-md bg-[#121419]/80 border border-white/10 rounded-2xl p-4">
+      <div className="surface-panel w-full rounded-2xl p-4">
         <div className="flex items-center gap-3 mb-4">
           <div className="h-5 w-5 bg-red-500/30 rounded animate-pulse" />
           <div className="h-5 bg-white/10 rounded w-48 animate-pulse" />
@@ -328,7 +328,7 @@ export default function RecentSurfReports() {
   if (shorts.length === 0) return null;
 
   return (
-    <div className="w-full backdrop-blur-md bg-[#121419]/80 border border-white/10 rounded-2xl p-4 overflow-hidden">
+    <div className="surface-panel w-full rounded-2xl p-4 overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2.5">

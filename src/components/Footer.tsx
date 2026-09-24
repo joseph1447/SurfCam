@@ -1,15 +1,17 @@
 "use client";
 
 import { Link } from '@/i18n/routing';
-import { Mail } from 'lucide-react';
+import { Gamepad2, Mail } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { GAME_URL } from '@/lib/links';
 
 export default function Footer() {
   const t = useTranslations('footer');
+  const tNav = useTranslations('nav');
   const year = new Date().getFullYear();
 
   return (
-    <footer className="border-t border-white/10 bg-[#090A0E]/80 backdrop-blur-sm mt-auto w-full relative z-10">
+    <footer className="border-t border-white/[0.06] bg-[#050C14]/85 backdrop-blur-sm mt-auto w-full relative z-10">
       <div className="container mx-auto px-4 py-8">
         <div className="grid md:grid-cols-3 gap-8 mb-6">
           <div>
@@ -28,6 +30,17 @@ export default function Footer() {
                 <Link href="/surf-lessons" className="text-white/60 hover:text-white transition-colors">
                   {t('surfLessons')}
                 </Link>
+              </li>
+              <li>
+                <a
+                  href={GAME_URL}
+                  target="_blank"
+                  rel="noopener"
+                  className="inline-flex items-center gap-2 text-[#FFB07A] hover:text-white transition-colors"
+                >
+                  <Gamepad2 className="h-4 w-4" aria-hidden />
+                  {tNav('game')} · Ripping
+                </a>
               </li>
               <li>
                 <Link href="/contacto" className="text-white/60 hover:text-white transition-colors">

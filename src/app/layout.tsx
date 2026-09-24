@@ -1,20 +1,21 @@
 // Root layout - provides HTML structure for all routes
 import './globals.css';
 import type { Metadata } from 'next';
-import { Open_Sans, PT_Serif, JetBrains_Mono } from 'next/font/google';
+import { IBM_Plex_Sans, Playfair_Display, JetBrains_Mono } from 'next/font/google';
 
-const openSans = Open_Sans({
+// The SurfCam type system (see CLAUDE.md): Playfair headlines, Plex body, JetBrains data.
+const plexSans = IBM_Plex_Sans({
   subsets: ['latin'],
-  weight: ['400', '600', '700'],
+  weight: ['400', '500', '600', '700'],
   display: 'swap',
-  variable: '--font-open-sans',
+  variable: '--font-body',
 });
 
-const ptSerif = PT_Serif({
+const playfair = Playfair_Display({
   subsets: ['latin'],
-  weight: ['400', '700'],
+  weight: ['500', '600', '700'],
   display: 'swap',
-  variable: '--font-pt-serif',
+  variable: '--font-headline',
 });
 
 const jetbrainsMono = JetBrains_Mono({
@@ -35,7 +36,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es" suppressHydrationWarning className={`${openSans.variable} ${ptSerif.variable} ${jetbrainsMono.variable}`}>
+    <html lang="es" suppressHydrationWarning className={`${plexSans.variable} ${playfair.variable} ${jetbrainsMono.variable}`}>
       <head>
         {/* DNS prefetch for YouTube (loaded lazily, no preconnect needed) */}
         <link rel="dns-prefetch" href="https://www.youtube.com" />
@@ -44,7 +45,7 @@ export default async function RootLayout({
         <link rel="icon" type="image/png" sizes="32x32" href="/wave-32.png" />
         <link rel="shortcut icon" href="/wave-16.png" />
       </head>
-      <body className={openSans.className} suppressHydrationWarning>
+      <body className={plexSans.className} suppressHydrationWarning>
         {children}
       </body>
     </html>

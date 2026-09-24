@@ -25,18 +25,36 @@ export interface TideSeries {
   extremes: TideExtreme[];
 }
 
+export type WindKind = 'light' | 'offshore' | 'onshore' | 'cross-shore';
+
 export interface SurfReport {
   swellFt: number;
   swellPeriodS: number;
   swellFrom: string;
+  swellFromDeg: number;
   windKmh: number;
   windFrom: string;
-  windKind: 'light' | 'offshore' | 'onshore' | 'cross-shore';
+  windFromDeg: number;
+  windKind: WindKind;
+  waterTempC: number | null;
   tide: {
     direction: 'rising' | 'falling';
     heightFt: number;
     next: TideExtreme | null;
   };
+}
+
+// Everything the home page's conditions panel draws for one Costa Rica calendar day.
+export interface DayOutlook {
+  date: string;
+  generatedAt: number;
+  now: SurfReport;
+  tide: TideSeries;
+  // Turns from yesterday through tomorrow, so the live cycle (last turn → next turn) is
+  // known even when it crosses midnight.
+  cycle: TideExtreme[];
+  wind: { at: number; kmh: number; fromDeg: number; kind: WindKind }[];
+  sun: { sunrise: number; sunset: number };
 }
 
 async function getJson(url: string) {
@@ -90,47 +108,99 @@ export function tideAt(series: TideSeries, at: number) {
   const [before, after] = [series.points[i - 1], series.points[i]];
   if (!before || !after) throw new Error('Time outside tide series');
   const heightFt = before.heightFt + ((after.heightFt - before.heightFt) * (at - before.at)) / (after.at - before.at);
+  const next = series.extremes.find((e) => e.at > at) ?? null;
+  // Heading for the next turn: comparing neighbouring 15-min samples flips early near a
+  // turn, which read as "Rising · Low 6:40 PM" minutes before the low.
+  const rising = next ? next.type === 'high' : after.heightFt >= before.heightFt;
   return {
     heightFt: round1(heightFt),
-    direction: after.heightFt >= before.heightFt ? ('rising' as const) : ('falling' as const),
-    next: series.extremes.find((e) => e.at > at) ?? null,
+    direction: rising ? ('rising' as const) : ('falling' as const),
+    next,
   };
 }
 
-export async function getSurfReport(at = Date.now()): Promise<SurfReport> {
-  const today = crDate(at);
-  const tomorrow = crDate(at + 86_400_000);
-  const [marine, weather, tides] = await Promise.all([
+// Today and tomorrow, hourly, in Costa Rica time. Both callers use these exact URLs, so
+// they share Next's data cache.
+async function getHourly() {
+  const [marine, weather] = await Promise.all([
     getJson(
       `https://marine-api.open-meteo.com/v1/marine?latitude=${LAT}&longitude=${LON}` +
-        `&hourly=swell_wave_height,swell_wave_period,swell_wave_direction&timeformat=unixtime&timezone=${TZ}&forecast_days=1`,
+        `&hourly=swell_wave_height,swell_wave_period,swell_wave_direction,sea_surface_temperature` +
+        `&timeformat=unixtime&timezone=${TZ}&forecast_days=2`,
     ),
     getJson(
       `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}` +
-        `&hourly=wind_speed_10m,wind_direction_10m&timeformat=unixtime&timezone=${TZ}&forecast_days=1`,
+        `&hourly=wind_speed_10m,wind_direction_10m&daily=sunrise,sunset` +
+        `&timeformat=unixtime&timezone=${TZ}&forecast_days=2`,
     ),
-    getTides(today, tomorrow),
   ]);
+  return { marine: marine.hourly, weather: weather.hourly, daily: weather.daily };
+}
 
+type Hourly = Awaited<ReturnType<typeof getHourly>>;
+
+function reportAt({ marine, weather }: Hourly, tides: TideSeries, at: number): SurfReport {
   const hour = (times: number[]) =>
     times.reduce((best, t, i) => (Math.abs(t * 1000 - at) < Math.abs(times[best] * 1000 - at) ? i : best), 0);
-  const m = hour(marine.hourly.time);
-  const w = hour(weather.hourly.time);
-  const windDeg: number = weather.hourly.wind_direction_10m[w];
+  const m = hour(marine.time);
+  const w = hour(weather.time);
+  const swellDeg: number = marine.swell_wave_direction[m];
+  const windDeg: number = weather.wind_direction_10m[w];
+  const water: number | null = marine.sea_surface_temperature[m];
 
   return {
-    swellFt: round1(marine.hourly.swell_wave_height[m] * 3.281),
-    swellPeriodS: Math.round(marine.hourly.swell_wave_period[m]),
-    swellFrom: compass(marine.hourly.swell_wave_direction[m]),
-    windKmh: Math.round(weather.hourly.wind_speed_10m[w]),
+    swellFt: round1(marine.swell_wave_height[m] * 3.281),
+    swellPeriodS: Math.round(marine.swell_wave_period[m]),
+    swellFrom: compass(swellDeg),
+    swellFromDeg: Math.round(swellDeg),
+    windKmh: Math.round(weather.wind_speed_10m[w]),
     windFrom: compass(windDeg),
-    windKind: windKind(windDeg, weather.hourly.wind_speed_10m[w]),
+    windFromDeg: Math.round(windDeg),
+    windKind: windKind(windDeg, weather.wind_speed_10m[w]),
+    waterTempC: water == null ? null : round1(water),
     tide: tideAt(tides, at),
   };
 }
 
+export async function getSurfReport(at = Date.now()): Promise<SurfReport> {
+  const [hourly, tides] = await Promise.all([getHourly(), getTides(crDate(at), crDate(at + 86_400_000))]);
+  return reportAt(hourly, tides, at);
+}
+
+export async function getDayOutlook(at = Date.now()): Promise<DayOutlook> {
+  const date = crDate(at);
+  // A day of padding each side so turns near midnight are still detected.
+  const [hourly, tides] = await Promise.all([
+    getHourly(),
+    getTides(crDate(at - 86_400_000), crDate(at + 86_400_000)),
+  ]);
+  const start = Date.parse(`${date}T00:00:00-06:00`);
+  const end = start + 86_400_000;
+  const today = (t: number) => t >= start && t <= end;
+
+  return {
+    date,
+    generatedAt: at,
+    now: reportAt(hourly, tides, at),
+    tide: {
+      points: tides.points.filter((p) => today(p.at)).map((p) => ({ at: p.at, heightFt: round1(p.heightFt) })),
+      extremes: tides.extremes.filter((e) => today(e.at)),
+    },
+    cycle: tides.extremes,
+    wind: hourly.weather.time
+      .map((t: number, i: number) => ({
+        at: t * 1000,
+        kmh: Math.round(hourly.weather.wind_speed_10m[i]),
+        fromDeg: Math.round(hourly.weather.wind_direction_10m[i]),
+        kind: windKind(hourly.weather.wind_direction_10m[i], hourly.weather.wind_speed_10m[i]),
+      }))
+      .filter((w: { at: number }) => w.at >= start && w.at < end),
+    sun: { sunrise: hourly.daily.sunrise[0] * 1000, sunset: hourly.daily.sunset[0] * 1000 },
+  };
+}
+
 // Under ~6 km/h the surface stays glassy whichever way it blows.
-function windKind(fromDeg: number, kmh: number): SurfReport['windKind'] {
+function windKind(fromDeg: number, kmh: number): WindKind {
   if (kmh < 6) return 'light';
   const off = Math.abs(((fromDeg - OFFSHORE_FROM_DEG + 540) % 360) - 180);
   if (off <= 45) return 'offshore';

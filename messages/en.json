@@ -37,7 +37,9 @@
     "restaurants": "Restaurants",
     "contact": "Contact",
     "profile": "Profile",
-    "admin": "Admin"
+    "admin": "Admin",
+    "game": "Surf game",
+    "gameShort": "Game"
   },
   "home": {
     "title": "Santa Teresa Surf Cam",
@@ -46,7 +48,14 @@
     "liveStream": "Live Stream",
     "chat": "Chat",
     "tides": "Tides",
-    "conditions": "Conditions"
+    "conditions": "Conditions",
+    "eyebrow": "Costa Rica · Nicoya Peninsula",
+    "heroTitle": "Santa Teresa",
+    "heroSubtitle": "Live 24/7 surf cam with real-time tide, swell and wind",
+    "localTime": "Local time",
+    "sourceLabel": "Video source",
+    "youtubeHint": "Standard quality · universal access",
+    "twitchHint": "Max HD · chat · replays"
   },
   "aiservices": {
     "title": "Online Presence for Businesses in Santa Teresa, Costa Rica",
@@ -70,6 +79,46 @@
     "readyToStartDescription": "Transform your digital presence today. Contact us for a free consultation.",
     "sendEmail": "Send Email",
     "viewContactPage": "View Contact Page"
+  },
+  "conditions": {
+    "title": "Conditions now",
+    "updated": "Updated {time}",
+    "swell": "Swell",
+    "wind": "Wind",
+    "tide": "Tide",
+    "water": "Water",
+    "from": "from the {dir}",
+    "rising": "Rising",
+    "falling": "Falling",
+    "high": "High",
+    "low": "Low",
+    "today": "Today's tide & wind",
+    "sunrise": "Sunrise",
+    "sunset": "Sunset",
+    "windLegend": "Wind legend",
+    "windKind": {
+      "offshore": "Offshore",
+      "cross-shore": "Cross-shore",
+      "onshore": "Onshore",
+      "light": "Light"
+    },
+    "chartLabel": "Today's tide curve in Santa Teresa: {summary}",
+    "source": "Forecast, swell and tides:",
+    "error": "We couldn't load the ocean conditions.",
+    "retry": "Retry",
+    "now": "NOW",
+    "nextIn": "{type} in {time}",
+    "hoursMinutes": "{h}h {m}m",
+    "minutes": "{m} min",
+    "cycleLabel": "Tide progress from {from} to {to}"
+  },
+  "game": {
+    "eyebrow": "Free game · New",
+    "title": "Ripping",
+    "tagline": "Surf the waves of Santa Teresa in 3D",
+    "description": "Drop in, get barreled, land tricks and climb the leaderboard. Right in your browser, no download.",
+    "cta": "Play now",
+    "platforms": "Desktop & mobile",
+    "imageAlt": "Surfer riding a Sunset Reef wave in Santa Teresa, in the game Ripping"
   }
 }
-

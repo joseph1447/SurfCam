@@ -151,7 +151,7 @@ export default function SurfLessonQuote({ compact = false, className = '' }: Sur
 
   if (compact) {
     return (
-      <Card className={`border-cyan-500/30 bg-gradient-to-br from-[#0d1117]/95 to-[#161b22]/95 backdrop-blur-md ${className}`}>
+      <Card className={`rounded-2xl border-[rgba(160,205,235,0.1)] bg-[linear-gradient(180deg,rgba(13,30,44,0.8),rgba(7,17,27,0.8))] backdrop-blur-[14px] ${className}`}>
         <CardHeader className="pb-2">
           <CardTitle className="text-lg flex items-center gap-2">
             <Calculator className="h-5 w-5 text-cyan-400" />
@@ -324,7 +324,7 @@ export default function SurfLessonQuote({ compact = false, className = '' }: Sur
 
   // Full version for surf-lessons page
   return (
-    <Card className={`border-cyan-500/30 bg-gradient-to-br from-[#0d1117]/95 to-[#161b22]/95 backdrop-blur-md overflow-hidden ${className}`}>
+    <Card className={`rounded-2xl border-[rgba(160,205,235,0.1)] bg-[linear-gradient(180deg,rgba(13,30,44,0.8),rgba(7,17,27,0.8))] backdrop-blur-[14px] overflow-hidden ${className}`}>
       <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
 
       <CardHeader className="relative">

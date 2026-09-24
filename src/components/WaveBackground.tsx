@@ -1,132 +1,60 @@
-"use client";
+// Night nautical chart: depth-lit water, bathymetric contours around the reef, a touch of
+// grain. Fully static (no animation loop), rendered once on the server.
+
+// Irregular closed rings around a point, like depth contours on a chart.
+function contours(cx: number, cy: number, rings: number, step: number, seed: number) {
+  return Array.from({ length: rings }, (_, k) => {
+    const r0 = 90 + k * step;
+    const pts = Array.from({ length: 97 }, (_, i) => {
+      const a = (i / 96) * Math.PI * 2;
+      const r =
+        r0 *
+        (1 +
+          0.07 * Math.sin(3 * a + k * 0.55 + seed) +
+          0.04 * Math.sin(5 * a - k * 0.9 + seed * 2) +
+          0.025 * Math.sin(9 * a + k * 1.7));
+      return `${(cx + r * Math.cos(a)).toFixed(1)},${(cy + r * Math.sin(a) * 0.62).toFixed(1)}`;
+    });
+    return `M${pts.join("L")}Z`;
+  });
+}
+
+const REEF = contours(1560, 40, 16, 64, 0.4);
+const POINT = contours(180, 1120, 9, 70, 2.1);
 
 export default function WaveBackground() {
   return (
-    <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-      {/* CSS-only animated waves - no JS, no main thread work */}
-      <svg
-        className="absolute bottom-0 w-full wave-svg-1"
-        style={{ height: '30%', opacity: 0.15 }}
-        viewBox="0 0 1920 400"
-        preserveAspectRatio="none"
-      >
-        <path
-          d="M0,200 Q480,150 960,200 T1920,200 L1920,400 L0,400 Z"
-          fill="url(#waveGradient1)"
-        >
-          <animate
-            attributeName="d"
-            dur="8s"
-            repeatCount="indefinite"
-            values="
-              M0,200 Q480,150 960,200 T1920,200 L1920,400 L0,400 Z;
-              M0,215 Q480,170 960,190 T1920,215 L1920,400 L0,400 Z;
-              M0,200 Q480,150 960,200 T1920,200 L1920,400 L0,400 Z
-            "
-          />
-        </path>
-        <defs>
-          <linearGradient id="waveGradient1" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="hsl(190, 70%, 50%)" stopOpacity="0.4" />
-            <stop offset="100%" stopColor="hsl(190, 70%, 50%)" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-      </svg>
-
-      <svg
-        className="absolute bottom-0 w-full wave-svg-2"
-        style={{ height: '25%', opacity: 0.1 }}
-        viewBox="0 0 1920 400"
-        preserveAspectRatio="none"
-      >
-        <path
-          d="M0,220 Q480,180 960,220 T1920,220 L1920,400 L0,400 Z"
-          fill="url(#waveGradient2)"
-        >
-          <animate
-            attributeName="d"
-            dur="10s"
-            repeatCount="indefinite"
-            values="
-              M0,220 Q480,180 960,220 T1920,220 L1920,400 L0,400 Z;
-              M0,240 Q480,200 960,210 T1920,240 L1920,400 L0,400 Z;
-              M0,220 Q480,180 960,220 T1920,220 L1920,400 L0,400 Z
-            "
-          />
-        </path>
-        <defs>
-          <linearGradient id="waveGradient2" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="hsl(200, 75%, 55%)" stopOpacity="0.3" />
-            <stop offset="100%" stopColor="hsl(200, 75%, 55%)" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-      </svg>
-
-      {/* CSS-only bubbles - no JS animation loop */}
-      <div className="absolute inset-0">
-        {Array.from({ length: 12 }, (_, i) => (
-          <div
-            key={i}
-            className="absolute rounded-full"
-            style={{
-              left: `${(i * 8 + 5) % 95}%`,
-              bottom: '-20px',
-              width: `${8 + (i % 4) * 5}px`,
-              height: `${8 + (i % 4) * 5}px`,
-              background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.6), rgba(100,200,255,0.3), rgba(0,150,255,0.15))',
-              border: '1px solid rgba(255,255,255,0.2)',
-              opacity: 0.25,
-              animation: `bubble-rise ${12 + (i % 5) * 3}s linear infinite`,
-              animationDelay: `${i * 1.2}s`,
-            }}
-          />
-        ))}
-      </div>
-
-      {/* Static gradient overlay */}
+    <div aria-hidden className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
       <div
         className="absolute inset-0"
         style={{
-          background: 'radial-gradient(ellipse at 50% 0%, rgba(100,200,255,0.15) 0%, rgba(14,116,144,0.12) 30%, rgba(6,78,96,0.08) 60%, transparent 90%), linear-gradient(180deg, rgba(0,100,150,0.1) 0%, rgba(0,50,100,0.05) 50%, rgba(0,20,40,0.02) 100%)',
+          background:
+            "radial-gradient(1100px 620px at 88% -8%, rgba(0,170,255,0.17), transparent 62%)," +
+            "radial-gradient(900px 520px at -8% 108%, rgba(255,106,0,0.07), transparent 60%)," +
+            "linear-gradient(180deg, #0a1a28 0%, #07121d 42%, #050c14 100%)",
         }}
       />
 
-      {/* Light rays using CSS animation */}
-      <div className="absolute inset-0 overflow-hidden">
-        {[0, 1, 2, 3, 4].map((i) => (
-          <div
-            key={`ray-${i}`}
-            className="absolute top-0 animate-pulse"
-            style={{
-              left: `${15 + i * 20}%`,
-              width: 80,
-              height: '70%',
-              background: 'linear-gradient(180deg, rgba(100,200,255,0.04) 0%, transparent 100%)',
-              transform: 'skewX(-5deg)',
-              animationDuration: `${3 + i * 0.5}s`,
-            }}
-          />
-        ))}
-      </div>
+      <svg className="absolute inset-0 h-full w-full" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
+        <g fill="none" stroke="#9fd4f0" strokeWidth={1}>
+          {REEF.map((d, i) => (
+            <path key={`r${i}`} d={d} strokeOpacity={i % 4 === 0 ? 0.11 : 0.055} />
+          ))}
+          {POINT.map((d, i) => (
+            <path key={`p${i}`} d={d} strokeOpacity={i % 3 === 0 ? 0.08 : 0.04} />
+          ))}
+        </g>
+      </svg>
 
-      <style jsx>{`
-        @keyframes bubble-rise {
-          0% {
-            transform: translateY(0) translateX(0);
-            opacity: 0;
-          }
-          10% {
-            opacity: 0.25;
-          }
-          90% {
-            opacity: 0.15;
-          }
-          100% {
-            transform: translateY(-110vh) translateX(20px);
-            opacity: 0;
-          }
-        }
-      `}</style>
+      <svg className="absolute inset-0 h-full w-full opacity-[0.045] mix-blend-overlay">
+        <filter id="bg-grain">
+          <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" />
+        </filter>
+        <rect width="100%" height="100%" filter="url(#bg-grain)" />
+      </svg>
+
+      {/* Vignette keeps the edges deep so panels float */}
+      <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 50% 40%, transparent 55%, rgba(2,6,11,0.55) 100%)" }} />
     </div>
   );
 }

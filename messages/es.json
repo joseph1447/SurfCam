@@ -37,7 +37,9 @@
     "restaurants": "Restaurantes",
     "contact": "Contacto",
     "profile": "Perfil",
-    "admin": "Admin"
+    "admin": "Admin",
+    "game": "Juego de surf",
+    "gameShort": "Juego"
   },
   "home": {
     "title": "Santa Teresa Surf Cam",
@@ -46,7 +48,14 @@
     "liveStream": "Transmisión en Vivo",
     "chat": "Chat",
     "tides": "Mareas",
-    "conditions": "Condiciones"
+    "conditions": "Condiciones",
+    "eyebrow": "Costa Rica · Península de Nicoya",
+    "heroTitle": "Santa Teresa",
+    "heroSubtitle": "Cámara de surf en vivo 24/7 con marea, swell y viento en tiempo real",
+    "localTime": "Hora local",
+    "sourceLabel": "Fuente del video",
+    "youtubeHint": "Calidad estándar · acceso universal",
+    "twitchHint": "HD máximo · chat · repeticiones"
   },
   "aiservices": {
     "title": "Presencia Online para Negocios en Santa Teresa, Costa Rica",
@@ -70,6 +79,46 @@
     "readyToStartDescription": "Transforma tu presencia digital hoy mismo. Contáctanos para una consulta gratuita.",
     "sendEmail": "Enviar Email",
     "viewContactPage": "Ver Página de Contacto"
+  },
+  "conditions": {
+    "title": "Condiciones ahora",
+    "updated": "Actualizado {time}",
+    "swell": "Swell",
+    "wind": "Viento",
+    "tide": "Marea",
+    "water": "Agua",
+    "from": "desde el {dir}",
+    "rising": "Subiendo",
+    "falling": "Bajando",
+    "high": "Alta",
+    "low": "Baja",
+    "today": "Marea y viento de hoy",
+    "sunrise": "Amanecer",
+    "sunset": "Atardecer",
+    "windLegend": "Leyenda del viento",
+    "windKind": {
+      "offshore": "Offshore",
+      "cross-shore": "Cruzado",
+      "onshore": "Onshore",
+      "light": "Suave"
+    },
+    "chartLabel": "Curva de marea de hoy en Santa Teresa: {summary}",
+    "source": "Pronóstico, oleaje y mareas:",
+    "error": "No pudimos cargar las condiciones del mar.",
+    "retry": "Reintentar",
+    "now": "AHORA",
+    "nextIn": "{type} en {time}",
+    "hoursMinutes": "{h} h {m} min",
+    "minutes": "{m} min",
+    "cycleLabel": "Avance de la marea de {from} a {to}"
+  },
+  "game": {
+    "eyebrow": "Juego gratis · Nuevo",
+    "title": "Ripping",
+    "tagline": "Surfea las olas de Santa Teresa en 3D",
+    "description": "Toma la ola, métete al tubo, haz maniobras y compite en el ranking. Directo en tu navegador, sin descargas.",
+    "cta": "Jugar ahora",
+    "platforms": "PC y celular",
+    "imageAlt": "Surfista en una ola de Sunset Reef, Santa Teresa, en el juego Ripping"
   }
 }
-

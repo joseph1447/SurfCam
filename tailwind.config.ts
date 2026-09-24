@@ -10,9 +10,9 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['var(--font-open-sans)', '"Open Sans"', 'sans-serif'],
-        body: ['var(--font-open-sans)', '"Open Sans"', 'sans-serif'],
-        headline: ['var(--font-pt-serif)', '"PT Serif"', 'serif'],
+        sans: ['var(--font-body)', '"IBM Plex Sans"', 'sans-serif'],
+        body: ['var(--font-body)', '"IBM Plex Sans"', 'sans-serif'],
+        headline: ['var(--font-headline)', '"Playfair Display"', 'serif'],
         mono: ['var(--font-jetbrains-mono)', '"JetBrains Mono"', 'monospace'],
       },
       colors: {

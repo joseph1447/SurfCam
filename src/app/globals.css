@@ -3,16 +3,16 @@
 @tailwind utilities;
 
 body {
-  background: #000000;
+  background: #050c14;
   background-attachment: fixed;
 }
 
 @layer base {
   :root {
-    /* Deep Black Foundation */
-    --background: 220 15% 4%;
-    --background-elevated: 220 15% 8%;
-    --background-card: 220 15% 10%;
+    /* Deep ocean foundation (night nautical chart) */
+    --background: 210 50% 5%;
+    --background-elevated: 210 45% 8%;
+    --background-card: 210 42% 10%;
 
     /* Text Colors - Gray Scale */
     --foreground: 0 0% 100%;
@@ -21,9 +21,9 @@ body {
     --text-dark-grey: 220 10% 40%;
 
     /* Card & Popover */
-    --card: 220 15% 10%;
+    --card: 210 42% 10%;
     --card-foreground: 0 0% 100%;
-    --popover: 220 15% 10%;
+    --popover: 210 42% 10%;
     --popover-foreground: 0 0% 100%;
 
     /* Primary - Subtle Blue */
@@ -35,8 +35,8 @@ body {
     --secondary-foreground: 220 15% 4%;
 
     /* Muted */
-    --muted: 220 15% 20%;
-    --muted-foreground: 220 10% 60%;
+    --muted: 210 30% 16%;
+    --muted-foreground: 210 15% 62%;
 
     /* Accent - Gold highlight */
     --accent: 40 80% 55%;
@@ -49,8 +49,8 @@ body {
     --warning: 40 80% 55%;
 
     /* Border & Input */
-    --border: 220 15% 20%;
-    --input: 220 15% 12%;
+    --border: 210 30% 18%;
+    --input: 210 40% 11%;
     --ring: 220 60% 50%;
 
     /* Charts */
@@ -112,6 +112,14 @@ body {
 
   .gradient-gold {
     @apply bg-gradient-to-r from-[#D4A32A] to-[#B8922A];
+  }
+
+  /* The one surface every home panel sits on: deep-water glass with a hairline edge */
+  .surface-panel {
+    background: linear-gradient(180deg, rgba(13, 30, 44, 0.8), rgba(7, 17, 27, 0.8));
+    border: 1px solid rgba(160, 205, 235, 0.1);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 24px 48px -28px rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(14px);
   }
 
   /* Glass effect - subtle MH1 style */
@@ -176,6 +184,22 @@ body {
 
   .fade-in {
     animation: fade-in 0.4s ease-out;
+  }
+
+  /* Tide curve draws itself in; the path uses pathLength="1" */
+  .tide-draw {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: tide-draw 1.4s cubic-bezier(0.16, 1, 0.3, 1) 0.25s forwards;
+  }
+
+  @keyframes tide-draw {
+    to { stroke-dashoffset: 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tide-draw { animation: none; stroke-dashoffset: 0; }
+    .fade-in-up { animation: none; }
   }
 
   @keyframes fade-in {

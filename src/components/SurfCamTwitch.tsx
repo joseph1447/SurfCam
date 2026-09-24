@@ -6,7 +6,10 @@ import { Button } from "@/components/ui/button";
 import TwitchEmbedClient from "./TwitchEmbedClient";
 import YouTubeEmbedWrapper from "./YouTubeEmbedWrapper";
 import ServerTabs from "./ServerTabs";
+import SurfConditions from "./SurfConditions";
+import RippingPromo from "./RippingPromo";
 import { usePWA } from "@/hooks/usePWA";
+import { useTranslations } from "next-intl";
 
 // Lazy load components with different priorities
 // const RadioWidget = lazy(() => import("./RadioWidget")); // Hidden: causes more problems than benefits
@@ -30,7 +33,7 @@ function useProgressiveLoading() {
 
 // Skeleton components for loading states
 const SurfLessonQuoteSkeleton = () => (
-  <div className="w-full backdrop-blur-md bg-[#121419]/80 border border-white/10 rounded-2xl p-4 animate-pulse">
+  <div className="surface-panel w-full rounded-2xl p-4 animate-pulse">
     <div className="space-y-3">
       <div className="h-5 bg-white/10 rounded w-48"></div>
       <div className="flex gap-2">
@@ -44,6 +47,7 @@ const SurfLessonQuoteSkeleton = () => (
 );
 
 export default function SurfCamTwitch() {
+  const t = useTranslations("home");
   const { isInstallable, isInstalled, installApp } = usePWA();
   const [isInstalling, setIsInstalling] = useState(false);
   const [currentServer, setCurrentServer] = useState<'twitch' | 'youtube'>('youtube');
@@ -112,10 +116,10 @@ export default function SurfCamTwitch() {
         <div className="container mx-auto max-w-7xl">
           {/* PWA Install Banner */}
           {isInstallable && !isInstalled && (
-            <div className="mb-6 bg-gradient-to-r from-[#3366BB] to-[#2A5599] text-white p-4 rounded-lg shadow-lg shadow-black/30">
+            <div className="surface-panel mb-6 text-white p-4 rounded-2xl">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                  <div className="w-10 h-10 bg-[#00AAFF]/15 rounded-full flex items-center justify-center">
                     <span className="text-xl">📱</span>
                   </div>
                   <div>
@@ -135,44 +139,63 @@ export default function SurfCamTwitch() {
             </div>
           )}
 
-          {/* Server Tabs */}
-          <ServerTabs
-            currentServer={currentServer}
-            onServerChange={handleServerChange}
-          />
-
-          {/* Main content area - Video full width */}
-          <div className="w-full space-y-4">
-            {/* Video container - Full width */}
-            <div className="w-full relative rounded-xl overflow-hidden shadow-2xl shadow-black/40">
-              {currentServer === 'youtube' ? (
-                <YouTubeEmbedWrapper
-                  videoId={youtubeVideoId}
-                  title="Pura Vida & Epic Waves | Santa Teresa Live Surf Cam 24/7 | Costa Rica"
-                  autoplay={true}
-                  muted={true}
-                  allowfullscreen={true}
-                  onVideoReady={handleVideoReady}
-                  onVideoPlay={handleVideoPlay}
-                />
-              ) : (
-                <TwitchEmbedClient
-                  channel="elsurfo"
-                  layout="video-with-chat"
-                  autoplay={true}
-                  muted={false}
-                  theme="dark"
-                  allowfullscreen={true}
-                  onVideoReady={handleVideoReady}
-                  onVideoPlay={handleVideoPlay}
-                />
-              )}
+          {/* Spot title + video source switch */}
+          <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-[#00AAFF] fade-in-up">{t("eyebrow")}</p>
+              <h1 className="mt-1.5 text-4xl font-semibold tracking-tight text-white md:text-5xl fade-in-up" style={{ animationDelay: "80ms", animationFillMode: "both" }}>
+                {t("heroTitle")}
+              </h1>
+              <p className="mt-2 max-w-xl text-sm text-white/60 md:text-base fade-in-up" style={{ animationDelay: "160ms", animationFillMode: "both" }}>
+                {t("heroSubtitle")}
+              </p>
             </div>
+            <ServerTabs
+              currentServer={currentServer}
+              onServerChange={handleServerChange}
+            />
+          </div>
+
+          {/* Main content area */}
+          <div className="w-full space-y-4">
+            {/* Hero: the cam plus live conditions. Side by side on wide screens for YouTube;
+                Twitch's video-with-chat embed needs the full width, so conditions drop below. */}
+            <div className={`grid gap-4 ${currentServer === 'youtube' ? 'xl:grid-cols-12 xl:items-start' : ''}`}>
+              <div className={`w-full relative rounded-2xl overflow-hidden ring-1 ring-white/10 shadow-[0_30px_60px_-30px_rgba(0,0,0,0.8),0_0_0_1px_rgba(0,170,255,0.06)] ${currentServer === 'youtube' ? 'xl:col-span-8' : ''}`}>
+                {currentServer === 'youtube' ? (
+                  <YouTubeEmbedWrapper
+                    videoId={youtubeVideoId}
+                    title="Pura Vida & Epic Waves | Santa Teresa Live Surf Cam 24/7 | Costa Rica"
+                    autoplay={true}
+                    muted={true}
+                    allowfullscreen={true}
+                    onVideoReady={handleVideoReady}
+                    onVideoPlay={handleVideoPlay}
+                  />
+                ) : (
+                  <TwitchEmbedClient
+                    channel="elsurfo"
+                    layout="video-with-chat"
+                    autoplay={true}
+                    muted={false}
+                    theme="dark"
+                    allowfullscreen={true}
+                    onVideoReady={handleVideoReady}
+                    onVideoPlay={handleVideoPlay}
+                  />
+                )}
+              </div>
+              <div className={currentServer === 'youtube' ? 'xl:col-span-4' : ''}>
+                <SurfConditions sideBySide={currentServer === 'youtube'} />
+              </div>
+            </div>
+
+            <RippingPromo />
 
             {/* Recent Surf Reports - Below video */}
             {loadWidgets ? (
               <Suspense fallback={
-                <div className="w-full backdrop-blur-md bg-[#121419]/80 border border-white/10 rounded-2xl p-4">
+                <div className="surface-panel w-full rounded-2xl p-4">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="h-5 w-5 bg-red-500/30 rounded animate-pulse" />
                     <div className="h-5 bg-white/10 rounded w-48 animate-pulse" />
