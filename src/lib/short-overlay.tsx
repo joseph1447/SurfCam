@@ -14,23 +14,27 @@ const FOAM = '#F8FAFB';
 const SAND = '#D9B98C';
 
 // Rotated per upload and stored on the TwitchShort record, so Analytics can tell which
-// first-frame question holds viewers best.
-export const HOOKS = ['Waves today?', 'Worth the paddle?', 'Should you surf today?'];
+// first-frame question holds viewers best. Kept to one line at the hook's size.
+export const HOOKS = ['Waves today?', 'Worth a paddle?', 'Surf or skip?'];
+
+// The block grows upward from this line: below it the phone player lays the channel name,
+// title and sound over the video (~18% of the height).
+const BOTTOM_UI = 190;
 
 const font = (file: string) => readFileSync(join(process.cwd(), 'assets', 'fonts', file));
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'baseline', marginTop: 10 }}>
-      <div style={{ width: 92, fontFamily: 'JetBrains Mono', fontSize: 17, letterSpacing: 2, color: TEAL }}>{label}</div>
-      <div style={{ fontFamily: 'IBM Plex Sans', fontWeight: 600, fontSize: 27, color: FOAM }}>{value}</div>
+    <div style={{ display: 'flex', alignItems: 'baseline', marginTop: 4 }}>
+      <div style={{ width: 76, fontFamily: 'JetBrains Mono', fontSize: 14, letterSpacing: 2, color: TEAL }}>{label}</div>
+      <div style={{ fontFamily: 'IBM Plex Sans', fontWeight: 600, fontSize: 21, color: FOAM }}>{value}</div>
     </div>
   );
 }
 
-// Everything stacks in the top half, over open water: the lower half is where the waves
-// break near shore, and the Shorts player chrome (title/channel at the bottom, like/comment
-// column on the right) covers the rest.
+// Everything sits over the vegetation at the bottom of the crop: the top two thirds are
+// the lineup and the break near shore, which is what viewers came to see. Width stops
+// short of the like/comment column down the right edge.
 export async function renderOverlay(opts: { hook: string; at: number; report: SurfReport | null }): Promise<Buffer> {
   const { hook, at, report } = opts;
   const next = report?.tide.next;
@@ -38,30 +42,23 @@ export async function renderOverlay(opts: { hook: string; at: number; report: Su
   const image = new ImageResponse(
     (
       <div style={{ width: OVERLAY_W, height: OVERLAY_H, display: 'flex', position: 'relative' }}>
-        <div style={{ position: 'absolute', top: 92, left: 28, right: 28, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-          <div style={{ display: 'flex', alignItems: 'center', fontFamily: 'JetBrains Mono', fontSize: 18, letterSpacing: 3, color: FOAM, background: OCEAN, padding: '6px 12px', borderRadius: 6 }}>
-            <div style={{ width: 11, height: 11, borderRadius: 6, background: SUNSET, marginRight: 10 }} />
-            LIVE · SANTA TERESA, CR
-          </div>
-          <div style={{ marginTop: 14, fontFamily: 'Playfair Display', fontSize: 64, lineHeight: 1.05, color: FOAM, background: SUNSET, padding: '4px 18px 12px' }}>
+        <div style={{ position: 'absolute', bottom: BOTTOM_UI, left: 28, width: 470, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+          <div style={{ fontFamily: 'Playfair Display', fontSize: 54, lineHeight: 1.05, color: FOAM, background: SUNSET, padding: '2px 14px 10px' }}>
             {hook}
           </div>
-          <div style={{ marginTop: 12, fontFamily: 'JetBrains Mono', fontSize: 21, letterSpacing: 2, color: FOAM, background: OCEAN, padding: '6px 12px', borderRadius: 6 }}>
-            {`SURF CHECK · ${crTime(at, '12h')}`}
+          <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', fontFamily: 'JetBrains Mono', fontSize: 15, letterSpacing: 1, color: FOAM, background: OCEAN, padding: '5px 10px', borderRadius: 6 }}>
+            <div style={{ width: 9, height: 9, borderRadius: 5, background: SUNSET, marginRight: 8 }} />
+            {`LIVE ${crTime(at, '12h')}`}
+            <span style={{ marginLeft: 8, color: SAND }}>· santateresasurfcam.com</span>
           </div>
           {report && (
-            <div style={{ marginTop: 18, width: 470, display: 'flex', flexDirection: 'column' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', background: `linear-gradient(160deg, ${OCEAN}, rgba(4, 52, 78, 0.72))`, border: '1px solid rgba(255, 255, 255, 0.18)', borderRadius: 22, padding: '10px 22px 18px' }}>
-                <Row label="SWELL" value={`${report.swellFt} ft · ${report.swellPeriodS}s · ${report.swellFrom}`} />
-                <Row
-                  label="TIDE"
-                  value={`${report.tide.direction === 'rising' ? 'Rising' : 'Falling'}${next ? ` · ${next.type === 'high' ? 'High' : 'Low'} ${crTime(next.at, '12h')}` : ''}`}
-                />
-                <Row label="WIND" value={`${report.windKmh} km/h ${report.windFrom} · ${report.windKind}`} />
-              </div>
-              <div style={{ marginTop: 10, alignSelf: 'flex-start', fontFamily: 'JetBrains Mono', fontSize: 17, letterSpacing: 1, color: SAND, background: OCEAN, padding: '5px 10px', borderRadius: 6 }}>
-                santateresasurfcam.com · 24/7 live
-              </div>
+            <div style={{ marginTop: 8, width: 470, display: 'flex', flexDirection: 'column', background: `linear-gradient(160deg, ${OCEAN}, rgba(4, 52, 78, 0.72))`, border: '1px solid rgba(255, 255, 255, 0.18)', borderRadius: 16, padding: '4px 16px 10px' }}>
+              <Row label="SWELL" value={`${report.swellFt} ft · ${report.swellPeriodS}s · ${report.swellFrom}`} />
+              <Row
+                label="TIDE"
+                value={`${report.tide.direction === 'rising' ? 'Rising' : 'Falling'}${next ? ` · ${next.type === 'high' ? 'High' : 'Low'} ${crTime(next.at, '12h')}` : ''}`}
+              />
+              <Row label="WIND" value={`${report.windKmh} km/h ${report.windFrom} · ${report.windKind}`} />
             </div>
           )}
         </div>

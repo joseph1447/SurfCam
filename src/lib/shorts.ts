@@ -6,6 +6,7 @@ import { join, basename, extname } from 'path';
 import { tmpdir } from 'os';
 import { OVERLAY_W, OVERLAY_H } from '@/lib/short-overlay';
 import { crTime, type SurfReport } from '@/lib/conditions';
+import { GAME_URL } from '@/lib/links';
 
 const YOUTUBE_CLIENT_ID = process.env.YOUTUBE_CLIENT_ID!;
 const YOUTUBE_CLIENT_SECRET = process.env.YOUTUBE_CLIENT_SECRET!;
@@ -162,6 +163,7 @@ export function surfCheckMeta(
     description: `Live surf conditions from Santa Teresa, Costa Rica! 🏄‍♂️🌊
 
 ${conditions}📍 Watch the live 24/7 stream: https://santateresasurfcam.com
+🎮 Surf these waves in 3D — play Ripping free: ${GAME_URL}
 🎬 Twitch clip: ${twitchClipUrl}
 ${music ? `🎵 Music: ${trackName(music)} (YouTube Audio Library)\n` : ''}${report ? 'Forecast data: Open-Meteo.com (CC BY 4.0)\n' : ''}
 Santa Teresa is one of the best surf spots in Costa Rica, known for its consistent waves and beautiful beaches.
