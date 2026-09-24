@@ -63,11 +63,13 @@ export async function GET() {
     }
 
     const videosRes = await youtube.videos.list({
-      part: ['contentDetails', 'snippet'],
+      part: ['contentDetails', 'snippet', 'status'],
       id: videoIds,
     });
 
     const shorts: ShortsData[] = (videosRes.data.items || [])
+      // Authenticated as the channel owner, the uploads playlist includes unlisted test runs.
+      .filter((video) => video.status?.privacyStatus === 'public')
       .filter((video) => {
         // Parse ISO 8601 duration to check if it's a short (< 3 minutes)
         const duration = video.contentDetails?.duration || '';
