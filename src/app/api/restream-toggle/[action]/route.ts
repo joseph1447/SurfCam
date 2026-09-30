@@ -1,79 +1,73 @@
 import { NextRequest, NextResponse } from 'next/server';
+import nodemailer from 'nodemailer';
+import { getRestreamAccessToken, RestreamMcp } from '@/lib/restream';
 
 const CRON_SECRET = process.env.CRON_SECRET;
-const REFRESH_TOKEN = process.env.RESTREAM_WEB_REFRESH_TOKEN!;
-const REFRESH_XSRF = process.env.RESTREAM_WEB_REFRESH_XSRF!;
 
-// YouTube channels to toggle: malpaisurfcam + joseph quesada (Twitch excluded)
+// YouTube channels to toggle: malpaisurfcam + joseph quesada (Twitch stays on for Shorts)
 const CHANNEL_IDS = (process.env.RESTREAM_CHANNEL_IDS || '17321915,16098113')
   .split(',')
   .map((id) => Number(id.trim()))
   .filter(Boolean);
 
-const WEB_BACKEND = 'https://website-backend.restream.io';
-const EVENTS_BACKEND = 'https://backend.events.restream.io';
-
-interface WebSession {
-  accessToken: string;
-  xsrf: string; // url-encoded xsrfToken from the access JWT
-  userId: number;
+interface RestreamEvent {
+  id: string;
+  title: string;
+  description: string;
 }
 
-// Mint a fresh 5-min access token from the long-lived web refresh token.
-async function getWebSession(): Promise<WebSession> {
-  const res = await fetch(`${WEB_BACKEND}/v2/public/refresh/refreshAccessToken`, {
-    method: 'GET',
-    headers: {
-      Cookie: `refreshToken=${REFRESH_TOKEN}; refreshXsrfToken=${REFRESH_XSRF}`,
-      'x-xsrf-rtoken': REFRESH_XSRF,
-      Origin: 'https://app.restream.io',
-    },
+async function sendFailureAlert(action: string, detail: string) {
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_PASS },
   });
-
-  if (!res.ok) {
-    throw new Error(`Web token refresh failed: HTTP ${res.status}`);
-  }
-
-  const setCookies = res.headers.getSetCookie?.() ?? [];
-  const accessToken = setCookies
-    .find((c) => c.startsWith('accessToken='))
-    ?.split(';')[0]
-    ?.slice('accessToken='.length);
-
-  if (!accessToken) {
-    throw new Error('No accessToken cookie in refresh response');
-  }
-
-  const payload = JSON.parse(
-    Buffer.from(accessToken.split('.')[1], 'base64').toString('utf8')
-  );
-
-  return {
-    accessToken,
-    xsrf: encodeURIComponent(payload.xsrfToken),
-    userId: payload.user.id,
-  };
+  await transporter.sendMail({
+    from: process.env.GMAIL_USER,
+    to: process.env.NOTIFICATION_EMAIL || process.env.GMAIL_USER,
+    subject: `⚠️ SurfCam: falló el ${action === 'on' ? 'encendido' : 'apagado'} de la transmisión`,
+    text: `El cron /api/restream-toggle/${action} falló:\n\n${detail}\n\nRevisar el token OAuth en la colección restreamauth.`,
+  });
 }
 
-function authHeaders(s: WebSession): Record<string, string> {
-  return {
-    Cookie: `accessToken=${s.accessToken}; accessXsrfToken=${s.xsrf}`,
-    'x-axsrf-token': s.xsrf,
-    Origin: 'https://app.restream.io',
-  };
-}
+async function toggle(action: 'on' | 'off') {
+  const mcp = new RestreamMcp(await getRestreamAccessToken());
+  await mcp.connect();
 
-// The live stream runs as an "event"; find the one whose session is still open.
-async function getActiveEventId(s: WebSession): Promise<string | null> {
-  const res = await fetch(
-    `${WEB_BACKEND}/v2/api/stream-analytics/streaming-sessions?userId=${s.userId}`,
-    { headers: authHeaders(s) }
+  const { events } = await mcp.call<{ events: RestreamEvent[] }>('list_user_events', {
+    status: 'in_progress',
+  });
+  const event = events[0];
+  if (!event) return null;
+
+  const { destinations } = await mcp.call<{ destinations: { channelId: number }[] }>(
+    'list_event_destinations',
+    { eventId: event.id }
   );
-  if (!res.ok) throw new Error(`streaming-sessions failed: HTTP ${res.status}`);
+  const connected = new Set(destinations.map((d) => d.channelId));
 
-  const body = await res.json();
-  const active = (body.data ?? []).find((sess: { till: number }) => sess.till === 0);
-  return active?.eventId ?? null;
+  const results = [];
+  for (const channelId of CHANNEL_IDS) {
+    if ((action === 'on') === connected.has(channelId)) {
+      results.push({ channelId, skipped: true });
+      continue;
+    }
+    if (action === 'off') {
+      await mcp.call('toggle_event_channel_off', { eventId: event.id, channelId });
+    } else {
+      await mcp.call('toggle_event_channel_on', {
+        eventId: event.id,
+        channelId,
+        payload: {
+          platform: 'YouTube',
+          title: event.title,
+          description: event.description,
+          privacy: 'public',
+        },
+      });
+    }
+    results.push({ channelId, ok: true });
+  }
+  return { eventId: event.id, results };
 }
 
 export async function GET(
@@ -95,46 +89,21 @@ export async function GET(
     );
   }
 
-  const verb = action === 'on' ? 'enable' : 'disable';
-
   try {
-    const session = await getWebSession();
-    const eventId = await getActiveEventId(session);
-
-    if (!eventId) {
-      return NextResponse.json(
-        {
-          success: false,
-          action,
-          message: 'No active streaming session found (camera not sending?)',
-        },
-        { status: 409 }
-      );
+    const outcome = await toggle(action);
+    if (!outcome) {
+      const message = 'No in-progress Restream event (camera not sending?)';
+      await sendFailureAlert(action, message).catch(() => {});
+      return NextResponse.json({ success: false, action, message }, { status: 409 });
     }
 
-    const results = await Promise.all(
-      CHANNEL_IDS.map(async (channelId) => {
-        const res = await fetch(
-          `${EVENTS_BACKEND}/events/${eventId}/channels/${channelId}/${verb}`,
-          {
-            method: 'POST',
-            headers: { ...authHeaders(session), 'Content-Type': 'application/json' },
-            body: '{}',
-          }
-        );
-        return { channelId, ok: res.ok, status: res.status };
-      })
-    );
-
-    const failed = results.filter((r) => !r.ok);
-    console.log(`[restream-toggle] ${verb} on event ${eventId}:`, results);
-
-    return NextResponse.json(
-      { success: failed.length === 0, action, eventId, results },
-      { status: failed.length === 0 ? 200 : 502 }
-    );
+    console.log(`[restream-toggle] ${action}:`, outcome);
+    return NextResponse.json({ success: true, action, ...outcome });
   } catch (error) {
     console.error('[restream-toggle] Error:', error);
+    await sendFailureAlert(action, String(error)).catch((e) =>
+      console.error('[restream-toggle] Alert email failed:', e)
+    );
     return NextResponse.json(
       { error: 'Failed to toggle Restream destinations' },
       { status: 500 }
