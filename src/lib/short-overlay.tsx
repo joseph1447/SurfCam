@@ -17,9 +17,8 @@ const SAND = '#D9B98C';
 // first-frame question holds viewers best. Kept to one line at the hook's size.
 export const HOOKS = ['Waves today?', 'Worth a paddle?', 'Surf or skip?'];
 
-// The block grows upward from this line: below it the phone player lays the channel name,
-// title and sound over the video (~18% of the height).
-const BOTTOM_UI = 190;
+// The block hangs from this line: above it the phone player shows its search/camera bar.
+const TOP_UI = 96;
 
 const font = (file: string) => readFileSync(join(process.cwd(), 'assets', 'fonts', file));
 
@@ -32,9 +31,10 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-// Everything sits over the vegetation at the bottom of the crop: the top two thirds are
-// the lineup and the break near shore, which is what viewers came to see. Width stops
-// short of the like/comment column down the right edge.
+// A compact block at the top, over open water far outside the lineup: the break mid-frame
+// and the shore below stay clear (Joseph's call on 2026-09-30, after seeing it at the bottom
+// on a real Short). It covers about the top third; width stops short of the like/comment
+// column down the right edge.
 export async function renderOverlay(opts: { hook: string; at: number; report: SurfReport | null }): Promise<Buffer> {
   const { hook, at, report } = opts;
   const next = report?.tide.next;
@@ -42,25 +42,25 @@ export async function renderOverlay(opts: { hook: string; at: number; report: Su
   const image = new ImageResponse(
     (
       <div style={{ width: OVERLAY_W, height: OVERLAY_H, display: 'flex', position: 'relative' }}>
-        <div style={{ position: 'absolute', bottom: BOTTOM_UI, left: 28, width: 470, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+        <div style={{ position: 'absolute', top: TOP_UI, left: 28, width: 470, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
           <div style={{ fontFamily: 'Playfair Display', fontSize: 54, lineHeight: 1.05, color: FOAM, background: SUNSET, padding: '2px 14px 10px' }}>
             {hook}
           </div>
-          <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', fontFamily: 'JetBrains Mono', fontSize: 15, letterSpacing: 1, color: FOAM, background: OCEAN, padding: '5px 10px', borderRadius: 6 }}>
-            <div style={{ width: 9, height: 9, borderRadius: 5, background: SUNSET, marginRight: 8 }} />
-            {`LIVE ${crTime(at, '12h')}`}
-            <span style={{ marginLeft: 8, color: SAND }}>· santateresasurfcam.com</span>
-          </div>
-          {report && (
-            <div style={{ marginTop: 8, width: 470, display: 'flex', flexDirection: 'column', background: `linear-gradient(160deg, ${OCEAN}, rgba(4, 52, 78, 0.72))`, border: '1px solid rgba(255, 255, 255, 0.18)', borderRadius: 16, padding: '4px 16px 10px' }}>
-              <Row label="SWELL" value={`${report.swellFt} ft · ${report.swellPeriodS}s · ${report.swellFrom}`} />
-              <Row
-                label="TIDE"
-                value={`${report.tide.direction === 'rising' ? 'Rising' : 'Falling'}${next ? ` · ${next.type === 'high' ? 'High' : 'Low'} ${crTime(next.at, '12h')}` : ''}`}
-              />
-              <Row label="WIND" value={`${report.windKmh} km/h ${report.windFrom} · ${report.windKind}`} />
+          <div style={{ marginTop: 8, width: 470, display: 'flex', flexDirection: 'column', background: `linear-gradient(160deg, ${OCEAN}, rgba(4, 52, 78, 0.72))`, border: '1px solid rgba(255, 255, 255, 0.18)', borderRadius: 16, padding: '4px 16px 10px' }}>
+            {report && (
+              <div style={{ display: 'flex', flexDirection: 'column', paddingBottom: 8, marginBottom: 8, borderBottom: '1px solid rgba(255, 255, 255, 0.14)' }}>
+                <Row label="SWELL" value={`${report.swellFt} ft · ${report.swellPeriodS}s · ${report.swellFrom}`} />
+                <Row
+                  label="TIDE"
+                  value={`${report.tide.direction === 'rising' ? 'Rising' : 'Falling'}${next ? ` · ${next.type === 'high' ? 'High' : 'Low'} ${crTime(next.at, '12h')}` : ''}`}
+                />
+                <Row label="WIND" value={`${report.windKmh} km/h ${report.windFrom} · ${report.windKind}`} />
+              </div>
+            )}
+            <div style={{ display: 'flex', marginTop: report ? 0 : 6, fontFamily: 'JetBrains Mono', fontSize: 16, letterSpacing: 1, color: SAND }}>
+              santateresasurfcam.com
             </div>
-          )}
+          </div>
         </div>
       </div>
     ),
