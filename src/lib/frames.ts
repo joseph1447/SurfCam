@@ -43,6 +43,9 @@ export interface ClipAnalysis {
   // For the best frame: a tight crop on the action (styles A/B) and a wider one (style C).
   zoomCrop: Crop;
   mediumCrop: Crop;
+  // 9:16 window on the action, for Shorts: YouTube's Shorts shelves show thumbnails
+  // vertically and would centre-crop a 16:9 one, text and all.
+  portraitCrop: Crop;
   // Where the foam sits across the zoom crop, 0 = left edge; text goes on the other side.
   foamX: number;
 }
@@ -188,6 +191,23 @@ function chooseCrop(maps: FrameMaps, zooms: number[]): { crop: Crop; foamX: numb
   return fallback ?? { crop: { x: 0.1, y: 0.12, w: 0.74, h: 0.74, zoom: 1.35 }, foamX: 0.5 };
 }
 
+// Tallest 9:16 window that fits between the timestamp band and the watermark band, slid
+// sideways to hold the most foam. At 1440p it's ~340x1100 px, still sharp for a thumbnail.
+function choosePortrait(maps: FrameMaps): Crop {
+  const y0 = Math.ceil(TIMESTAMP.y1 * H);
+  const h = Math.floor(WATERMARK.y0 * H) - y0;
+  // The analysis grid has the source's 16:9 shape, so a 9:16 window in source pixels is
+  // h * 9/16 wide here too.
+  const winW = Math.max(1, Math.round((h * 9) / 16));
+  let bestX = 0, bestFoam = -1;
+  for (let x = 0; x + winW <= W; x++) {
+    let foam = 0;
+    for (let yy = y0; yy < y0 + h; yy++) for (let xx = x; xx < x + winW; xx++) foam += maps.foam[yy * W + xx];
+    if (foam > bestFoam) [bestX, bestFoam] = [x, foam];
+  }
+  return { x: bestX / W, y: y0 / H, w: winW / W, h: h / H, zoom: 1 / (h / H) };
+}
+
 export function analyzeClip(path: string): ClipAnalysis {
   const frames = readFrames(path);
   const measured = frames.map((f, i) => ({ t: i / FPS, ...measure(f) }));
@@ -210,7 +230,8 @@ export function analyzeClip(path: string): ClipAnalysis {
   const maps = best?.maps ?? scored[0]?.maps;
   const zoom = maps ? chooseCrop(maps, [1.8, 1.6, 1.45, 1.35]) : { crop: { x: 0.1, y: 0.12, w: 0.74, h: 0.74, zoom: 1.35 }, foamX: 0.5 };
   const medium = maps ? chooseCrop(maps, [1.35]) : zoom;
+  const portrait = maps ? choosePortrait(maps) : { x: 0.35, y: 0.1, w: 0.2375, h: 0.76, zoom: 1.3 };
 
   const strip = ({ maps: _maps, ...f }: (typeof scored)[number]) => f;
-  return { frames: scored.map(strip), best: best ? strip(best) : null, zoomCrop: zoom.crop, mediumCrop: medium.crop, foamX: zoom.foamX };
+  return { frames: scored.map(strip), best: best ? strip(best) : null, zoomCrop: zoom.crop, mediumCrop: medium.crop, portraitCrop: portrait, foamX: zoom.foamX };
 }

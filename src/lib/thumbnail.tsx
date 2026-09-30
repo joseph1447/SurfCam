@@ -66,43 +66,54 @@ function balance(headline: string): string[] {
 const asset = (...p: string[]) => join(process.cwd(), 'assets', ...p);
 const LOGO = () => `data:image/jpeg;base64,${readFileSync(asset('brand', 'channel-logo.jpg')).toString('base64')}`;
 
-async function renderOverlay(style: ThumbStyle, text: ThumbText, textRight: boolean): Promise<Buffer> {
+// Shorts shelves (channel tab, search, home) show a 9:16 image, and YouTube centre-crops a
+// landscape thumbnail into it, text and all. So Shorts get a portrait thumbnail; the
+// 24/7 broadcast keeps the landscape one.
+export type Orientation = 'landscape' | 'portrait';
+const SIZE: Record<Orientation, { w: number; h: number }> = { landscape: { w: TW, h: TH }, portrait: { w: 720, h: 1280 } };
+
+async function renderOverlay(style: ThumbStyle, text: ThumbText, textRight: boolean, orientation: Orientation): Promise<Buffer> {
+  const { w: W, h: H } = SIZE[orientation];
+  const portrait = orientation === 'portrait';
   const yellow = style === 'B' || style === 'BEST';
   const big = style === 'C';
-  const stroke = big ? 12 : 9;
-  const lines = big ? [text.headline] : balance(text.headline);
+  // Portrait is narrower, so every headline wraps and the sizes come down a notch.
+  const lines = big && !portrait ? [text.headline] : balance(text.headline);
   const headlineStyle = {
     fontFamily: 'Anton',
-    fontSize: big ? 230 : lines.length > 1 ? 112 : 128,
+    fontSize: portrait ? (big ? 200 : lines.length > 1 ? 104 : 118) : big ? 230 : lines.length > 1 ? 112 : 128,
     lineHeight: 0.95,
     color: yellow ? '#FFD60A' : '#FFFFFF',
-    WebkitTextStroke: `${stroke}px #000000`,
+    WebkitTextStroke: `${big ? 12 : 9}px #000000`,
     textShadow: '0 8px 24px rgba(0,0,0,0.55)',
-    textAlign: textRight ? ('right' as const) : ('left' as const),
-    maxWidth: big ? 760 : 720,
+    textAlign: textRight && !portrait ? ('right' as const) : ('left' as const),
+    maxWidth: portrait ? 660 : big ? 760 : 720,
   };
+  const tagSize = portrait ? 26 : 34;
+  const logoSize = portrait ? 64 : 78;
 
   const image = new ImageResponse(
     (
-      <div style={{ width: TW, height: TH, display: 'flex', position: 'relative' }}>
+      <div style={{ width: W, height: H, display: 'flex', position: 'relative' }}>
         {/* Fixed brand corner, the same on every thumbnail */}
         <div style={{ position: 'absolute', top: 30, left: 32, display: 'flex', alignItems: 'center' }}>
-          <img src={LOGO()} width={78} height={78} style={{ borderRadius: 39, border: '4px solid #FFFFFF' }} />
+          <img src={LOGO()} width={logoSize} height={logoSize} style={{ borderRadius: logoSize / 2, border: '4px solid #FFFFFF' }} />
           <div style={{ marginLeft: 14, display: 'flex', alignItems: 'center', background: 'rgba(0,0,0,0.72)', borderRadius: 10, padding: '8px 16px' }}>
             <div style={{ width: 16, height: 16, borderRadius: 8, background: '#FF2D2D', marginRight: 12 }} />
-            <div style={{ fontFamily: 'Anton', fontSize: 34, color: '#FFFFFF', letterSpacing: 1 }}>SANTA TERESA • EN VIVO</div>
+            <div style={{ fontFamily: 'Anton', fontSize: tagSize, color: '#FFFFFF', letterSpacing: 1 }}>SANTA TERESA • EN VIVO</div>
           </div>
         </div>
 
-        {/* Headline sits on the side away from the break; bottom-right stays free for YouTube's duration badge */}
+        {/* Landscape: headline on the side away from the break, bottom-right free for the
+            duration badge. Portrait: under the brand tag, over open water, so the break and
+            the whitewater lower down stay visible in the shelf. */}
         <div
           style={{
             position: 'absolute',
-            top: 138,
-            ...(textRight ? { right: 40 } : { left: 36 }),
+            ...(portrait ? { top: 130, left: 32 } : { top: 138, ...(textRight ? { right: 40 } : { left: 36 }) }),
             display: 'flex',
             flexDirection: 'column',
-            alignItems: textRight ? 'flex-end' : 'flex-start',
+            alignItems: textRight && !portrait ? 'flex-end' : 'flex-start',
           }}
         >
           {lines.map((line) => (
@@ -111,7 +122,7 @@ async function renderOverlay(style: ThumbStyle, text: ThumbText, textRight: bool
             </div>
           ))}
           {text.sub && (
-            <div style={{ marginTop: 10, fontFamily: 'Anton', fontSize: big ? 84 : 64, color: '#FFFFFF', WebkitTextStroke: '6px #000000', textShadow: '0 6px 18px rgba(0,0,0,0.55)' }}>
+            <div style={{ marginTop: 10, fontFamily: 'Anton', fontSize: portrait ? (big ? 72 : 56) : big ? 84 : 64, color: '#FFFFFF', WebkitTextStroke: '6px #000000', textShadow: '0 6px 18px rgba(0,0,0,0.55)' }}>
               {text.sub}
             </div>
           )}
@@ -119,8 +130,8 @@ async function renderOverlay(style: ThumbStyle, text: ThumbText, textRight: bool
       </div>
     ),
     {
-      width: TW,
-      height: TH,
+      width: W,
+      height: H,
       fonts: [{ name: 'Anton', data: readFileSync(asset('fonts', 'Anton-Regular.ttf')), weight: 400, style: 'normal' }],
     },
   );
@@ -134,9 +145,11 @@ export async function renderThumbnail(opts: {
   analysis: ClipAnalysis;
   style: ThumbStyle;
   text: ThumbText;
+  orientation?: Orientation;
 }): Promise<Buffer> {
-  const { clip, analysis, style, text } = opts;
-  const crop: Crop = style === 'C' ? analysis.mediumCrop : analysis.zoomCrop;
+  const { clip, analysis, style, text, orientation = 'landscape' } = opts;
+  const { w: outW, h: outH } = SIZE[orientation];
+  const crop: Crop = orientation === 'portrait' ? analysis.portraitCrop : style === 'C' ? analysis.mediumCrop : analysis.zoomCrop;
   const t = analysis.best?.t ?? 0;
   const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
   const clipPath = join(tmpdir(), `thumb-clip-${stamp}.mp4`);
@@ -144,10 +157,10 @@ export async function renderThumbnail(opts: {
   const outPath = join(tmpdir(), `thumb-${stamp}.jpg`);
   try {
     writeFileSync(clipPath, clip);
-    writeFileSync(overlayPath, await renderOverlay(style, text, analysis.foamX < 0.5));
+    writeFileSync(overlayPath, await renderOverlay(style, text, analysis.foamX < 0.5, orientation));
     const grade =
       `crop=iw*${crop.w.toFixed(4)}:ih*${crop.h.toFixed(4)}:iw*${crop.x.toFixed(4)}:ih*${crop.y.toFixed(4)},` +
-      `scale=${TW}:${TH}:flags=lanczos,` +
+      `scale=${outW}:${outH}:flags=lanczos,` +
       'eq=saturation=1.25:contrast=1.12:gamma=1.03,' +
       'colorbalance=rs=-0.06:gs=0.02:bs=0.07:rm=-0.03:gm=0.02:bm=0.04:rh=0.07:gh=0.03:bh=-0.04,' +
       'unsharp=7:7:0.8:7:7:0';

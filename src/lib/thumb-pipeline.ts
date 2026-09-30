@@ -58,7 +58,7 @@ export async function thumbnailVideo(opts: {
 
   const picked = opts.style ? { style: opts.style, reason } : await pickStyle(kind);
   const text = thumbText(picked.style, report, at);
-  const jpg = await renderThumbnail({ clip, analysis, style: picked.style, text });
+  const jpg = await renderThumbnail({ clip, analysis, style: picked.style, text, orientation: kind === 'live' ? 'landscape' : 'portrait' });
   if (opts.dry) return { dry: true as const, style: picked.style, text, jpg, frameT: analysis.best.t, score: analysis.best.score };
   await setThumbnail(videoId, jpg);
 

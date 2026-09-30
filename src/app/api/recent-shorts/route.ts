@@ -63,13 +63,15 @@ export async function GET() {
     }
 
     const videosRes = await youtube.videos.list({
-      part: ['contentDetails', 'snippet', 'status'],
+      part: ['contentDetails', 'snippet', 'status', 'liveStreamingDetails'],
       id: videoIds,
     });
 
     const shorts: ShortsData[] = (videosRes.data.items || [])
       // Authenticated as the channel owner, the uploads playlist includes unlisted test runs.
       .filter((video) => video.status?.privacyStatus === 'public')
+      // The 24/7 broadcast reports a 0s duration while live and would pass the length check.
+      .filter((video) => !video.liveStreamingDetails)
       .filter((video) => {
         // Parse ISO 8601 duration to check if it's a short (< 3 minutes)
         const duration = video.contentDetails?.duration || '';
@@ -84,7 +86,10 @@ export async function GET() {
       .map((video) => ({
         videoId: video.id!,
         title: video.snippet?.title || '',
+        // maxres keeps the uploaded orientation (portrait for our Shorts); the smaller
+        // sizes are letterboxed 4:3.
         thumbnail:
+          video.snippet?.thumbnails?.maxres?.url ||
           video.snippet?.thumbnails?.high?.url ||
           video.snippet?.thumbnails?.medium?.url ||
           video.snippet?.thumbnails?.default?.url ||
