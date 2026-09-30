@@ -360,8 +360,27 @@ function TideChart({
   const nowLabel = inDay ? `${t("now")} ${round1(nowFt)}ft` : "";
   const nowY = inDay ? y(nowFt) : 0;
   const pillW = nowLabel.length * 6.2 + 12;
-  const pillX = Math.min(Math.max(nowX - pillW / 2, 0), width - pillW);
-  const pillY = nowY - 30 < 0 ? nowY + 10 : nowY - 30;
+  const PILL_H = 18;
+
+  // Near a turn the NOW pill lands on that turn's label ("9.3ft 5:10 p. m."), so it tries
+  // above, below, left and right of the dot and takes the first spot clear of every label.
+  const labelBoxes = data.tide.extremes.map((e) => {
+    const label = `${e.heightFt}ft ${format(e.at)}`;
+    const w = label.length * 6.2;
+    const baseline = e.type === "high" ? y(e.heightFt) - 8 : y(e.heightFt) + 15;
+    return { x: clampX(x(e.at), label.length) - w / 2, y: baseline - 10, w, h: 13 };
+  });
+  const clear = (px: number, py: number) =>
+    py >= 0 &&
+    py + PILL_H <= base &&
+    !labelBoxes.some((b) => px < b.x + b.w && px + pillW > b.x && py < b.y + b.h && py + PILL_H > b.y);
+  const spots = [
+    [nowX - pillW / 2, nowY - 30],
+    [nowX - pillW / 2, nowY + 12],
+    [nowX - pillW - 10, nowY - PILL_H / 2],
+    [nowX + 10, nowY - PILL_H / 2],
+  ].map(([px, py]) => [Math.min(Math.max(px, 0), width - pillW), py] as const);
+  const [pillX, pillY] = spots.find(([px, py]) => clear(px, py)) ?? spots[0];
 
   return (
     <div ref={ref}>
