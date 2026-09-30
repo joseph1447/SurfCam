@@ -5,8 +5,8 @@ import { writeFileSync, readFileSync, unlinkSync, existsSync, readdirSync } from
 import { join, basename, extname } from 'path';
 import { tmpdir } from 'os';
 import { OVERLAY_W, OVERLAY_H } from '@/lib/short-overlay';
-import { crTime, type SurfReport } from '@/lib/conditions';
-import { GAME_URL } from '@/lib/links';
+import type { SurfReport } from '@/lib/conditions';
+import { surfDescription, surfTitle } from '@/lib/copy';
 
 const YOUTUBE_CLIENT_ID = process.env.YOUTUBE_CLIENT_ID!;
 const YOUTUBE_CLIENT_SECRET = process.env.YOUTUBE_CLIENT_SECRET!;
@@ -14,13 +14,17 @@ const YOUTUBE_REFRESH_TOKEN = process.env.YOUTUBE_REFRESH_TOKEN!;
 
 export type Privacy = 'public' | 'unlisted' | 'private';
 
-export function youtubeClient() {
+export function youtubeAuth() {
   const auth = new google.auth.OAuth2(YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET);
   auth.setCredentials({ refresh_token: YOUTUBE_REFRESH_TOKEN });
-  return google.youtube({ version: 'v3', auth });
+  return auth;
 }
 
-function ffmpegPath(): string {
+export function youtubeClient() {
+  return google.youtube({ version: 'v3', auth: youtubeAuth() });
+}
+
+export function ffmpegPath(): string {
   const candidates = [
     // Direct require (plain Node, and what Next's file tracing follows into the bundle)
     (() => { try { return require('ffmpeg-static') as string; } catch { return null; } })(),
@@ -124,8 +128,7 @@ export async function uploadShort(video: Buffer, meta: ShortMeta): Promise<strin
         description: meta.description,
         tags: meta.tags,
         categoryId: '17', // Sports
-        defaultLanguage: 'en',
-        defaultAudioLanguage: 'en',
+        defaultLanguage: 'es',
       },
       status: { privacyStatus: meta.privacy, selfDeclaredMadeForKids: false },
     },
@@ -141,38 +144,15 @@ export function surfCheckMeta(
   privacy: Privacy,
   report: SurfReport | null,
   music: string | null,
+  kind: 'short' | 'best' = 'short',
+  at = Date.now(),
 ): ShortMeta {
-  const stamp = new Date().toLocaleString('en-US', {
-    timeZone: 'America/Costa_Rica',
-    month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true,
-  });
-  const next = report?.tide.next;
-  const conditions = report
-    ? `🌊 Swell: ${report.swellFt} ft @ ${report.swellPeriodS}s from ${report.swellFrom}
-🌙 Tide: ${report.tide.direction}${next ? `, ${next.type} at ${crTime(next.at, '12h')} (${next.heightFt} ft)` : ''}
-💨 Wind: ${report.windKmh} km/h ${report.windFrom} (${report.windKind})
-
-`
-    : '';
   return {
-    title: report
-      ? `🌊 Santa Teresa Surf Check - ${stamp} · ${report.swellFt}ft @ ${report.swellPeriodS}s · Tide ${report.tide.direction} #Shorts`
-      : `🌊 Santa Teresa Surf Check - ${stamp} #Shorts`,
-    // Deliberately not "Original clip:" - that phrase is what promote-to-shorts keys on
-    // to pick candidates, and these uploads must never re-enter that pipeline.
-    description: `Live surf conditions from Santa Teresa, Costa Rica! 🏄‍♂️🌊
-
-${conditions}📍 Watch the live 24/7 stream: https://santateresasurfcam.com
-🎮 Surf these waves in 3D — play Ripping free: ${GAME_URL}
-🎬 Twitch clip: ${twitchClipUrl}
-${music ? `🎵 Music: ${trackName(music)} (YouTube Audio Library)\n` : ''}${report ? 'Forecast data: Open-Meteo.com (CC BY 4.0)\n' : ''}
-Santa Teresa is one of the best surf spots in Costa Rica, known for its consistent waves and beautiful beaches.
-
-#Shorts #surf #santateresa #costarica #surfing #waves #beach #ocean #puravida #surfcam #livesurf #surfcheck`,
+    title: surfTitle(kind, report, at),
+    description: surfDescription({ kind, report, twitchClipUrl, music: music && trackName(music) }),
     tags: [
-      'shorts', 'surf', 'surfing', 'santa teresa', 'costa rica',
-      'waves', 'beach', 'ocean', 'pura vida', 'surfcam',
-      'live surf', 'surf conditions', 'surf check', 'surf report',
+      'santa teresa', 'surf', 'costa rica', 'surf report', 'surf cam', 'olas', 'surf en vivo',
+      'santa teresa surf', 'mal pais', 'shorts', 'surfing', 'waves', 'pura vida',
     ],
     privacy,
   };

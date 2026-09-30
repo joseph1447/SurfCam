@@ -24,6 +24,22 @@
     {
       "path": "/api/short-from-twitch",
       "schedule": "46 23 * * *"
+    },
+    {
+      "path": "/api/live-thumbnail",
+      "schedule": "20 11,14,17,20,23 * * *"
+    },
+    {
+      "path": "/api/score-clip",
+      "schedule": "0 12,15,17,19,21 * * *"
+    },
+    {
+      "path": "/api/best-wave",
+      "schedule": "40 22 * * *"
+    },
+    {
+      "path": "/api/thumbnail-metrics",
+      "schedule": "30 15 * * *"
     }
   ]
 }

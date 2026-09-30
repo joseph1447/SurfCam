@@ -9,6 +9,8 @@ const REDIRECT_URI = process.env.NEXTAUTH_URL
 const SCOPES = [
   'https://www.googleapis.com/auth/youtube.upload',
   'https://www.googleapis.com/auth/youtube',
+  // Reporting API reach report: thumbnail impressions + CTR (the Analytics API lacks them)
+  'https://www.googleapis.com/auth/yt-analytics.readonly',
 ].join(' ');
 
 // GET: Generate OAuth URL or handle callback

@@ -199,6 +199,17 @@ export async function getDayOutlook(at = Date.now()): Promise<DayOutlook> {
   };
 }
 
+export const cleanSurface = (r: SurfReport) =>
+  r.windKind === 'light' || r.windKind === 'offshore' || (r.windKind === 'cross-shore' && r.windKmh < 12);
+
+// One word for the surface, straight from the wind forecast so titles can't oversell.
+export function surfaceWord(r: SurfReport): 'GLASSY' | 'LIMPIO' | 'PICADO' | 'CON VIENTO' {
+  if (r.windKind === 'light') return 'GLASSY';
+  if (cleanSurface(r)) return 'LIMPIO';
+  if (r.windKind === 'onshore' && r.windKmh >= 10) return 'PICADO';
+  return 'CON VIENTO';
+}
+
 // Under ~6 km/h the surface stays glassy whichever way it blows.
 function windKind(fromDeg: number, kmh: number): WindKind {
   if (kmh < 6) return 'light';

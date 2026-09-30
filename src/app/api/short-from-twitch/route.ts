@@ -5,6 +5,7 @@ import { getAppToken, getUserToken, getLiveStream, createClip, waitForClip, down
 import { composeShort, uploadShort, surfCheckMeta, musicTracks, trackName, type Privacy } from '@/lib/shorts';
 import { getSurfReport } from '@/lib/conditions';
 import { renderOverlay, HOOKS } from '@/lib/short-overlay';
+import { analyzeBuffer, recordClipScore, thumbnailVideo } from '@/lib/thumb-pipeline';
 
 const CRON_SECRET = process.env.CRON_SECRET;
 
@@ -72,8 +73,9 @@ export async function GET(request: NextRequest) {
       const report = await reportPromise;
       record.report = report;
       const overlay = await renderOverlay({ hook, at, report });
-      const vertical = composeShort(await downloadClip(clipId), overlay, music);
-      const meta = surfCheckMeta(clip.url, privacy, report, music);
+      const source = await downloadClip(clipId);
+      const vertical = composeShort(source, overlay, music);
+      const meta = surfCheckMeta(clip.url, privacy, report, music, 'short', at);
       const shortVideoId = await uploadShort(vertical, meta);
 
       record.shortVideoId = shortVideoId;
@@ -81,9 +83,23 @@ export async function GET(request: NextRequest) {
       record.status = 'completed';
       await record.save();
 
+      // The thumbnail is cut from the 16:9 source (sharper and wider than the vertical crop).
+      // It's a bonus on top of a Short that's already live, so a failure here is only logged.
+      let thumbnail: unknown = null;
+      try {
+        const analysis = analyzeBuffer(source);
+        await recordClipScore({ clipId, clipUrl: clip.url, source: 'short', analysis, at });
+        thumbnail = await thumbnailVideo({
+          videoId: shortVideoId, kind: 'short', clipId, clip: source, analysis, report, at, title: meta.title, reason: 'upload',
+        });
+      } catch (err) {
+        thumbnail = { error: err instanceof Error ? err.message : String(err) };
+        console.error('⚠️ Thumbnail failed:', thumbnail);
+      }
+
       const url = `https://youtube.com/shorts/${shortVideoId}`;
       console.log(`✅ ${url}`);
-      return NextResponse.json({ status: 'completed', clipId, clipUrl: clip.url, shortVideoId, url, privacy, hook, music: record.music, report });
+      return NextResponse.json({ status: 'completed', clipId, clipUrl: clip.url, shortVideoId, url, privacy, hook, music: record.music, report, thumbnail });
     } catch (err) {
       record.status = 'failed';
       record.error = err instanceof Error ? err.message : String(err);
