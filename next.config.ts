@@ -40,6 +40,10 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Short, typeable URL printed on the Shorts' end card. The home page is the live player.
+  async redirects() {
+    return [{ source: '/live', destination: '/', permanent: false }];
+  },
   async headers() {
     return [
       {

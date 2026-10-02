@@ -42,6 +42,43 @@ export interface ReelResult {
   permalink: string;
 }
 
+// Container → poll until Meta finishes transcoding (up to ~4 min) → publish.
+async function publishContainer(userId: string, t: string, params: Record<string, string>): Promise<string> {
+  const create = (await fetch(`${IG}/${userId}/media`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ ...params, access_token: t }),
+  }).then((r) => r.json())) as { id?: string; error?: { message: string } };
+  if (!create.id) throw new Error(`IG create container: ${create.error?.message ?? 'no id'}`);
+
+  let status = 'IN_PROGRESS';
+  for (let i = 0; i < 48 && status !== 'FINISHED'; i++) {
+    await sleep(5_000);
+    const s = (await fetch(`${IG}/${create.id}?fields=status_code,status&access_token=${t}`).then((r) => r.json())) as { status_code?: string; status?: string };
+    status = s.status_code ?? status;
+    if (status === 'ERROR' || status === 'EXPIRED') throw new Error(`IG container ${status}: ${s.status ?? ''}`);
+  }
+  if (status !== 'FINISHED') throw new Error(`IG container not ready (last status ${status})`);
+
+  const pub = (await fetch(`${IG}/${userId}/media_publish`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ creation_id: create.id, access_token: t }),
+  }).then((r) => r.json())) as { id?: string; error?: { message: string } };
+  if (!pub.id) throw new Error(`IG publish: ${pub.error?.message ?? 'no id'}`);
+  return pub.id;
+}
+
+// Public, unguessable URL for Meta to pull from; deleted once the publish is done.
+async function withPublicVideo<T>(name: string, video: Buffer, fn: (url: string) => Promise<T>): Promise<T> {
+  const blob = await put(`reels/${name}.mp4`, video, { access: 'public', contentType: 'video/mp4', addRandomSuffix: true });
+  try {
+    return await fn(blob.url);
+  } finally {
+    await del(blob.url).catch(() => undefined);
+  }
+}
+
 export async function publishReel(opts: {
   video: Buffer;
   caption: string;
@@ -52,43 +89,28 @@ export async function publishReel(opts: {
   const userId = process.env.INSTAGRAM_USER_ID?.trim();
   if (!userId) throw new Error('INSTAGRAM_USER_ID not configured');
 
-  // Public, unguessable URL; deleted once Instagram has ingested it.
-  const blob = await put(`reels/${opts.name}.mp4`, opts.video, { access: 'public', contentType: 'video/mp4', addRandomSuffix: true });
-  try {
-    const create = (await fetch(`${IG}/${userId}/media`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        media_type: 'REELS',
-        video_url: blob.url,
-        caption: opts.caption.slice(0, 2200),
-        share_to_feed: 'true',
-        ...(opts.thumbnailOffsetMs != null ? { thumb_offset: String(opts.thumbnailOffsetMs) } : {}),
-        access_token: t,
-      }),
-    }).then((r) => r.json())) as { id?: string; error?: { message: string } };
-    if (!create.id) throw new Error(`IG create container: ${create.error?.message ?? 'no id'}`);
+  return withPublicVideo(opts.name, opts.video, async (url) => {
+    const mediaId = await publishContainer(userId, t, {
+      media_type: 'REELS',
+      video_url: url,
+      caption: opts.caption.slice(0, 2200),
+      share_to_feed: 'true',
+      ...(opts.thumbnailOffsetMs != null ? { thumb_offset: String(opts.thumbnailOffsetMs) } : {}),
+    });
+    const perm = (await fetch(`${IG}/${mediaId}?fields=permalink&access_token=${t}`).then((r) => r.json())) as { permalink?: string };
+    return { mediaId, permalink: perm.permalink ?? `https://www.instagram.com/reel/${mediaId}/` };
+  });
+}
 
-    // Video containers take a while (Meta transcodes); poll up to ~4 minutes.
-    let status = 'IN_PROGRESS';
-    for (let i = 0; i < 48 && status !== 'FINISHED'; i++) {
-      await sleep(5_000);
-      const s = (await fetch(`${IG}/${create.id}?fields=status_code,status&access_token=${t}`).then((r) => r.json())) as { status_code?: string; status?: string };
-      status = s.status_code ?? status;
-      if (status === 'ERROR' || status === 'EXPIRED') throw new Error(`IG container ${status}: ${s.status ?? ''}`);
-    }
-    if (status !== 'FINISHED') throw new Error(`IG container not ready (last status ${status})`);
-
-    const pub = (await fetch(`${IG}/${userId}/media_publish`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ creation_id: create.id, access_token: t }),
-    }).then((r) => r.json())) as { id?: string; error?: { message: string } };
-    if (!pub.id) throw new Error(`IG publish: ${pub.error?.message ?? 'no id'}`);
-
-    const perm = (await fetch(`${IG}/${pub.id}?fields=permalink&access_token=${t}`).then((r) => r.json())) as { permalink?: string };
-    return { mediaId: pub.id, permalink: perm.permalink ?? `https://www.instagram.com/reel/${pub.id}/` };
-  } finally {
-    await del(blob.url).catch(() => undefined);
-  }
+// Same video as a 24h Story. The Content Publishing API takes no stickers, so there's no
+// way to attach a link sticker from here: the end card's URL and the bio link do that job.
+export async function publishStory(opts: { video: Buffer; name: string }): Promise<ReelResult> {
+  const t = await token();
+  const userId = process.env.INSTAGRAM_USER_ID?.trim();
+  if (!userId) throw new Error('INSTAGRAM_USER_ID not configured');
+  return withPublicVideo(`story-${opts.name}`, opts.video, async (url) => {
+    const mediaId = await publishContainer(userId, t, { media_type: 'STORIES', video_url: url });
+    const perm = (await fetch(`${IG}/${mediaId}?fields=permalink&access_token=${t}`).then((r) => r.json())) as { permalink?: string };
+    return { mediaId, permalink: perm.permalink ?? `https://www.instagram.com/stories/eltrillo_santateresa/` };
+  });
 }

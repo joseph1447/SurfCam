@@ -4,9 +4,9 @@ import TwitchShort from '@/models/TwitchShort';
 import { getAppToken, getUserToken, getLiveStream, createClip, waitForClip, downloadClip } from '@/lib/twitch';
 import { composeShort, uploadShort, surfCheckMeta, musicTracks, trackName, type Privacy } from '@/lib/shorts';
 import { getSurfReport } from '@/lib/conditions';
-import { renderOverlay, HOOKS } from '@/lib/short-overlay';
+import { renderOverlay, renderEndCard, HOOKS } from '@/lib/short-overlay';
 import { analyzeBuffer, recordClipScore, thumbnailVideo } from '@/lib/thumb-pipeline';
-import { publishReel } from '@/lib/instagram';
+import { publishReel, publishStory } from '@/lib/instagram';
 import { reelCaption } from '@/lib/copy';
 
 const CRON_SECRET = process.env.CRON_SECRET;
@@ -74,9 +74,9 @@ export async function GET(request: NextRequest) {
 
       const report = await reportPromise;
       record.report = report;
-      const overlay = await renderOverlay({ hook, at, report });
+      const [overlay, endCard] = await Promise.all([renderOverlay({ hook, at, report }), renderEndCard()]);
       const source = await downloadClip(clipId);
-      const vertical = composeShort(source, overlay, music);
+      const vertical = composeShort(source, overlay, music, endCard);
       const meta = surfCheckMeta(clip.url, privacy, report, music, 'short', at);
       const shortVideoId = await uploadShort(vertical, meta);
 
@@ -120,10 +120,19 @@ export async function GET(request: NextRequest) {
           instagram = { error: record.instagramError };
           console.error('⚠️ Instagram failed:', record.instagramError);
         }
+        try {
+          record.instagramStory = await publishStory({ video: vertical, name: `short-${shortVideoId}` });
+        } catch (err) {
+          record.instagramStoryError = err instanceof Error ? err.message : String(err);
+          console.error('⚠️ Instagram story failed:', record.instagramStoryError);
+        }
         await record.save();
       }
 
-      return NextResponse.json({ status: 'completed', clipId, clipUrl: clip.url, shortVideoId, url, privacy, hook, music: record.music, report, thumbnail, instagram });
+      return NextResponse.json({
+        status: 'completed', clipId, clipUrl: clip.url, shortVideoId, url, privacy, hook, music: record.music, report, thumbnail, instagram,
+        instagramStory: record.instagramStory ?? { error: record.instagramStoryError },
+      });
     } catch (err) {
       record.status = 'failed';
       record.error = err instanceof Error ? err.message : String(err);

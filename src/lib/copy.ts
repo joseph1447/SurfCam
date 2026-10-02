@@ -2,6 +2,7 @@
 // built only from the live forecast, so the words always match the water.
 import { crTime, surfaceWord, type SurfReport } from '@/lib/conditions';
 import { GAME_URL, INSTAGRAM_URL } from '@/lib/links';
+import { LIVE_URL_SHORT, YOUTUBE_HANDLE } from '@/lib/short-overlay';
 
 export type CopyKind = 'short' | 'live' | 'best';
 
@@ -66,7 +67,10 @@ export function surfDescription(opts: {
   const lines = [
     report ? conditionsLine(report) : '🌊 Condiciones del mar en vivo desde Santa Teresa, Costa Rica.',
     '',
-    '📍 En vivo 24/7 con marea, swell y viento: https://santateresasurfcam.com',
+    kind === 'live'
+      ? '👉 Suscríbete para no perderte el reporte de olas de cada día.'
+      : '👉 Suscríbete: reporte de olas de Santa Teresa todos los días, mañana y tarde.',
+    `🔴 Míralo EN VIVO 24/7 con marea, swell y viento: https://${LIVE_URL_SHORT}`,
     ...(INSTAGRAM_URL ? [`📸 Instagram: ${INSTAGRAM_URL}`] : []),
     `🎮 Surfea estas olas en 3D, juega Ripping gratis: ${GAME_URL}`,
     // Deliberately not "Original clip:" - that phrase is what promote-to-shorts keys on to
@@ -92,9 +96,10 @@ export function reelCaption(opts: { kind: CopyKind; report: SurfReport | null; a
     head,
     ...(report ? [conditionsLine(report)] : []),
     '',
-    `▶️ Cámara en vivo 24/7 y más Shorts en YouTube: @QuesadaJoseph`,
+    `👉 Suscríbete en YouTube para el reporte diario: ${YOUTUBE_HANDLE}`,
     youtubeUrl,
-    '🔗 Link en la bio → santateresasurfcam.com',
+    `🔴 Cámara EN VIVO 24/7 con marea, swell y viento: ${LIVE_URL_SHORT}`,
+    '🔗 Link directo en la bio',
     '',
     '#SantaTeresa #CostaRica #Surf #SurfReport #PuraVida #MalPais #Nicoya #SurfCam #OlasHoy',
   ].join('\n');

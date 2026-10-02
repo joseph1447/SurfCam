@@ -7,9 +7,9 @@ import { cronAuthorized } from '@/lib/cron';
 import { downloadClip } from '@/lib/twitch';
 import { composeShort, uploadShort, surfCheckMeta, musicTracks, trackName, type Privacy } from '@/lib/shorts';
 import { crDate, getSurfReport } from '@/lib/conditions';
-import { renderOverlay } from '@/lib/short-overlay';
+import { renderOverlay, renderEndCard } from '@/lib/short-overlay';
 import { analyzeBuffer, thumbnailVideo } from '@/lib/thumb-pipeline';
-import { publishReel } from '@/lib/instagram';
+import { publishReel, publishStory } from '@/lib/instagram';
 import { reelCaption } from '@/lib/copy';
 
 export const maxDuration = 300;
@@ -37,9 +37,9 @@ export async function GET(request: NextRequest) {
     const [source, report] = await Promise.all([downloadClip(pick.clipId), getSurfReport(at).catch(() => null)]);
     const tracks = musicTracks();
     const music = tracks.length ? tracks[Math.floor(Math.random() * tracks.length)] : null;
-    const overlay = await renderOverlay({ hook: 'MEJOR OLA DEL DÍA', at, report });
+    const [overlay, endCard] = await Promise.all([renderOverlay({ hook: 'MEJOR OLA DEL DÍA', at, report }), renderEndCard()]);
     const meta = surfCheckMeta(pick.clipUrl ?? '', privacy, report, music, 'best', at);
-    const vertical = composeShort(source, overlay, music);
+    const vertical = composeShort(source, overlay, music, endCard);
     const videoId = await uploadShort(vertical, meta);
     const url = `https://youtube.com/shorts/${videoId}`;
 
@@ -62,6 +62,11 @@ export async function GET(request: NextRequest) {
       } catch (err) {
         record.instagramError = err instanceof Error ? err.message : String(err);
         instagram = { error: record.instagramError };
+      }
+      try {
+        record.instagramStory = await publishStory({ video: vertical, name: `best-${videoId}` });
+      } catch (err) {
+        record.instagramStoryError = err instanceof Error ? err.message : String(err);
       }
       await record.save();
     }

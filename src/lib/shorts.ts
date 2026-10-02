@@ -4,7 +4,7 @@ import { execFileSync } from 'child_process';
 import { writeFileSync, readFileSync, unlinkSync, existsSync, readdirSync } from 'fs';
 import { join, basename, extname } from 'path';
 import { tmpdir } from 'os';
-import { OVERLAY_W, OVERLAY_H } from '@/lib/short-overlay';
+import { OVERLAY_W, OVERLAY_H, END_CARD_SECONDS } from '@/lib/short-overlay';
 import type { SurfReport } from '@/lib/conditions';
 import { surfDescription, surfTitle } from '@/lib/copy';
 
@@ -72,10 +72,11 @@ function probe(path: string) {
 // The window sits a bit right of center: the cam burns a watermark bottom-left and a
 // timestamp top-right, and this offset (~14% of frame height) lands the window in the
 // gap between them so neither gets sliced mid-word.
-export function composeShort(input: Buffer, overlay: Buffer, music: string | null): Buffer {
+export function composeShort(input: Buffer, overlay: Buffer, music: string | null, endCard?: Buffer): Buffer {
   const stamp = Date.now();
   const inPath = join(tmpdir(), `short-in-${stamp}.mp4`);
   const overlayPath = join(tmpdir(), `short-overlay-${stamp}.png`);
+  const endCardPath = join(tmpdir(), `short-endcard-${stamp}.png`);
   const outPath = join(tmpdir(), `short-out-${stamp}.mp4`);
   try {
     writeFileSync(inPath, input);
@@ -85,12 +86,26 @@ export function composeShort(input: Buffer, overlay: Buffer, music: string | nul
     const inputs = ['-i', inPath, '-i', overlayPath];
     let filter =
       `[0:v]crop=ih*9/16:ih:(iw-ih*9/16)/2+ih*0.143:0,scale=${OVERLAY_W}:${OVERLAY_H},setsar=1[bg];` +
-      `[bg][1:v]overlay=0:0[v]`;
+      `[bg][1:v]overlay=0:0[v0]`;
+    let video = '[v0]';
+
+    // The end card fades in over the last END_CARD_SECONDS. Looped so the fade has a
+    // timeline to run on; -t on the output caps it to the clip.
+    if (endCard) {
+      writeFileSync(endCardPath, endCard);
+      const start = Math.max(0, durationS - END_CARD_SECONDS);
+      inputs.push('-loop', '1', '-framerate', '30', '-i', endCardPath);
+      filter +=
+        `;[2:v]format=rgba,fade=t=in:st=${start.toFixed(2)}:d=0.6:alpha=1[ec];` +
+        `[v0][ec]overlay=0:0:enable='gte(t,${start.toFixed(2)})':shortest=1[v]`;
+      video = '[v]';
+    }
     let audio = hasAudio ? ['-map', '0:a', '-c:a', 'copy'] : [];
 
     if (music) {
+      const musicIdx = endCard ? 3 : 2;
       inputs.push('-stream_loop', '-1', '-i', music);
-      const bed = `[2:a]${MUSIC_FILTER},afade=t=in:d=1`;
+      const bed = `[${musicIdx}:a]${MUSIC_FILTER},afade=t=in:d=1`;
       const mixed = hasAudio ? `${bed}[m];[0:a][m]amix=inputs=2:duration=first:normalize=0` : bed;
       filter += `;${mixed},afade=t=out:st=${Math.max(0, durationS - 1.5).toFixed(2)}:d=1.5[a]`;
       audio = ['-map', '[a]', '-c:a', 'aac', '-b:a', '160k'];
@@ -100,7 +115,7 @@ export function composeShort(input: Buffer, overlay: Buffer, music: string | nul
       '-hide_banner', '-loglevel', 'error',
       ...inputs,
       '-filter_complex', filter,
-      '-map', '[v]', ...audio,
+      '-map', video, ...audio,
       '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '23', '-pix_fmt', 'yuv420p',
       '-t', durationS.toFixed(2),
       '-movflags', '+faststart',
@@ -108,7 +123,7 @@ export function composeShort(input: Buffer, overlay: Buffer, music: string | nul
     ], { timeout: 120_000, stdio: 'pipe' });
     return readFileSync(outPath);
   } finally {
-    for (const p of [inPath, overlayPath, outPath]) if (existsSync(p)) unlinkSync(p);
+    for (const p of [inPath, overlayPath, endCardPath, outPath]) if (existsSync(p)) unlinkSync(p);
   }
 }
 

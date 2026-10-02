@@ -14,6 +14,8 @@ export interface TwitchShort extends Document {
   // Instagram Reel on @eltrillo_santateresa, when the cross-post succeeded.
   instagram?: { mediaId: string; permalink: string } | null;
   instagramError?: string;
+  instagramStory?: { mediaId: string; permalink: string } | null;
+  instagramStoryError?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -34,6 +36,8 @@ const twitchShortSchema = new Schema<TwitchShort>({
   report: { type: Schema.Types.Mixed, default: null },
   instagram: { type: new Schema({ mediaId: String, permalink: String }, { _id: false }), default: null },
   instagramError: { type: String, trim: true },
+  instagramStory: { type: new Schema({ mediaId: String, permalink: String }, { _id: false }), default: null },
+  instagramStoryError: { type: String, trim: true },
 }, {
   timestamps: true,
 });
