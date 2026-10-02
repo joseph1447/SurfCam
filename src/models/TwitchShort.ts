@@ -11,6 +11,9 @@ export interface TwitchShort extends Document {
   hook?: string;
   music?: string | null;
   report?: Record<string, unknown> | null;
+  // Instagram Reel on @eltrillo_santateresa, when the cross-post succeeded.
+  instagram?: { mediaId: string; permalink: string } | null;
+  instagramError?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -29,6 +32,8 @@ const twitchShortSchema = new Schema<TwitchShort>({
   hook: { type: String, trim: true },
   music: { type: String, default: null },
   report: { type: Schema.Types.Mixed, default: null },
+  instagram: { type: new Schema({ mediaId: String, permalink: String }, { _id: false }), default: null },
+  instagramError: { type: String, trim: true },
 }, {
   timestamps: true,
 });

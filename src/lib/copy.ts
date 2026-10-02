@@ -79,3 +79,23 @@ export function surfDescription(opts: {
   ];
   return lines.join('\n');
 }
+
+// Instagram caption for the Reel of a Short. Links aren't clickable in IG captions, so
+// the YouTube handle is the thing to remember; the full URL sits in the bio.
+export function reelCaption(opts: { kind: CopyKind; report: SurfReport | null; at: number; youtubeUrl: string }): string {
+  const { kind, report, at, youtubeUrl } = opts;
+  const head =
+    kind === 'best'
+      ? `🏄 Mejor ola del día en Santa Teresa · ${esDay(at)}`
+      : `🌊 ${report ? conditionLabel(report) : 'Surf'} en Santa Teresa · ${esTime(at)}`;
+  return [
+    head,
+    ...(report ? [conditionsLine(report)] : []),
+    '',
+    `▶️ Cámara en vivo 24/7 y más Shorts en YouTube: @QuesadaJoseph`,
+    youtubeUrl,
+    '🔗 Link en la bio → santateresasurfcam.com',
+    '',
+    '#SantaTeresa #CostaRica #Surf #SurfReport #PuraVida #MalPais #Nicoya #SurfCam #OlasHoy',
+  ].join('\n');
+}

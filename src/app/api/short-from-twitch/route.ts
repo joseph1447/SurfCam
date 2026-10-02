@@ -6,6 +6,8 @@ import { composeShort, uploadShort, surfCheckMeta, musicTracks, trackName, type 
 import { getSurfReport } from '@/lib/conditions';
 import { renderOverlay, HOOKS } from '@/lib/short-overlay';
 import { analyzeBuffer, recordClipScore, thumbnailVideo } from '@/lib/thumb-pipeline';
+import { publishReel } from '@/lib/instagram';
+import { reelCaption } from '@/lib/copy';
 
 const CRON_SECRET = process.env.CRON_SECRET;
 
@@ -99,7 +101,29 @@ export async function GET(request: NextRequest) {
 
       const url = `https://youtube.com/shorts/${shortVideoId}`;
       console.log(`✅ ${url}`);
-      return NextResponse.json({ status: 'completed', clipId, clipUrl: clip.url, shortVideoId, url, privacy, hook, music: record.music, report, thumbnail });
+
+      // Same MP4 as the Short, cross-posted as a Reel on @eltrillo_santateresa, pointing
+      // back at the channel. Public Shorts only, and never fatal for the Short itself.
+      let instagram: unknown = null;
+      if (privacy === 'public' && request.nextUrl.searchParams.get('instagram') !== 'off') {
+        try {
+          const reel = await publishReel({
+            video: vertical,
+            caption: reelCaption({ kind: 'short', report, at, youtubeUrl: url }),
+            name: `short-${shortVideoId}`,
+          });
+          record.instagram = reel;
+          instagram = reel;
+          console.log(`📸 ${reel.permalink}`);
+        } catch (err) {
+          record.instagramError = err instanceof Error ? err.message : String(err);
+          instagram = { error: record.instagramError };
+          console.error('⚠️ Instagram failed:', record.instagramError);
+        }
+        await record.save();
+      }
+
+      return NextResponse.json({ status: 'completed', clipId, clipUrl: clip.url, shortVideoId, url, privacy, hook, music: record.music, report, thumbnail, instagram });
     } catch (err) {
       record.status = 'failed';
       record.error = err instanceof Error ? err.message : String(err);

@@ -9,6 +9,8 @@ import { composeShort, uploadShort, surfCheckMeta, musicTracks, trackName, type 
 import { crDate, getSurfReport } from '@/lib/conditions';
 import { renderOverlay } from '@/lib/short-overlay';
 import { analyzeBuffer, thumbnailVideo } from '@/lib/thumb-pipeline';
+import { publishReel } from '@/lib/instagram';
+import { reelCaption } from '@/lib/copy';
 
 export const maxDuration = 300;
 
@@ -37,11 +39,13 @@ export async function GET(request: NextRequest) {
     const music = tracks.length ? tracks[Math.floor(Math.random() * tracks.length)] : null;
     const overlay = await renderOverlay({ hook: 'MEJOR OLA DEL DÍA', at, report });
     const meta = surfCheckMeta(pick.clipUrl ?? '', privacy, report, music, 'best', at);
-    const videoId = await uploadShort(composeShort(source, overlay, music), meta);
+    const vertical = composeShort(source, overlay, music);
+    const videoId = await uploadShort(vertical, meta);
+    const url = `https://youtube.com/shorts/${videoId}`;
 
     pick.usedForBest = true;
     await pick.save();
-    await TwitchShort.create({
+    const record = await TwitchShort.create({
       clipId: pick.clipId, clipUrl: pick.clipUrl, shortVideoId: videoId, title: meta.title, status: 'completed',
       hook: 'MEJOR OLA DEL DÍA', music: music && trackName(music), report,
     });
@@ -49,7 +53,20 @@ export async function GET(request: NextRequest) {
       videoId, kind: 'best', clipId: pick.clipId, clip: source, analysis: analyzeBuffer(source), report, at, title: meta.title, style: 'BEST', reason: 'best of day',
     }).catch((err) => ({ error: err instanceof Error ? err.message : String(err) }));
 
-    return NextResponse.json({ status: 'completed', videoId, url: `https://youtube.com/shorts/${videoId}`, score: pick.score, clipId: pick.clipId, thumbnail });
+    let instagram: unknown = null;
+    if (privacy === 'public') {
+      try {
+        const reel = await publishReel({ video: vertical, caption: reelCaption({ kind: 'best', report, at, youtubeUrl: url }), name: `best-${videoId}` });
+        record.instagram = reel;
+        instagram = reel;
+      } catch (err) {
+        record.instagramError = err instanceof Error ? err.message : String(err);
+        instagram = { error: record.instagramError };
+      }
+      await record.save();
+    }
+
+    return NextResponse.json({ status: 'completed', videoId, url, score: pick.score, clipId: pick.clipId, thumbnail, instagram });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     console.error('❌ best-wave:', message);

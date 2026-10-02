@@ -42,6 +42,7 @@
     "@remotion/player": "^4.0.417",
     "@types/bcryptjs": "^2.4.6",
     "@vercel/analytics": "^1.5.0",
+    "@vercel/blob": "^2.8.0",
     "@vercel/speed-insights": "^1.2.0",
     "bcryptjs": "^3.0.2",
     "class-variance-authority": "^0.7.1",
