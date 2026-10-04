@@ -1,7 +1,7 @@
 // Titles and descriptions for everything uploaded or updated on the channel. Spanish, and
 // built only from the live forecast, so the words always match the water.
 import { crTime, surfaceWord, type SurfReport } from '@/lib/conditions';
-import { GAME_URL, INSTAGRAM_URL, YOUTUBE_CHANNEL_URL } from '@/lib/links';
+import { GAME_URL, INSTAGRAM_URL, YOUTUBE_CHANNEL_URL, YOUTUBE_CHANNEL_ID_URL } from '@/lib/links';
 import { LIVE_URL_SHORT } from '@/lib/short-overlay';
 
 export type CopyKind = 'short' | 'live' | 'best';
@@ -96,7 +96,7 @@ export function reelCaption(opts: { kind: CopyKind; report: SurfReport | null; a
     head,
     ...(report ? [conditionsLine(report)] : []),
     '',
-    `👉 Suscríbete al canal de YouTube para el reporte diario: ${YOUTUBE_CHANNEL_URL}`,
+    `👉 Suscríbete al canal de YouTube para el reporte diario: ${YOUTUBE_CHANNEL_ID_URL}`,
     `▶️ Este video: ${youtubeUrl}`,
     `🔴 Cámara EN VIVO 24/7 con marea, swell y viento: ${LIVE_URL_SHORT}`,
     '🔗 Link directo en la bio',
