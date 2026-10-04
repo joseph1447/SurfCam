@@ -90,7 +90,8 @@ export async function renderOverlay(opts: { hook: string; at: number; report: Su
 }
 
 export const END_CARD_SECONDS = 5;
-export const YOUTUBE_HANDLE = '@QuesadaJoseph';
+// Shown as a URL, not a bare handle: on Instagram a bare "@..." reads as an IG account.
+export const YOUTUBE_URL_SHORT = 'youtube.com/@QuesadaJoseph';
 export const LIVE_URL_SHORT = 'santateresasurfcam.com/live';
 
 // Shown over the last END_CARD_SECONDS of every Short/Reel: subscribe first (the ask that
@@ -119,9 +120,9 @@ export async function renderEndCard(): Promise<Buffer> {
           <div style={{ marginTop: 12, fontFamily: 'Playfair Display', fontSize: 72, lineHeight: 1, color: FOAM, background: SUNSET, padding: '4px 22px 14px' }}>
             SUSCRÍBETE
           </div>
-          <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', fontFamily: 'IBM Plex Sans', fontWeight: 600, fontSize: 28, color: FOAM }}>
+          <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', fontFamily: 'IBM Plex Sans', fontWeight: 600, fontSize: 27, color: FOAM }}>
             <div style={{ width: 0, height: 0, borderTop: '11px solid transparent', borderBottom: '11px solid transparent', borderLeft: '18px solid #FF2D2D', marginRight: 12 }} />
-            {`${YOUTUBE_HANDLE} · YouTube`}
+            {YOUTUBE_URL_SHORT}
           </div>
           <div style={{ marginTop: 22, width: '100%', borderTop: '1px solid rgba(255, 255, 255, 0.14)' }} />
           <div style={{ marginTop: 18, display: 'flex', alignItems: 'center', fontFamily: 'JetBrains Mono', fontSize: 18, letterSpacing: 2, color: FOAM }}>
