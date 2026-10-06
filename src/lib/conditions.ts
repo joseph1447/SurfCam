@@ -238,3 +238,23 @@ export function crTime(at: number, style: '24h' | '12h' = '24h') {
     hourCycle: style === '24h' ? 'h23' : 'h12',
   }).format(at);
 }
+
+// Sunset over Santa Teresa on the Costa Rica day containing `at`, from NOAA's general solar
+// position equations (about a minute of error, no network). Includes refraction (90.833°).
+export function sunsetAt(at: number): number {
+  const [y, m, d] = crDate(at).split('-').map(Number);
+  const midnightUtc = Date.UTC(y, m - 1, d);
+  const doy = (midnightUtc - Date.UTC(y, 0, 1)) / 86_400_000 + 1;
+  // Fractional year evaluated at ~23:30 UTC, when the sun sets here.
+  const g = ((2 * Math.PI) / 365) * (doy - 1 + (23.5 - 12) / 24);
+  const eqTimeMin =
+    229.18 * (0.000075 + 0.001868 * Math.cos(g) - 0.032077 * Math.sin(g) - 0.014615 * Math.cos(2 * g) - 0.040849 * Math.sin(2 * g));
+  const decl =
+    0.006918 - 0.399912 * Math.cos(g) + 0.070257 * Math.sin(g) - 0.006758 * Math.cos(2 * g) +
+    0.000907 * Math.sin(2 * g) - 0.002697 * Math.cos(3 * g) + 0.00148 * Math.sin(3 * g);
+  const lat = (LAT * Math.PI) / 180;
+  const zenith = (90.833 * Math.PI) / 180;
+  const ha = Math.acos(Math.cos(zenith) / (Math.cos(lat) * Math.cos(decl)) - Math.tan(lat) * Math.tan(decl));
+  const sunsetMinUtc = 720 - 4 * (LON - (ha * 180) / Math.PI) - eqTimeMin;
+  return midnightUtc + sunsetMinUtc * 60_000;
+}

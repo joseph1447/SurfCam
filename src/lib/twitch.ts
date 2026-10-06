@@ -154,3 +154,87 @@ async function fetchClipMp4(slug: string): Promise<Buffer> {
   }
   return buffer;
 }
+
+// ---- VOD access, for the sunset Short (cut after the fact, not clipped live) ----
+
+export interface Archive {
+  id: string;
+  createdAt: number;
+  durationS: number;
+}
+
+export interface VodSegment {
+  vodId: string;
+  index: number; // media sequence number; consecutive segments differ by 1
+  at: number; // wall clock (PROGRAM-DATE-TIME), epoch ms
+  offsetS: number; // position in the VOD, for a ?t= link
+  durationS: number;
+  url: string;
+}
+
+// The 24/7 stream is archived in 48h VODs that roll over around 00:08 UTC. The newest one
+// is still recording, and its playlist trails live by only ~10 s.
+export async function recentArchives(appToken: string, count = 3): Promise<Archive[]> {
+  const res = await fetch(`https://api.twitch.tv/helix/videos?user_id=${BROADCASTER_ID}&type=archive&first=${count}`, {
+    headers: helixHeaders(appToken),
+  });
+  if (!res.ok) throw new Error(`Archive lookup failed: ${res.status}`);
+  const data = (await res.json()) as { data: { id: string; created_at: string; duration: string }[] };
+  return data.data.map((v) => {
+    const [, h = '0', m = '0', s = '0'] = v.duration.match(/(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?/) ?? [];
+    return { id: v.id, createdAt: Date.parse(v.created_at), durationS: +h * 3600 + +m * 60 + +s };
+  });
+}
+
+// Usher only offers these VODs as audio_only, but the source rendition ("chunked", the cam's
+// full 2560x1440) sits on the CDN next to the storyboards whose URL GQL hands out.
+export async function vodSegments(vodId: string): Promise<VodSegment[]> {
+  const gql = await fetch('https://gql.twitch.tv/gql', {
+    method: 'POST',
+    headers: { 'Client-ID': 'kimne78kx3ncx6brgo4mv6wki5h1ko', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query: `{ video(id: "${vodId}") { seekPreviewsURL } }` }),
+  }).then((r) => r.json());
+  const previews: string | undefined = gql?.data?.video?.seekPreviewsURL;
+  if (!previews) throw new Error(`No CDN path for VOD ${vodId}`);
+  const base = previews.replace(/\/storyboards\/.*$/, '/chunked/');
+
+  const res = await fetch(`${base}index-dvr.m3u8`);
+  if (!res.ok) throw new Error(`VOD ${vodId} playlist: ${res.status}`);
+  const segments: VodSegment[] = [];
+  let offsetS = 0, at = 0, durationS = 0;
+  for (const line of (await res.text()).split('\n').map((l) => l.trim())) {
+    if (line.startsWith('#EXT-X-TWITCH-ELAPSED-SECS:')) offsetS = parseFloat(line.split(':')[1]);
+    else if (line.startsWith('#EXT-X-PROGRAM-DATE-TIME:')) at = Date.parse(line.slice(25));
+    else if (line.startsWith('#EXTINF:')) durationS = parseFloat(line.slice(8));
+    else if (line && !line.startsWith('#')) {
+      segments.push({ vodId, index: parseInt(line, 10), at, offsetS, durationS, url: base + line });
+      offsetS += durationS;
+      at += durationS * 1000; // overwritten by the next PROGRAM-DATE-TIME when there is one
+    }
+  }
+  return segments;
+}
+
+// Just the head of a segment: its leading I-frame (350-700 KB of ~8 MB at 1440p) is enough
+// for one frame. A short read still decodes, with the bottom rows smeared, so leave room.
+export async function segmentHead(url: string, bytes = 1_000_000): Promise<Buffer> {
+  const res = await fetch(url, { headers: { Range: `bytes=0-${bytes - 1}` } });
+  if (!res.ok) throw new Error(`Segment head ${res.status}: ${url}`);
+  return Buffer.from(await res.arrayBuffer());
+}
+
+export async function downloadSegments(urls: string[]): Promise<Buffer> {
+  const parts = await Promise.all(
+    urls.map(async (url) => {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Segment ${res.status}: ${url}`);
+      return Buffer.from(await res.arrayBuffer());
+    }),
+  );
+  return Buffer.concat(parts); // MPEG-TS segments of one stream concatenate byte for byte
+}
+
+export const vodLink = (s: VodSegment) => {
+  const t = Math.floor(s.offsetS);
+  return `https://www.twitch.tv/videos/${s.vodId}?t=${Math.floor(t / 3600)}h${Math.floor((t % 3600) / 60)}m${t % 60}s`;
+};

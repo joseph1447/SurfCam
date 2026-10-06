@@ -5,6 +5,9 @@
 // detection: a model couldn't see them and wouldn't fit the function bundle anyway.
 
 import { execFileSync } from 'child_process';
+import { writeFileSync, existsSync, unlinkSync } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
 import { ffmpegPath } from '@/lib/shorts';
 
 const W = 160;
@@ -234,4 +237,39 @@ export function analyzeClip(path: string): ClipAnalysis {
 
   const strip = ({ maps: _maps, ...f }: (typeof scored)[number]) => f;
   return { frames: scored.map(strip), best: best ? strip(best) : null, zoomCrop: zoom.crop, mediumCrop: medium.crop, portraitCrop: portrait, foamX: zoom.foamX };
+}
+
+// How much sunset colour one frame holds, for picking the evening Short's moment. warmPct is
+// the share of pixels with a red/orange/pink hue: the pink glow of 2026-10-03 read 90%, grey
+// dusks 0-8%. satPct is plain saturation; it falls to ~0 once the cam switches to IR.
+// Reads from a temp file, not stdin: ffmpeg quits after the first frame, and the unread rest
+// of a piped input fails the spawn (EOF on Windows, EPIPE on Linux).
+export function frameColor(image: Buffer): { warmPct: number; satPct: number } {
+  const path = join(tmpdir(), `frame-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2)}.ts`);
+  let raw: Buffer;
+  try {
+    writeFileSync(path, image);
+    raw = execFileSync(ffmpegPath(), [
+      '-hide_banner', '-loglevel', 'error', '-i', path, '-frames:v', '1',
+      '-vf', `scale=${W}:${H}:flags=area`, '-f', 'rawvideo', '-pix_fmt', 'rgb24', 'pipe:1',
+    ], { timeout: 20_000 });
+  } finally {
+    if (existsSync(path)) unlinkSync(path);
+  }
+  if (raw.length < W * H * 3) throw new Error('No frame decoded');
+
+  let warm = 0, sat = 0;
+  for (let i = 0; i < W * H; i++) {
+    const r = raw[i * 3], g = raw[i * 3 + 1], b = raw[i * 3 + 2];
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    const s = max ? (max - min) / max : 0;
+    sat += s;
+    if (s <= 0.08 || max <= 60) continue;
+    const d = max - min;
+    let hue = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    hue = (hue * 60 + 360) % 360;
+    if (hue < 50 || hue > 300) warm++;
+  }
+  const n = W * H;
+  return { warmPct: Math.round((1000 * warm) / n) / 10, satPct: Math.round((1000 * sat) / n) / 10 };
 }

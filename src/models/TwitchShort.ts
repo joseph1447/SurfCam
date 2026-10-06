@@ -10,6 +10,8 @@ export interface TwitchShort extends Document {
   // What the Short carried, for comparing hooks / music on vs off in YouTube Analytics.
   hook?: string;
   music?: string | null;
+  // 'sunset' for the evening run timed off the day's sunset; unset for the morning one.
+  slot?: string;
   report?: Record<string, unknown> | null;
   // Instagram Reel on @eltrillo_santateresa, when the cross-post succeeded.
   instagram?: { mediaId: string; permalink: string } | null;
@@ -33,6 +35,7 @@ const twitchShortSchema = new Schema<TwitchShort>({
   error: { type: String, trim: true },
   hook: { type: String, trim: true },
   music: { type: String, default: null },
+  slot: { type: String, trim: true },
   report: { type: Schema.Types.Mixed, default: null },
   instagram: { type: new Schema({ mediaId: String, permalink: String }, { _id: false }), default: null },
   instagramError: { type: String, trim: true },

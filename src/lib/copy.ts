@@ -86,7 +86,7 @@ export function surfDescription(opts: {
 
 // Instagram caption for the Reel of a Short. Links aren't clickable in IG captions, so
 // the YouTube handle is the thing to remember; the full URL sits in the bio.
-export function reelCaption(opts: { kind: CopyKind; report: SurfReport | null; at: number; youtubeUrl: string }): string {
+export function reelCaption(opts: { kind: CopyKind; report: SurfReport | null; at: number; youtubeUrl?: string }): string {
   const { kind, report, at, youtubeUrl } = opts;
   const head =
     kind === 'best'
@@ -97,7 +97,7 @@ export function reelCaption(opts: { kind: CopyKind; report: SurfReport | null; a
     ...(report ? [conditionsLine(report)] : []),
     '',
     `👉 Suscríbete al canal de YouTube para el reporte diario: ${YOUTUBE_CHANNEL_ID_URL}`,
-    `▶️ Este video: ${youtubeUrl}`,
+    ...(youtubeUrl ? [`▶️ Este video: ${youtubeUrl}`] : []),
     `🔴 Cámara EN VIVO 24/7 con marea, swell y viento: ${LIVE_URL_SHORT}`,
     '🔗 Link directo en la bio',
     '',

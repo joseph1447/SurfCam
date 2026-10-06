@@ -127,6 +127,23 @@ export function composeShort(input: Buffer, overlay: Buffer, music: string | nul
   }
 }
 
+// VOD segments arrive as MPEG-TS; compose and the thumbnail pipeline take MP4.
+export function tsToMp4(ts: Buffer): Buffer {
+  const stamp = Date.now();
+  const inPath = join(tmpdir(), `vod-${stamp}.ts`);
+  const outPath = join(tmpdir(), `vod-${stamp}.mp4`);
+  try {
+    writeFileSync(inPath, ts);
+    execFileSync(ffmpegPath(), [
+      '-hide_banner', '-loglevel', 'error', '-i', inPath,
+      '-c', 'copy', '-bsf:a', 'aac_adtstoasc', '-movflags', '+faststart', '-y', outPath,
+    ], { timeout: 60_000, stdio: 'pipe' });
+    return readFileSync(outPath);
+  } finally {
+    for (const p of [inPath, outPath]) if (existsSync(p)) unlinkSync(p);
+  }
+}
+
 export interface ShortMeta {
   title: string;
   description: string;
