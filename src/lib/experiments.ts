@@ -3,7 +3,9 @@
 import ThumbnailTest, { type ThumbKind } from '@/models/ThumbnailTest';
 import { ROTATING_STYLES, type ThumbStyle } from '@/lib/thumbnail';
 
-const EXPLOIT_AFTER = 20;
+// First week of reach data (2026-10-07): Shorts B 3.6% vs A 1.2% / C 0.6%, live A 31% vs
+// 23-26%. Clear enough to start exploiting at 10 measured videos instead of 20.
+const EXPLOIT_AFTER = 10;
 // Below this a video's CTR is too noisy to count toward its style.
 export const MIN_IMPRESSIONS = 50;
 

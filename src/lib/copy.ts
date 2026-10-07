@@ -69,7 +69,9 @@ export function surfDescription(opts: {
     '',
     kind === 'live'
       ? `👉 Suscríbete para no perderte el reporte de olas de cada día: ${YOUTUBE_CHANNEL_URL}`
-      : `👉 Suscríbete: reporte de olas de Santa Teresa todos los días, mañana y tarde: ${YOUTUBE_CHANNEL_URL}`,
+      : kind === 'best'
+        ? `👉 Suscríbete y recibe la mejor ola de Santa Teresa cada día: ${YOUTUBE_CHANNEL_URL}`
+        : `👉 Suscríbete: reporte de olas de Santa Teresa todos los días, mañana y tarde: ${YOUTUBE_CHANNEL_URL}`,
     `🔴 Míralo EN VIVO 24/7 con marea, swell y viento: https://${LIVE_URL_SHORT}`,
     ...(INSTAGRAM_URL ? [`📸 Instagram: ${INSTAGRAM_URL}`] : []),
     `🎮 Surfea estas olas en 3D, juega Ripping gratis: ${GAME_URL}`,
@@ -96,7 +98,9 @@ export function reelCaption(opts: { kind: CopyKind; report: SurfReport | null; a
     head,
     ...(report ? [conditionsLine(report)] : []),
     '',
-    `👉 Suscríbete al canal de YouTube para el reporte diario: ${YOUTUBE_CHANNEL_ID_URL}`,
+    kind === 'best'
+      ? `👉 Suscríbete en YouTube y recibe la mejor ola de Santa Teresa cada día: ${YOUTUBE_CHANNEL_ID_URL}`
+      : `👉 Suscríbete al canal de YouTube para el reporte diario: ${YOUTUBE_CHANNEL_ID_URL}`,
     ...(youtubeUrl ? [`▶️ Este video: ${youtubeUrl}`] : []),
     `🔴 Cámara EN VIVO 24/7 con marea, swell y viento: ${LIVE_URL_SHORT}`,
     '🔗 Link directo en la bio',

@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     const [source, report] = await Promise.all([downloadClip(pick.clipId), getSurfReport(at).catch(() => null)]);
     const tracks = musicTracks();
     const music = tracks.length ? tracks[Math.floor(Math.random() * tracks.length)] : null;
-    const [overlay, endCard] = await Promise.all([renderOverlay({ hook: 'MEJOR OLA DEL DÍA', at, report }), renderEndCard()]);
+    const [overlay, endCard] = await Promise.all([renderOverlay({ hook: 'MEJOR OLA DEL DÍA', at, report }), renderEndCard('best')]);
     const meta = surfCheckMeta(pick.clipUrl ?? '', privacy, report, music, 'best', at);
     const vertical = composeShort(source, overlay, music, endCard);
     const videoId = await uploadShort(vertical, meta);

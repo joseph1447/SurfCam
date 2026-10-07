@@ -97,7 +97,10 @@ export const LIVE_URL_SHORT = 'santateresasurfcam.com/live';
 // Shown over the last END_CARD_SECONDS of every Short/Reel: subscribe first (the ask that
 // compounds), then the live. Sits mid-frame, under the conditions block and above the
 // player's bottom strip; the rest of the video stays untouched.
-export async function renderEndCard(): Promise<Buffer> {
+// The "best wave" Short leads with its own promise: that's the format people rewatch
+// (936 views at 113% on 2026-10-01), so it carries the most concrete reason to subscribe.
+export async function renderEndCard(kind: 'short' | 'best' = 'short'): Promise<Buffer> {
+  const eyebrow = kind === 'best' ? 'LA MEJOR OLA DE SANTA TERESA, CADA DÍA' : '¿TE GUSTÓ EL REPORTE?';
   const image = new ImageResponse(
     (
       <div style={{ width: OVERLAY_W, height: OVERLAY_H, display: 'flex', position: 'relative' }}>
@@ -116,7 +119,7 @@ export async function renderEndCard(): Promise<Buffer> {
             padding: '26px 22px 24px',
           }}
         >
-          <div style={{ fontFamily: 'JetBrains Mono', fontSize: 17, letterSpacing: 3, color: SAND }}>¿TE GUSTÓ EL REPORTE?</div>
+          <div style={{ fontFamily: 'JetBrains Mono', fontSize: kind === 'best' ? 15 : 17, letterSpacing: kind === 'best' ? 1.5 : 3, color: SAND }}>{eyebrow}</div>
           <div style={{ marginTop: 12, fontFamily: 'Playfair Display', fontSize: 72, lineHeight: 1, color: FOAM, background: SUNSET, padding: '4px 22px 14px' }}>
             SUSCRÍBETE
           </div>
