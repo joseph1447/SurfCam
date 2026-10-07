@@ -90,14 +90,19 @@ export async function renderOverlay(opts: { hook: string; at: number; report: Su
   return Buffer.from(await image.arrayBuffer());
 }
 
-// Each closing card (subscribe, then sponsors) holds this long; they run back to back at
-// the end of the clip.
+// The closing subscribe card holds this long at the end of the clip.
 export const CARD_SECONDS = 4.5;
+// Sponsors open the clip (Joseph's call: more eyes than at the end). Short enough not to
+// cost the first-second swipe; the hook and conditions stay visible above it.
+export const INTRO_SECONDS = 3.5;
+// Instagram uses the first frame as the Reel cover unless told otherwise: take it after
+// the intro so the cover shows the wave, not the sponsors card.
+export const REEL_COVER_MS = 5000;
 // Shown as a URL, not a bare handle: on Instagram a bare "@..." reads as an IG account.
 export const YOUTUBE_URL_SHORT = 'youtube.com/@QuesadaJoseph';
 export const LIVE_URL_SHORT = 'santateresasurfcam.com/live';
 
-// First of the two closing cards (CARD_SECONDS each) on every Short/Reel: subscribe (the ask that
+// Closing card (last CARD_SECONDS) on every Short/Reel: subscribe (the ask that
 // compounds), then the live. Sits mid-frame, under the conditions block and above the
 // player's bottom strip; the rest of the video stays untouched.
 const dataUrl = (file: string) => {
@@ -105,8 +110,8 @@ const dataUrl = (file: string) => {
   return `data:${mime};base64,${readFileSync(join(process.cwd(), 'assets', 'brand', 'sponsors', file)).toString('base64')}`;
 };
 
-// Last card of every Short/Reel: who supports the cam, and an open invitation to join.
-// Same box and position as the subscribe card so the swap reads as one sequence.
+// Opening card of every Short/Reel: who supports the cam, and an open invitation to join.
+// Mid-frame, under the hook + conditions block, same box as the closing subscribe card.
 export async function renderSponsorCard(): Promise<Buffer> {
   const image = new ImageResponse(
     (

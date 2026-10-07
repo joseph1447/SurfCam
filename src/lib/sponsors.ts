@@ -1,4 +1,4 @@
-// Sponsors shown on the closing card of every Short/Reel. Logos live in
+// Sponsors shown on the opening card of every Short/Reel. Logos live in
 // assets/brand/sponsors (traced into the Short routes via next.config).
 export interface Sponsor {
   name: string;

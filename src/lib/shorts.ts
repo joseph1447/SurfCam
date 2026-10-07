@@ -4,7 +4,7 @@ import { execFileSync } from 'child_process';
 import { writeFileSync, readFileSync, unlinkSync, existsSync, readdirSync } from 'fs';
 import { join, basename, extname } from 'path';
 import { tmpdir } from 'os';
-import { OVERLAY_W, OVERLAY_H, CARD_SECONDS } from '@/lib/short-overlay';
+import { OVERLAY_W, OVERLAY_H, CARD_SECONDS, INTRO_SECONDS } from '@/lib/short-overlay';
 import type { SurfReport } from '@/lib/conditions';
 import { surfDescription, surfTitle } from '@/lib/copy';
 
@@ -72,11 +72,17 @@ function probe(path: string) {
 // The window sits a bit right of center: the cam burns a watermark bottom-left and a
 // timestamp top-right, and this offset (~14% of frame height) lands the window in the
 // gap between them so neither gets sliced mid-word.
-export function composeShort(input: Buffer, overlay: Buffer, music: string | null, endCards: Buffer[] = []): Buffer {
+export function composeShort(
+  input: Buffer,
+  overlay: Buffer,
+  music: string | null,
+  cards: { intro?: Buffer; outro?: Buffer } = {},
+): Buffer {
   const stamp = Date.now();
   const inPath = join(tmpdir(), `short-in-${stamp}.mp4`);
   const overlayPath = join(tmpdir(), `short-overlay-${stamp}.png`);
-  const cardPaths = endCards.map((_, i) => join(tmpdir(), `short-card${i}-${stamp}.png`));
+  const introPath = join(tmpdir(), `short-intro-${stamp}.png`);
+  const outroPath = join(tmpdir(), `short-outro-${stamp}.png`);
   const outPath = join(tmpdir(), `short-out-${stamp}.mp4`);
   try {
     writeFileSync(inPath, input);
@@ -88,25 +94,35 @@ export function composeShort(input: Buffer, overlay: Buffer, music: string | nul
       `[0:v]crop=ih*9/16:ih:(iw-ih*9/16)/2+ih*0.143:0,scale=${OVERLAY_W}:${OVERLAY_H},setsar=1[bg];` +
       `[bg][1:v]overlay=0:0[v0]`;
     let video = '[v0]';
+    let next = 2;
 
-    // Closing cards run back to back over the last CARD_SECONDS each, every one fading in
-    // on top of the one before (which stays up through that fade, so nothing flashes in
-    // between). Looped so the fade has a timeline to run on; -t caps it to the clip.
-    endCards.forEach((card, i) => {
-      writeFileSync(cardPaths[i], card);
-      const start = Math.max(0, durationS - CARD_SECONDS * (endCards.length - i));
-      const last = i === endCards.length - 1;
-      const enable = last ? `gte(t,${start.toFixed(2)})` : `between(t,${start.toFixed(2)},${(start + CARD_SECONDS + 0.6).toFixed(2)})`;
-      inputs.push('-loop', '1', '-framerate', '30', '-i', cardPaths[i]);
+    // Cards are looped stills so their alpha fades have a timeline to run on; -t on the
+    // output caps everything to the clip. The intro is up from frame one and fades out;
+    // the outro fades in over the last CARD_SECONDS.
+    if (cards.intro) {
+      writeFileSync(introPath, cards.intro);
+      const out = (INTRO_SECONDS - 0.4).toFixed(2);
+      inputs.push('-loop', '1', '-framerate', '30', '-i', introPath);
       filter +=
-        `;[${i + 2}:v]format=rgba,fade=t=in:st=${start.toFixed(2)}:d=0.6:alpha=1[c${i}];` +
-        `${video}[c${i}]overlay=0:0:enable='${enable}':shortest=1[v${i + 1}]`;
-      video = `[v${i + 1}]`;
-    });
+        `;[${next}:v]format=rgba,fade=t=out:st=${out}:d=0.4:alpha=1[intro];` +
+        `${video}[intro]overlay=0:0:enable='lt(t,${INTRO_SECONDS})':shortest=1[vi]`;
+      video = '[vi]';
+      next++;
+    }
+    if (cards.outro) {
+      writeFileSync(outroPath, cards.outro);
+      const start = Math.max(INTRO_SECONDS, durationS - CARD_SECONDS).toFixed(2);
+      inputs.push('-loop', '1', '-framerate', '30', '-i', outroPath);
+      filter +=
+        `;[${next}:v]format=rgba,fade=t=in:st=${start}:d=0.6:alpha=1[outro];` +
+        `${video}[outro]overlay=0:0:enable='gte(t,${start})':shortest=1[vo]`;
+      video = '[vo]';
+      next++;
+    }
     let audio = hasAudio ? ['-map', '0:a', '-c:a', 'copy'] : [];
 
     if (music) {
-      const musicIdx = 2 + endCards.length;
+      const musicIdx = next;
       inputs.push('-stream_loop', '-1', '-i', music);
       const bed = `[${musicIdx}:a]${MUSIC_FILTER},afade=t=in:d=1`;
       const mixed = hasAudio ? `${bed}[m];[0:a][m]amix=inputs=2:duration=first:normalize=0` : bed;
@@ -126,7 +142,7 @@ export function composeShort(input: Buffer, overlay: Buffer, music: string | nul
     ], { timeout: 120_000, stdio: 'pipe' });
     return readFileSync(outPath);
   } finally {
-    for (const p of [inPath, overlayPath, ...cardPaths, outPath]) if (existsSync(p)) unlinkSync(p);
+    for (const p of [inPath, overlayPath, introPath, outroPath, outPath]) if (existsSync(p)) unlinkSync(p);
   }
 }
 

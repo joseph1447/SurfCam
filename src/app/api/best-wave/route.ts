@@ -7,7 +7,7 @@ import { cronAuthorized } from '@/lib/cron';
 import { downloadClip } from '@/lib/twitch';
 import { composeShort, uploadShort, surfCheckMeta, musicTracks, trackName, type Privacy } from '@/lib/shorts';
 import { crDate, getSurfReport } from '@/lib/conditions';
-import { renderOverlay, renderEndCard, renderSponsorCard } from '@/lib/short-overlay';
+import { renderOverlay, renderEndCard, renderSponsorCard, REEL_COVER_MS } from '@/lib/short-overlay';
 import { analyzeBuffer, thumbnailVideo } from '@/lib/thumb-pipeline';
 import { publishReel, publishStory } from '@/lib/instagram';
 import { reelCaption } from '@/lib/copy';
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
       renderSponsorCard(),
     ]);
     const meta = surfCheckMeta(pick.clipUrl ?? '', privacy, report, music, 'best', at);
-    const vertical = composeShort(source, overlay, music, [subscribeCard, sponsorCard]);
+    const vertical = composeShort(source, overlay, music, { intro: sponsorCard, outro: subscribeCard });
     const videoId = await uploadShort(vertical, meta);
     const url = `https://youtube.com/shorts/${videoId}`;
 
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
     let instagram: unknown = null;
     if (privacy === 'public') {
       try {
-        const reel = await publishReel({ video: vertical, caption: reelCaption({ kind: 'best', report, at, youtubeUrl: url }), name: `best-${videoId}` });
+        const reel = await publishReel({ video: vertical, caption: reelCaption({ kind: 'best', report, at, youtubeUrl: url }), thumbnailOffsetMs: REEL_COVER_MS, name: `best-${videoId}` });
         record.instagram = reel;
         instagram = reel;
       } catch (err) {
