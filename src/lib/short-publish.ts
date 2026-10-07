@@ -3,7 +3,7 @@
 // run (short-from-twitch) and the sunset run, which cuts its clip from the VOD instead.
 import { composeShort, uploadShort, surfCheckMeta, musicTracks, type Privacy } from '@/lib/shorts';
 import type { SurfReport } from '@/lib/conditions';
-import { renderOverlay, renderEndCard, HOOKS } from '@/lib/short-overlay';
+import { renderOverlay, renderEndCard, renderSponsorCard, HOOKS } from '@/lib/short-overlay';
 import { analyzeBuffer, recordClipScore, thumbnailVideo } from '@/lib/thumb-pipeline';
 import { publishReel, publishStory } from '@/lib/instagram';
 import { reelCaption } from '@/lib/copy';
@@ -38,8 +38,8 @@ export async function finishShort(opts: {
   record.clipUrl = clipUrl;
   record.report = report as TwitchShort['report'];
 
-  const [overlay, endCard] = await Promise.all([renderOverlay({ hook, at, report }), renderEndCard()]);
-  const vertical = composeShort(source, overlay, music, endCard);
+  const [overlay, subscribeCard, sponsorCard] = await Promise.all([renderOverlay({ hook, at, report }), renderEndCard(), renderSponsorCard()]);
+  const vertical = composeShort(source, overlay, music, [subscribeCard, sponsorCard]);
   const meta = surfCheckMeta(clipUrl, privacy, report, music, 'short', at);
   const shortVideoId = await uploadShort(vertical, meta);
 

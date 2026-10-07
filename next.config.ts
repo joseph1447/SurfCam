@@ -14,6 +14,7 @@ const nextConfig: NextConfig = {
   // Read with fs at runtime, so file tracing can't see them on its own.
   outputFileTracingIncludes: {
     '/api/short-from-twitch': ['./assets/**/*'],
+    '/api/short-from-twitch/sunset': ['./assets/**/*'],
     '/api/live-thumbnail': ['./assets/fonts/**/*', './assets/brand/**/*'],
     '/api/best-wave': ['./assets/**/*'],
     '/api/thumbnail-metrics': ['./assets/fonts/**/*', './assets/brand/**/*'],

@@ -2,6 +2,7 @@ import { ImageResponse } from 'next/og';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { crTime, type SurfReport } from '@/lib/conditions';
+import { SPONSORS, SPONSOR_CONTACT } from '@/lib/sponsors';
 
 // Same size as the vertical crop in shorts.ts, so the PNG lays over the video 1:1.
 export const OVERLAY_W = 608;
@@ -89,14 +90,85 @@ export async function renderOverlay(opts: { hook: string; at: number; report: Su
   return Buffer.from(await image.arrayBuffer());
 }
 
-export const END_CARD_SECONDS = 5;
+// Each closing card (subscribe, then sponsors) holds this long; they run back to back at
+// the end of the clip.
+export const CARD_SECONDS = 4.5;
 // Shown as a URL, not a bare handle: on Instagram a bare "@..." reads as an IG account.
 export const YOUTUBE_URL_SHORT = 'youtube.com/@QuesadaJoseph';
 export const LIVE_URL_SHORT = 'santateresasurfcam.com/live';
 
-// Shown over the last END_CARD_SECONDS of every Short/Reel: subscribe first (the ask that
+// First of the two closing cards (CARD_SECONDS each) on every Short/Reel: subscribe (the ask that
 // compounds), then the live. Sits mid-frame, under the conditions block and above the
 // player's bottom strip; the rest of the video stays untouched.
+const dataUrl = (file: string) => {
+  const mime = file.endsWith('.png') ? 'image/png' : 'image/jpeg';
+  return `data:${mime};base64,${readFileSync(join(process.cwd(), 'assets', 'brand', 'sponsors', file)).toString('base64')}`;
+};
+
+// Last card of every Short/Reel: who supports the cam, and an open invitation to join.
+// Same box and position as the subscribe card so the swap reads as one sequence.
+export async function renderSponsorCard(): Promise<Buffer> {
+  const image = new ImageResponse(
+    (
+      <div style={{ width: OVERLAY_W, height: OVERLAY_H, display: 'flex', position: 'relative' }}>
+        <div
+          style={{
+            position: 'absolute',
+            top: 380,
+            left: 28,
+            width: OVERLAY_W - 56,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            background: 'rgba(6, 17, 28, 0.88)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            borderRadius: 22,
+            padding: '22px 16px 22px',
+          }}
+        >
+          <div style={{ fontFamily: 'JetBrains Mono', fontSize: 17, letterSpacing: 3, color: SAND }}>PATROCINADORES</div>
+          <div style={{ marginTop: 18, display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+            {SPONSORS.map((s) => (
+              <div key={s.domain} style={{ width: 168, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <img
+                  src={dataUrl(s.logo)}
+                  width={112}
+                  height={112}
+                  style={{
+                    borderRadius: s.shape === 'circle' ? 56 : 18,
+                    border: '3px solid rgba(255, 255, 255, 0.9)',
+                    background: '#FFFFFF',
+                    objectFit: 'cover',
+                  }}
+                />
+                <div style={{ marginTop: 10, fontFamily: 'IBM Plex Sans', fontWeight: 600, fontSize: 17, color: FOAM, textAlign: 'center' }}>{s.name}</div>
+                <div style={{ marginTop: 2, fontFamily: 'JetBrains Mono', fontSize: 12, color: TEAL, textAlign: 'center' }}>{s.domain}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: 20, width: '100%', borderTop: '1px solid rgba(255, 255, 255, 0.14)' }} />
+          <div style={{ marginTop: 16, fontFamily: 'Playfair Display', fontSize: 30, lineHeight: 1.15, color: FOAM, textAlign: 'center', maxWidth: 470 }}>
+            ¿Quieres apoyar el surf cam o crear algo juntos?
+          </div>
+          <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', fontFamily: 'IBM Plex Sans', fontWeight: 600, fontSize: 20, color: '#0A0C10', background: SUNSET, borderRadius: 999, padding: '8px 18px' }}>
+            {`Contáctanos en ${SPONSOR_CONTACT}`}
+          </div>
+        </div>
+      </div>
+    ),
+    {
+      width: OVERLAY_W,
+      height: OVERLAY_H,
+      fonts: [
+        { name: 'Playfair Display', data: font('PlayfairDisplay-Black.ttf'), weight: 900, style: 'normal' },
+        { name: 'IBM Plex Sans', data: font('IBMPlexSans-SemiBold.ttf'), weight: 600, style: 'normal' },
+        { name: 'JetBrains Mono', data: font('JetBrainsMono-Bold.ttf'), weight: 700, style: 'normal' },
+      ],
+    },
+  );
+  return Buffer.from(await image.arrayBuffer());
+}
+
 // The "best wave" Short leads with its own promise: that's the format people rewatch
 // (936 views at 113% on 2026-10-01), so it carries the most concrete reason to subscribe.
 export async function renderEndCard(kind: 'short' | 'best' = 'short'): Promise<Buffer> {

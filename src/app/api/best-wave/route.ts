@@ -7,7 +7,7 @@ import { cronAuthorized } from '@/lib/cron';
 import { downloadClip } from '@/lib/twitch';
 import { composeShort, uploadShort, surfCheckMeta, musicTracks, trackName, type Privacy } from '@/lib/shorts';
 import { crDate, getSurfReport } from '@/lib/conditions';
-import { renderOverlay, renderEndCard } from '@/lib/short-overlay';
+import { renderOverlay, renderEndCard, renderSponsorCard } from '@/lib/short-overlay';
 import { analyzeBuffer, thumbnailVideo } from '@/lib/thumb-pipeline';
 import { publishReel, publishStory } from '@/lib/instagram';
 import { reelCaption } from '@/lib/copy';
@@ -37,9 +37,13 @@ export async function GET(request: NextRequest) {
     const [source, report] = await Promise.all([downloadClip(pick.clipId), getSurfReport(at).catch(() => null)]);
     const tracks = musicTracks();
     const music = tracks.length ? tracks[Math.floor(Math.random() * tracks.length)] : null;
-    const [overlay, endCard] = await Promise.all([renderOverlay({ hook: 'MEJOR OLA DEL DÍA', at, report }), renderEndCard('best')]);
+    const [overlay, subscribeCard, sponsorCard] = await Promise.all([
+      renderOverlay({ hook: 'MEJOR OLA DEL DÍA', at, report }),
+      renderEndCard('best'),
+      renderSponsorCard(),
+    ]);
     const meta = surfCheckMeta(pick.clipUrl ?? '', privacy, report, music, 'best', at);
-    const vertical = composeShort(source, overlay, music, endCard);
+    const vertical = composeShort(source, overlay, music, [subscribeCard, sponsorCard]);
     const videoId = await uploadShort(vertical, meta);
     const url = `https://youtube.com/shorts/${videoId}`;
 
