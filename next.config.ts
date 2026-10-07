@@ -17,6 +17,7 @@ const nextConfig: NextConfig = {
     '/api/short-from-twitch/sunset': ['./assets/**/*'],
     '/api/live-thumbnail': ['./assets/fonts/**/*', './assets/brand/**/*'],
     '/api/best-wave': ['./assets/**/*'],
+    '/api/day-summary': ['./assets/**/*'],
     '/api/thumbnail-metrics': ['./assets/fonts/**/*', './assets/brand/**/*'],
   },
   images: {

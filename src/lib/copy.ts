@@ -4,7 +4,14 @@ import { crTime, surfaceWord, type SurfReport } from '@/lib/conditions';
 import { GAME_URL, INSTAGRAM_URL, YOUTUBE_CHANNEL_URL, YOUTUBE_CHANNEL_ID_URL } from '@/lib/links';
 import { LIVE_URL_SHORT } from '@/lib/short-overlay';
 
-export type CopyKind = 'short' | 'live' | 'best';
+export type CopyKind = 'short' | 'live' | 'best' | 'day';
+
+// One stop of the day summary: which part of the day, when, and the water then.
+export interface DayMoment {
+  label: string;
+  at: number;
+  report: SurfReport | null;
+}
 
 const TITLE_MAX = 60;
 const meters = (r: SurfReport) => Math.round((r.swellFt / 3.281) * 10) / 10;
@@ -45,6 +52,7 @@ export function surfTitle(kind: CopyKind, r: SurfReport | null, at: number): str
   const cond = r ? conditionLabel(r) : 'Surf';
   if (kind === 'live') return fit([`🔴 ${cond} en Santa Teresa`, ' 🌊', ' | Surf Cam en vivo']);
   if (kind === 'best') return fit(['Mejor ola del día en Santa Teresa', ' 🌊', ` | Surf Report ${esDay(at)}`]);
+  if (kind === 'day') return fit(['Resumen del día en Santa Teresa', ' 🌊', ` | Surf Report ${esDay(at)}`]);
   return fit([`${cond} en Santa Teresa`, ' 🌊', ` | Surf Report ${crTime(at, '12h')}`]);
 }
 
@@ -57,21 +65,34 @@ export function conditionsLine(r: SurfReport): string {
   return `🌊 Olas ${m1(r)} m a ${r.swellPeriodS} s del ${r.swellFrom} · 💨 Viento ${r.windKmh} km/h ${r.windFrom} (${WIND_ES[r.windKind]}) · 🌙 ${tide}`;
 }
 
+// "• Mañana, 6:00 a. m.: Limpio 1.0 m · 💨 6 km/h offshore"
+const momentLine = (m: DayMoment) =>
+  `• ${m.label.charAt(0)}${m.label.slice(1).toLowerCase()}, ${esTime(m.at)}: ${
+    m.report ? `${conditionLabel(m.report)} · 💨 ${m.report.windKmh} km/h ${WIND_ES[m.report.windKind]}` : 'sin pronóstico'
+  }`;
+
 export function surfDescription(opts: {
   kind: CopyKind;
   report: SurfReport | null;
   twitchClipUrl?: string;
   music?: string | null;
+  moments?: DayMoment[];
 }): string {
-  const { kind, report, twitchClipUrl, music } = opts;
+  const { kind, report, twitchClipUrl, music, moments } = opts;
+  const head = moments?.length
+    ? ['🌊 Así estuvo el mar hoy en Santa Teresa, Costa Rica:', ...moments.map(momentLine)]
+    : [report ? conditionsLine(report) : '🌊 Condiciones del mar en vivo desde Santa Teresa, Costa Rica.'];
+  const forecast = report || moments?.some((m) => m.report);
   const lines = [
-    report ? conditionsLine(report) : '🌊 Condiciones del mar en vivo desde Santa Teresa, Costa Rica.',
+    ...head,
     '',
     kind === 'live'
       ? `👉 Suscríbete para no perderte el reporte de olas de cada día: ${YOUTUBE_CHANNEL_URL}`
       : kind === 'best'
         ? `👉 Suscríbete y recibe la mejor ola de Santa Teresa cada día: ${YOUTUBE_CHANNEL_URL}`
-        : `👉 Suscríbete: reporte de olas de Santa Teresa todos los días, mañana y tarde: ${YOUTUBE_CHANNEL_URL}`,
+        : kind === 'day'
+          ? `👉 Suscríbete: el resumen de olas de Santa Teresa todos los días: ${YOUTUBE_CHANNEL_URL}`
+          : `👉 Suscríbete: reporte de olas de Santa Teresa todos los días, mañana y tarde: ${YOUTUBE_CHANNEL_URL}`,
     `🔴 Míralo EN VIVO 24/7 con marea, swell y viento: https://${LIVE_URL_SHORT}`,
     ...(INSTAGRAM_URL ? [`📸 Instagram: ${INSTAGRAM_URL}`] : []),
     `🎮 Surfea estas olas en 3D, juega Ripping gratis: ${GAME_URL}`,
@@ -79,7 +100,7 @@ export function surfDescription(opts: {
     // pick candidates, and these uploads must never re-enter that pipeline.
     ...(twitchClipUrl ? [`🎬 Clip de Twitch: ${twitchClipUrl}`] : []),
     ...(music ? [`🎵 Música: ${music} (YouTube Audio Library)`] : []),
-    ...(report ? ['Pronóstico: Open-Meteo.com (CC BY 4.0)'] : []),
+    ...(forecast ? ['Pronóstico: Open-Meteo.com (CC BY 4.0)'] : []),
     '',
     `#SantaTeresa #CostaRica #Surf${kind === 'live' ? ' #SurfCam' : ' #Shorts'}`,
   ];
@@ -88,15 +109,17 @@ export function surfDescription(opts: {
 
 // Instagram caption for the Reel of a Short. Links aren't clickable in IG captions, so
 // the YouTube handle is the thing to remember; the full URL sits in the bio.
-export function reelCaption(opts: { kind: CopyKind; report: SurfReport | null; at: number; youtubeUrl?: string }): string {
-  const { kind, report, at, youtubeUrl } = opts;
+export function reelCaption(opts: { kind: CopyKind; report: SurfReport | null; at: number; youtubeUrl?: string; moments?: DayMoment[] }): string {
+  const { kind, report, at, youtubeUrl, moments } = opts;
   const head =
     kind === 'best'
       ? `🏄 Mejor ola del día en Santa Teresa · ${esDay(at)}`
-      : `🌊 ${report ? conditionLabel(report) : 'Surf'} en Santa Teresa · ${esTime(at)}`;
+      : kind === 'day'
+        ? `🌅 Resumen del día en Santa Teresa · ${esDay(at)}`
+        : `🌊 ${report ? conditionLabel(report) : 'Surf'} en Santa Teresa · ${esTime(at)}`;
   return [
     head,
-    ...(report ? [conditionsLine(report)] : []),
+    ...(moments?.length ? moments.map(momentLine) : report ? [conditionsLine(report)] : []),
     '',
     kind === 'best'
       ? `👉 Suscríbete en YouTube y recibe la mejor ola de Santa Teresa cada día: ${YOUTUBE_CHANNEL_ID_URL}`

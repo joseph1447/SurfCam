@@ -23,15 +23,25 @@ const TOP_UI = 96;
 
 const font = (file: string) => readFileSync(join(process.cwd(), 'assets', 'fonts', file));
 
+// "7am" / "5:46pm" (Costa Rica time).
+export function clockLabel(at: number): string {
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Costa_Rica', hour: 'numeric', minute: '2-digit', hour12: true }).formatToParts(at);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
+  const minute = get('minute');
+  return `${get('hour')}${minute === '00' ? '' : `:${minute}`}${get('dayPeriod').toLowerCase()}`;
+}
+
 // "oct 2 · 7am" / "oct 2 · 5:46pm" (Costa Rica time): when the clip was cut.
 export function captureStamp(at: number): string {
   const d = new Date(at);
   const month = new Intl.DateTimeFormat('es-CR', { timeZone: 'America/Costa_Rica', month: 'short' }).format(d).replace('.', '').toLowerCase();
   const day = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Costa_Rica', day: 'numeric' }).format(d);
-  const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Costa_Rica', hour: 'numeric', minute: '2-digit', hour12: true }).formatToParts(d);
-  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
-  const minute = get('minute');
-  return `${month} ${day} · ${get('hour')}${minute === '00' ? '' : `:${minute}`}${get('dayPeriod').toLowerCase()}`;
+  return `${month} ${day} · ${clockLabel(at)}`;
+}
+
+export interface TimelineStop {
+  label: string; // MAÑANA / MEDIODÍA / TARDE
+  at: number;
 }
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -47,8 +57,15 @@ function Row({ label, value }: { label: string; value: string }) {
 // and the shore below stay clear (Joseph's call on 2026-09-30, after seeing it at the bottom
 // on a real Short). It covers about the top third; width stops short of the like/comment
 // column down the right edge.
-export async function renderOverlay(opts: { hook: string; at: number; report: SurfReport | null }): Promise<Buffer> {
-  const { hook, at, report } = opts;
+// The day summary adds a row of its stops under the card, the current one lit, so the
+// cuts read as the day moving on rather than as random clips.
+export async function renderOverlay(opts: {
+  hook: string;
+  at: number;
+  report: SurfReport | null;
+  timeline?: { stops: TimelineStop[]; current: number };
+}): Promise<Buffer> {
+  const { hook, at, report, timeline } = opts;
   const next = report?.tide.next;
 
   const image = new ImageResponse(
@@ -74,6 +91,34 @@ export async function renderOverlay(opts: { hook: string; at: number; report: Su
               <span>santateresasurfcam.com</span>
             </div>
           </div>
+          {timeline && (
+            <div style={{ marginTop: 8, width: 470, display: 'flex' }}>
+              {timeline.stops.map((stop, i) => {
+                const on = i === timeline.current;
+                return (
+                  <div
+                    key={stop.label}
+                    style={{
+                      flex: 1,
+                      marginLeft: i ? 8 : 0,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      padding: '4px 0 6px',
+                      borderRadius: 12,
+                      background: on ? SUNSET : 'rgba(6, 17, 28, 0.62)',
+                      border: on ? `1px solid ${SUNSET}` : '1px solid rgba(255, 255, 255, 0.14)',
+                    }}
+                  >
+                    <div style={{ fontFamily: 'JetBrains Mono', fontSize: 12, letterSpacing: 2, color: on ? '#0A0C10' : SAND }}>{stop.label}</div>
+                    <div style={{ fontFamily: 'IBM Plex Sans', fontWeight: 600, fontSize: 19, lineHeight: 1.1, color: on ? '#0A0C10' : 'rgba(248, 250, 251, 0.7)' }}>
+                      {clockLabel(stop.at)}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     ),
@@ -176,8 +221,8 @@ export async function renderSponsorCard(): Promise<Buffer> {
 
 // The "best wave" Short leads with its own promise: that's the format people rewatch
 // (936 views at 113% on 2026-10-01), so it carries the most concrete reason to subscribe.
-export async function renderEndCard(kind: 'short' | 'best' = 'short'): Promise<Buffer> {
-  const eyebrow = kind === 'best' ? 'LA MEJOR OLA DE SANTA TERESA, CADA DÍA' : '¿TE GUSTÓ EL REPORTE?';
+export async function renderEndCard(kind: 'short' | 'best' | 'day' = 'short'): Promise<Buffer> {
+  const eyebrow = kind === 'best' ? 'LA MEJOR OLA DE SANTA TERESA, CADA DÍA' : kind === 'day' ? '¿TE GUSTÓ EL RESUMEN?' : '¿TE GUSTÓ EL REPORTE?';
   const image = new ImageResponse(
     (
       <div style={{ width: OVERLAY_W, height: OVERLAY_H, display: 'flex', position: 'relative' }}>

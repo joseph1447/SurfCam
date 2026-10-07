@@ -72,30 +72,30 @@ function probe(path: string) {
 // The window sits a bit right of center: the cam burns a watermark bottom-left and a
 // timestamp top-right, and this offset (~14% of frame height) lands the window in the
 // gap between them so neither gets sliced mid-word.
-export function composeShort(
-  input: Buffer,
-  overlay: Buffer,
-  music: string | null,
-  cards: { intro?: Buffer; outro?: Buffer } = {},
-): Buffer {
-  const stamp = Date.now();
-  const inPath = join(tmpdir(), `short-in-${stamp}.mp4`);
-  const overlayPath = join(tmpdir(), `short-overlay-${stamp}.png`);
-  const introPath = join(tmpdir(), `short-intro-${stamp}.png`);
-  const outroPath = join(tmpdir(), `short-outro-${stamp}.png`);
-  const outPath = join(tmpdir(), `short-out-${stamp}.mp4`);
+const VERTICAL = `crop=ih*9/16:ih:(iw-ih*9/16)/2+ih*0.143:0,scale=${OVERLAY_W}:${OVERLAY_H},setsar=1`;
+
+export type Cards = { intro?: Buffer; outro?: Buffer };
+
+const tempPath = (name: string) => join(tmpdir(), `${name}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`);
+
+// Shared tail of both composers: cards, music bed, encode. `video` is the label of the
+// finished vertical picture in `filter`; inputs are numbered in the order they were added.
+function encode(job: {
+  inputs: string[];
+  filter: string;
+  video: string;
+  durationS: number;
+  cards: Cards;
+  music: string | null;
+  camAudio: boolean;
+}): Buffer {
+  const { inputs, durationS, cards, music, camAudio } = job;
+  let { filter, video } = job;
+  let next = inputs.filter((x) => x === '-i').length;
+  const introPath = tempPath('short-intro') + '.png';
+  const outroPath = tempPath('short-outro') + '.png';
+  const outPath = tempPath('short-out') + '.mp4';
   try {
-    writeFileSync(inPath, input);
-    writeFileSync(overlayPath, overlay);
-    const { durationS, hasAudio } = probe(inPath);
-
-    const inputs = ['-i', inPath, '-i', overlayPath];
-    let filter =
-      `[0:v]crop=ih*9/16:ih:(iw-ih*9/16)/2+ih*0.143:0,scale=${OVERLAY_W}:${OVERLAY_H},setsar=1[bg];` +
-      `[bg][1:v]overlay=0:0[v0]`;
-    let video = '[v0]';
-    let next = 2;
-
     // Cards are looped stills so their alpha fades have a timeline to run on; -t on the
     // output caps everything to the clip. The intro is up from frame one and fades out;
     // the outro fades in over the last CARD_SECONDS.
@@ -119,13 +119,12 @@ export function composeShort(
       video = '[vo]';
       next++;
     }
-    let audio = hasAudio ? ['-map', '0:a', '-c:a', 'copy'] : [];
+    let audio = camAudio ? ['-map', '0:a', '-c:a', 'copy'] : [];
 
     if (music) {
-      const musicIdx = next;
       inputs.push('-stream_loop', '-1', '-i', music);
-      const bed = `[${musicIdx}:a]${MUSIC_FILTER},afade=t=in:d=1`;
-      const mixed = hasAudio ? `${bed}[m];[0:a][m]amix=inputs=2:duration=first:normalize=0` : bed;
+      const bed = `[${next}:a]${MUSIC_FILTER},afade=t=in:d=1`;
+      const mixed = camAudio ? `${bed}[m];[0:a][m]amix=inputs=2:duration=first:normalize=0` : bed;
       filter += `;${mixed},afade=t=out:st=${Math.max(0, durationS - 1.5).toFixed(2)}:d=1.5[a]`;
       audio = ['-map', '[a]', '-c:a', 'aac', '-b:a', '160k'];
     }
@@ -139,10 +138,77 @@ export function composeShort(
       '-t', durationS.toFixed(2),
       '-movflags', '+faststart',
       '-y', outPath,
-    ], { timeout: 120_000, stdio: 'pipe' });
+    ], { timeout: 180_000, stdio: 'pipe' });
     return readFileSync(outPath);
   } finally {
-    for (const p of [inPath, overlayPath, introPath, outroPath, outPath]) if (existsSync(p)) unlinkSync(p);
+    for (const p of [introPath, outroPath, outPath]) if (existsSync(p)) unlinkSync(p);
+  }
+}
+
+export function composeShort(input: Buffer, overlay: Buffer, music: string | null, cards: Cards = {}): Buffer {
+  const inPath = tempPath('short-in') + '.mp4';
+  const overlayPath = tempPath('short-overlay') + '.png';
+  try {
+    writeFileSync(inPath, input);
+    writeFileSync(overlayPath, overlay);
+    const { durationS, hasAudio } = probe(inPath);
+    return encode({
+      inputs: ['-i', inPath, '-i', overlayPath],
+      filter: `[0:v]${VERTICAL}[bg];[bg][1:v]overlay=0:0[v0]`,
+      video: '[v0]',
+      durationS,
+      cards,
+      music,
+      camAudio: hasAudio,
+    });
+  } finally {
+    for (const p of [inPath, overlayPath]) if (existsSync(p)) unlinkSync(p);
+  }
+}
+
+export interface MontagePart {
+  clip: Buffer;
+  overlay: Buffer;
+  focusS: number; // the moment the segment is centred on (the clip's best frame)
+}
+
+const XFADE_S = 0.5;
+
+// Several clips cut to `segmentS` around their focus, each under its own overlay, joined
+// with short dissolves. The cam's own audio is dropped: it's silent, and a bed that
+// restarts at every cut would only draw attention to the cuts.
+export function composeMontage(parts: MontagePart[], music: string | null, cards: Cards = {}, segmentS = 12): Buffer {
+  const paths: string[] = [];
+  try {
+    const inputs: string[] = [];
+    const chains: string[] = [];
+    const lengths: number[] = [];
+    parts.forEach((p, i) => {
+      const clipPath = tempPath(`montage-${i}`) + '.mp4';
+      const overlayPath = tempPath(`montage-${i}`) + '.png';
+      writeFileSync(clipPath, p.clip);
+      writeFileSync(overlayPath, p.overlay);
+      paths.push(clipPath, overlayPath);
+      const { durationS } = probe(clipPath);
+      const length = Math.min(segmentS, durationS - 0.1);
+      const start = Math.min(Math.max(0, p.focusS - length / 2), durationS - length - 0.05);
+      lengths.push(length);
+      inputs.push('-ss', Math.max(0, start).toFixed(2), '-t', length.toFixed(2), '-i', clipPath, '-i', overlayPath);
+      chains.push(`[${2 * i}:v]${VERTICAL},fps=30,settb=AVTB,setpts=PTS-STARTPTS[s${i}];[s${i}][${2 * i + 1}:v]overlay=0:0,format=yuv420p[p${i}]`);
+    });
+
+    let filter = chains.join(';');
+    let video = '[p0]';
+    let offset = 0;
+    for (let i = 1; i < parts.length; i++) {
+      offset += lengths[i - 1] - XFADE_S;
+      filter += `;${video}[p${i}]xfade=transition=fade:duration=${XFADE_S}:offset=${offset.toFixed(2)}[x${i}]`;
+      video = `[x${i}]`;
+    }
+    const durationS = lengths.reduce((a, b) => a + b, 0) - XFADE_S * (parts.length - 1);
+    return encode({ inputs, filter, video, durationS, cards, music, camAudio: false });
+  } finally {
+    for (const p of paths) if (existsSync(p)) unlinkSync(p);
   }
 }
 
@@ -201,10 +267,12 @@ export function surfCheckMeta(
   return {
     title: surfTitle(kind, report, at),
     description: surfDescription({ kind, report, twitchClipUrl, music: music && trackName(music) }),
-    tags: [
-      'santa teresa', 'surf', 'costa rica', 'surf report', 'surf cam', 'olas', 'surf en vivo',
-      'santa teresa surf', 'mal pais', 'shorts', 'surfing', 'waves', 'pura vida',
-    ],
+    tags: SHORT_TAGS,
     privacy,
   };
 }
+
+export const SHORT_TAGS = [
+  'santa teresa', 'surf', 'costa rica', 'surf report', 'surf cam', 'olas', 'surf en vivo',
+  'santa teresa surf', 'mal pais', 'shorts', 'surfing', 'waves', 'pura vida',
+];

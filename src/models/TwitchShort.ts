@@ -10,7 +10,8 @@ export interface TwitchShort extends Document {
   // What the Short carried, for comparing hooks / music on vs off in YouTube Analytics.
   hook?: string;
   music?: string | null;
-  // 'sunset' for the evening run timed off the day's sunset; unset for the morning one.
+  // 'day' for the evening day summary, 'sunset' for the old sunset run (retired
+  // 2026-10-07); unset for the morning and best-wave ones.
   slot?: string;
   report?: Record<string, unknown> | null;
   // Instagram Reel on @eltrillo_santateresa, when the cross-post succeeded.

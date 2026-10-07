@@ -120,18 +120,20 @@ export function tideAt(series: TideSeries, at: number) {
 }
 
 // Today and tomorrow, hourly, in Costa Rica time. Both callers use these exact URLs, so
-// they share Next's data cache.
-async function getHourly() {
+// they share Next's data cache. pastDays reaches back for reports on earlier days (the
+// day summary re-run for a past date); without it those snap to today's first hour.
+async function getHourly(pastDays = 0) {
+  const past = pastDays > 0 ? `&past_days=${Math.min(pastDays, 92)}` : '';
   const [marine, weather] = await Promise.all([
     getJson(
       `https://marine-api.open-meteo.com/v1/marine?latitude=${LAT}&longitude=${LON}` +
         `&hourly=swell_wave_height,swell_wave_period,swell_wave_direction,sea_surface_temperature` +
-        `&timeformat=unixtime&timezone=${TZ}&forecast_days=2`,
+        `&timeformat=unixtime&timezone=${TZ}&forecast_days=2${past}`,
     ),
     getJson(
       `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}` +
         `&hourly=wind_speed_10m,wind_direction_10m&daily=sunrise,sunset` +
-        `&timeformat=unixtime&timezone=${TZ}&forecast_days=2`,
+        `&timeformat=unixtime&timezone=${TZ}&forecast_days=2${past}`,
     ),
   ]);
   return { marine: marine.hourly, weather: weather.hourly, daily: weather.daily };
@@ -163,7 +165,8 @@ function reportAt({ marine, weather }: Hourly, tides: TideSeries, at: number): S
 }
 
 export async function getSurfReport(at = Date.now()): Promise<SurfReport> {
-  const [hourly, tides] = await Promise.all([getHourly(), getTides(crDate(at), crDate(at + 86_400_000))]);
+  const pastDays = Math.ceil((Date.parse(`${crDate(Date.now())}T00:00:00-06:00`) - at) / 86_400_000);
+  const [hourly, tides] = await Promise.all([getHourly(pastDays), getTides(crDate(at), crDate(at + 86_400_000))]);
   return reportAt(hourly, tides, at);
 }
 

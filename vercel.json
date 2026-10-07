@@ -22,14 +22,6 @@
       "schedule": "0 13 * * *"
     },
     {
-      "path": "/api/short-from-twitch/sunset",
-      "schedule": "40-55/5 23 * * *"
-    },
-    {
-      "path": "/api/short-from-twitch/sunset",
-      "schedule": "0-35/5 0 * * *"
-    },
-    {
       "path": "/api/live-thumbnail",
       "schedule": "20 11,14,17,20,23 * * *"
     },
