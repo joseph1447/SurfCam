@@ -6,10 +6,10 @@ import { youtubeClient } from '@/lib/shorts';
 import { getDayOutlook } from '@/lib/conditions';
 import { chatNow, chatSchedule } from '@/lib/copy';
 
-// Hourly while the live is up (5:30am–6:30pm Costa Rica): a message in the broadcast's chat
-// so it never looks abandoned. The day plan goes out at these Costa Rica hours, the
-// conditions right now every other hour. ?kind=schedule|now forces one; ?dry=1 only
-// returns the text. Quota: 1 (videos.list) + 50 (insert) per post.
+// The day plan in the broadcast's chat, once at 5:30am Costa Rica. Joseph's call
+// (2026-10-20): nobody chats yet, so hourly posts would just stack up. If the chat picks
+// up, add hours to the cron: SCHEDULE_HOURS get the plan, the rest the conditions right
+// now. ?kind=schedule|now forces one; ?dry=1 only returns the text. Quota: 51 per post.
 const SCHEDULE_HOURS = [5, 9, 13, 16];
 
 export async function GET(request: NextRequest) {

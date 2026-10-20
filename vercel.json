@@ -39,7 +39,7 @@
     },
     {
       "path": "/api/live-chat",
-      "schedule": "30 11-23,0 * * *"
+      "schedule": "30 11 * * *"
     },
     {
       "path": "/api/thumbnail-metrics",
