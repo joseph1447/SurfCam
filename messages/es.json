@@ -28,7 +28,12 @@
     "location": "📍 Santa Teresa, Costa Rica",
     "copyright": "© {year} Santa Teresa Surf Cam. Todos los derechos reservados.",
     "poweredBy": "Powered by",
-    "aiservices": "AIServices Santa Teresa"
+    "aiservices": "AIServices Santa Teresa",
+    "ourSites": "Nuestros sitios en Santa Teresa",
+    "bookSite": "Tours y clases de surf",
+    "homecareSite": "Mantenimiento de casas",
+    "gameSite": "Juego de surf en 3D",
+    "aiSite": "Webs y automatización con IA"
   },
   "nav": {
     "home": "Inicio",
@@ -39,7 +44,9 @@
     "profile": "Perfil",
     "admin": "Admin",
     "game": "Juego de surf",
-    "gameShort": "Juego"
+    "gameShort": "Juego",
+    "tours": "Tours",
+    "homeCare": "Cuido de casas"
   },
   "home": {
     "title": "Santa Teresa Surf Cam",
@@ -120,5 +127,16 @@
     "cta": "Jugar ahora",
     "platforms": "PC y celular",
     "imageAlt": "Surfista en una ola de Sunset Reef, Santa Teresa, en el juego Ripping"
+  },
+  "ecosystem": {
+    "eyebrow": "Más de Santa Teresa",
+    "title": "Ya viste el mar. ¿Qué sigue?",
+    "bookTitle": "Tours y clases de surf",
+    "bookText": "Isla Tortuga, bioluminiscencia, cabalgata al atardecer, cataratas de Montezuma y clases con instructores locales. Reservas por WhatsApp.",
+    "bookCta": "Ver tours",
+    "homecareTitle": "¿Tienes casa en la zona?",
+    "homecareText": "Mantenimiento, jardín, piscina, aire acondicionado y cuido de casa para dueños ausentes, con precios publicados y cotizador en línea.",
+    "homecareCta": "Cotizar mantenimiento",
+    "external": "(se abre en otra pestaña)"
   }
 }

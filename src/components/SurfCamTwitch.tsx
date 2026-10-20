@@ -8,6 +8,7 @@ import YouTubeEmbedWrapper from "./YouTubeEmbedWrapper";
 import ServerTabs from "./ServerTabs";
 import SurfConditions from "./SurfConditions";
 import RippingPromo from "./RippingPromo";
+import EcosystemLinks from "./EcosystemLinks";
 import { usePWA } from "@/hooks/usePWA";
 import { useTranslations } from "next-intl";
 
@@ -189,6 +190,8 @@ export default function SurfCamTwitch() {
                 <SurfConditions sideBySide={currentServer === 'youtube'} />
               </div>
             </div>
+
+            <EcosystemLinks />
 
             <RippingPromo />
 

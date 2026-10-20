@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "@/i18n/routing";
 import { useLocale, useTranslations } from "next-intl";
-import { Gamepad2, Menu, X } from "lucide-react";
-import { GAME_URL } from "@/lib/links";
+import { ArrowUpRight, Gamepad2, Menu, X } from "lucide-react";
+import { GAME_URL, sisterUrl, type SisterSite } from "@/lib/links";
 
 function Wordmark() {
   return (
@@ -76,6 +76,37 @@ function GameLink({ compact = false }: { compact?: boolean }) {
   );
 }
 
+// Joseph's other Santa Teresa sites, in the main nav so the cam's traffic feeds them.
+const SISTERS: { site: SisterSite; label: "tours" | "homeCare" }[] = [
+  { site: "book", label: "tours" },
+  { site: "homecare", label: "homeCare" },
+];
+
+function SisterLinks({ mobile = false }: { mobile?: boolean }) {
+  const t = useTranslations("nav");
+  const locale = useLocale();
+  return (
+    <>
+      {SISTERS.map(({ site, label }) => (
+        <a
+          key={site}
+          href={sisterUrl(site, "header", locale)}
+          target="_blank"
+          rel="noopener"
+          className={
+            mobile
+              ? "flex items-center justify-between rounded-lg px-3 py-2 text-white/80 hover:bg-white/5 hover:text-white"
+              : "inline-flex items-center gap-1 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/5 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00AAFF]"
+          }
+        >
+          {t(label)}
+          <ArrowUpRight className="h-3.5 w-3.5 text-[#D9B98C]" aria-hidden />
+        </a>
+      ))}
+    </>
+  );
+}
+
 export default function AppHeader() {
   const t = useTranslations("nav");
   const [open, setOpen] = useState(false);
@@ -86,18 +117,19 @@ export default function AppHeader() {
         <div className="flex h-16 items-center justify-between gap-4">
           <Wordmark />
 
-          <nav className="hidden md:flex items-center gap-2" aria-label="Main">
+          <nav className="hidden lg:flex items-center gap-1.5" aria-label="Main">
             <LiveClock />
             <Link
               href="/surf-lessons"
-              className="rounded-full px-3.5 py-1.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/5 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00AAFF]"
+              className="whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/5 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00AAFF]"
             >
               {t("surfLessons")}
             </Link>
+            <SisterLinks />
             <GameLink />
           </nav>
 
-          <div className="flex items-center gap-2 md:hidden">
+          <div className="flex items-center gap-2 lg:hidden">
             <GameLink compact />
             <button
               onClick={() => setOpen(!open)}
@@ -111,11 +143,12 @@ export default function AppHeader() {
         </div>
 
         {open && (
-          <nav className="md:hidden border-t border-white/[0.06] py-3 space-y-2 fade-in-up" aria-label="Mobile">
+          <nav className="lg:hidden border-t border-white/[0.06] py-3 space-y-2 fade-in-up" aria-label="Mobile">
             <LiveClock />
             <Link href="/surf-lessons" className="block rounded-lg px-3 py-2 text-white/80 hover:bg-white/5 hover:text-white">
               {t("surfLessons")}
             </Link>
+            <SisterLinks mobile />
           </nav>
         )}
       </div>

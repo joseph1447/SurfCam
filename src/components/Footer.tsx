@@ -1,19 +1,26 @@
 "use client";
 
 import { Link } from '@/i18n/routing';
-import { Gamepad2, Mail } from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import { GAME_URL } from '@/lib/links';
+import { ArrowUpRight, Gamepad2, Mail } from 'lucide-react';
+import { useLocale, useTranslations } from 'next-intl';
+import { GAME_URL, sisterUrl } from '@/lib/links';
 
 export default function Footer() {
   const t = useTranslations('footer');
   const tNav = useTranslations('nav');
+  const locale = useLocale();
+  const sites = [
+    { name: 'Santa Teresa Book', note: t('bookSite'), href: sisterUrl('book', 'footer', locale) },
+    { name: 'Santa Teresa Home Care', note: t('homecareSite'), href: sisterUrl('homecare', 'footer', locale) },
+    { name: 'Ripping', note: t('gameSite'), href: GAME_URL },
+    { name: 'We Do It With AI', note: t('aiSite'), href: 'https://www.wedoitwithai.com' },
+  ];
   const year = new Date().getFullYear();
 
   return (
     <footer className="border-t border-white/[0.06] bg-[#050C14]/85 backdrop-blur-sm mt-auto w-full relative z-10">
       <div className="container mx-auto px-4 py-8">
-        <div className="grid md:grid-cols-3 gap-8 mb-6">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-6">
           <div>
             <h3 className="font-headline font-bold text-lg mb-4 text-white">
               {t('title')}
@@ -49,6 +56,23 @@ export default function Footer() {
               </li>
             </ul>
           </div>
+
+          <nav aria-labelledby="footer-sites">
+            <h4 id="footer-sites" className="font-semibold mb-4 text-white">{t('ourSites')}</h4>
+            <ul className="space-y-3 text-sm">
+              {sites.map((site) => (
+                <li key={site.name}>
+                  <a href={site.href} target="_blank" rel="noopener" className="group inline-flex flex-col">
+                    <span className="inline-flex items-center gap-1 text-white/80 transition-colors group-hover:text-white">
+                      {site.name}
+                      <ArrowUpRight className="h-3.5 w-3.5 text-[#D9B98C]" aria-hidden />
+                    </span>
+                    <span className="text-xs text-white/50">{site.note}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
 
           <div>
             <h4 className="font-semibold mb-4 text-white">{t('contactSection')}</h4>
