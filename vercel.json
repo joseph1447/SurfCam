@@ -38,6 +38,10 @@
       "schedule": "15 0 * * *"
     },
     {
+      "path": "/api/live-chat",
+      "schedule": "30 11-23,0 * * *"
+    },
+    {
       "path": "/api/thumbnail-metrics",
       "schedule": "30 15 * * *"
     }

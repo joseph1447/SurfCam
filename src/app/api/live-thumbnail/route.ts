@@ -8,8 +8,8 @@ import ThumbnailTest from '@/models/ThumbnailTest';
 import { cronAuthorized } from '@/lib/cron';
 import { youtubeClient } from '@/lib/shorts';
 import { getAppToken, getUserToken, getLiveStream, createClip, waitForClip, downloadClip } from '@/lib/twitch';
-import { getSurfReport } from '@/lib/conditions';
-import { surfDescription, surfTitle } from '@/lib/copy';
+import { getDayOutlook, getSurfReport } from '@/lib/conditions';
+import { chatSchedule, surfDescription, surfTitle } from '@/lib/copy';
 import { analyzeBuffer, recordClipScore, thumbnailVideo } from '@/lib/thumb-pipeline';
 import { pickStyle } from '@/lib/experiments';
 import type { ThumbStyle } from '@/lib/thumbnail';
@@ -43,10 +43,13 @@ export async function GET(request: NextRequest) {
 
     const at = Date.now();
     const clipId = await createClip(await getUserToken());
-    const [clip, report] = await Promise.all([
+    const [clip, report, outlook] = await Promise.all([
       waitForClip(appToken, clipId),
       getSurfReport(at).catch(() => null),
+      getDayOutlook(at).catch(() => null),
     ]);
+    // The day plan YouTube won't let us pin in chat, as the description's second line.
+    const schedule = outlook ? chatSchedule(outlook) : undefined;
     const source = await downloadClip(clipId);
     const analysis = analyzeBuffer(source);
     await recordClipScore({ clipId, clipUrl: clip.url, source: 'live', analysis, at });
@@ -62,13 +65,13 @@ export async function GET(request: NextRequest) {
       const { jpg, ...rest } = thumbnail as { jpg?: Buffer };
       const file = join(tmpdir(), `live-thumb-dry-${at}.jpg`);
       if (jpg) writeFileSync(file, jpg);
-      return NextResponse.json({ status: 'dry-run', videoId, title, description: surfDescription({ kind: 'live', report }), thumbnail: rest, file });
+      return NextResponse.json({ status: 'dry-run', videoId, title, description: surfDescription({ kind: 'live', report, schedule }), thumbnail: rest, file });
     }
 
     // videos.update replaces the whole snippet, so carry every writable field over.
     const s = video.snippet;
     const original = (s.description ?? '').includes(MARKER) ? (s.description ?? '').split(MARKER).slice(1).join(MARKER).trim() : (s.description ?? '').trim();
-    const description = `${surfDescription({ kind: 'live', report })}\n\n${MARKER}\n\n${original}`.slice(0, 4900);
+    const description = `${surfDescription({ kind: 'live', report, schedule })}\n\n${MARKER}\n\n${original}`.slice(0, 4900);
     await yt.videos.update({
       part: ['snippet'],
       requestBody: {

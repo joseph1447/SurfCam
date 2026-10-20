@@ -1,6 +1,6 @@
 // Titles and descriptions for everything uploaded or updated on the channel. Spanish, and
 // built only from the live forecast, so the words always match the water.
-import { crTime, surfaceWord, type SurfReport } from '@/lib/conditions';
+import { crTime, surfaceWord, type DayOutlook, type SurfReport, type WindKind } from '@/lib/conditions';
 import { GAME_URL, INSTAGRAM_URL, YOUTUBE_CHANNEL_URL, YOUTUBE_CHANNEL_ID_URL } from '@/lib/links';
 import { LIVE_URL_SHORT } from '@/lib/short-overlay';
 
@@ -71,17 +71,28 @@ const momentLine = (m: DayMoment) =>
     m.report ? `${conditionLabel(m.report)} · 💨 ${m.report.windKmh} km/h ${WIND_ES[m.report.windKind]}` : 'sin pronóstico'
   }`;
 
+// Tracks are named "Artist - Title". Kevin MacLeod's are CC BY 4.0 and need this exact
+// credit; anything else is assumed to come from the YouTube Audio Library.
+function musicCredit(name: string): string[] {
+  const [artist, ...rest] = name.split(' - ');
+  if (artist === 'Kevin MacLeod' && rest.length) {
+    return [`🎵 Música: "${rest.join(' - ')}" Kevin MacLeod (incompetech.com), licencia Creative Commons: By Attribution 4.0 http://creativecommons.org/licenses/by/4.0/`];
+  }
+  return [`🎵 Música: ${name} (YouTube Audio Library)`];
+}
+
 export function surfDescription(opts: {
   kind: CopyKind;
   report: SurfReport | null;
   twitchClipUrl?: string;
   music?: string | null;
   moments?: DayMoment[];
+  schedule?: string; // the live's day plan, under the conditions line
 }): string {
-  const { kind, report, twitchClipUrl, music, moments } = opts;
+  const { kind, report, twitchClipUrl, music, moments, schedule } = opts;
   const head = moments?.length
     ? ['🌊 Así estuvo el mar hoy en Santa Teresa, Costa Rica:', ...moments.map(momentLine)]
-    : [report ? conditionsLine(report) : '🌊 Condiciones del mar en vivo desde Santa Teresa, Costa Rica.'];
+    : [report ? conditionsLine(report) : '🌊 Condiciones del mar en vivo desde Santa Teresa, Costa Rica.', ...(schedule ? [schedule] : [])];
   const forecast = report || moments?.some((m) => m.report);
   const lines = [
     ...head,
@@ -99,7 +110,7 @@ export function surfDescription(opts: {
     // Deliberately not "Original clip:" - that phrase is what promote-to-shorts keys on to
     // pick candidates, and these uploads must never re-enter that pipeline.
     ...(twitchClipUrl ? [`🎬 Clip de Twitch: ${twitchClipUrl}`] : []),
-    ...(music ? [`🎵 Música: ${music} (YouTube Audio Library)`] : []),
+    ...(music ? musicCredit(music) : []),
     ...(forecast ? ['Pronóstico: Open-Meteo.com (CC BY 4.0)'] : []),
     '',
     `#SantaTeresa #CostaRica #Surf${kind === 'live' ? ' #SurfCam' : ' #Shorts'}`,
@@ -130,4 +141,64 @@ export function reelCaption(opts: { kind: CopyKind; report: SurfReport | null; a
     '',
     '#SantaTeresa #CostaRica #Surf #SurfReport #PuraVida #MalPais #Nicoya #SurfCam #OlasHoy',
   ].join('\n');
+}
+
+// --- Live chat -------------------------------------------------------------------------
+// YouTube caps a chat message at 200 characters, and the API can't pin one, so the day
+// plan is re-posted a few times a day and also sits at the top of the live's description.
+const CHAT_MAX = 200;
+
+// "5:28am", "1pm"
+const clock = (at: number) => crTime(at, '12h').replace(':00 ', ' ').replace(' ', '').toLowerCase();
+
+const cleanWind = (w: { kmh: number; kind: WindKind }) =>
+  w.kind === 'light' || w.kind === 'offshore' || (w.kind === 'cross-shore' && w.kmh < 12);
+
+// Longest daylight stretch of clean wind, as hour marks: "limpio 5am–10am".
+function windWindow(o: DayOutlook): string | null {
+  const daylight = o.wind.filter((w) => w.at >= o.sun.sunrise - 3_600_000 && w.at <= o.sun.sunset);
+  if (!daylight.length) return null;
+  let [bestFrom, bestTo] = [-1, -2];
+  for (let i = 0, from = -1; i <= daylight.length; i++) {
+    const clean = i < daylight.length && cleanWind(daylight[i]);
+    if (clean && from < 0) from = i;
+    if (!clean && from >= 0) {
+      if (i - 1 - from > bestTo - bestFrom) [bestFrom, bestTo] = [from, i - 1];
+      from = -1;
+    }
+  }
+  if (bestFrom < 0) return 'con viento todo el día';
+  if (bestFrom === 0 && bestTo === daylight.length - 1) return 'limpio todo el día';
+  return `limpio ${clock(daylight[bestFrom].at)}–${clock(daylight[bestTo].at + 3_600_000)}`;
+}
+
+function fitChat(parts: string[]): string {
+  // Drop from the end of the optional tail until it fits.
+  const out = [...parts];
+  while (chars(out.join(' · ')) > CHAT_MAX && out.length > 1) out.pop();
+  return Array.from(out.join(' · ')).slice(0, CHAT_MAX).join('');
+}
+
+// "📅 Hoy: 🌅 5:28am · 💨 limpio 5am–10am · 🌊 baja 7:12am, alta 1:25pm · 🌇 5:32pm, mejor luz 4:50pm"
+export function chatSchedule(o: DayOutlook): string {
+  const wind = windWindow(o);
+  const tides = o.tide.extremes.map((e) => `${e.type === 'high' ? 'alta' : 'baja'} ${clock(e.at)}`).join(', ');
+  return fitChat([
+    `📅 Hoy en Santa Teresa: 🌅 amanece ${clock(o.sun.sunrise)}`,
+    ...(wind ? [`💨 ${wind}`] : []),
+    ...(tides ? [`🌊 marea ${tides}`] : []),
+    `🌇 atardecer ${clock(o.sun.sunset)} (mejor luz desde ${clock(o.sun.sunset - 45 * 60_000)})`,
+  ]);
+}
+
+// "🔴 7:30am · Glassy 1.1 m · 14 s del SSW · 💨 4 km/h suave · 🌊 subiendo, alta 1:25pm · ¿Quién se tira? 🏄"
+export function chatNow(o: DayOutlook, at: number): string {
+  const r = o.now;
+  const next = r.tide.next;
+  return fitChat([
+    `🔴 ${clock(at)} · ${conditionLabel(r)} · ${r.swellPeriodS} s del ${r.swellFrom}`,
+    `💨 ${r.windKmh} km/h ${WIND_ES[r.windKind]}`,
+    `🌊 ${r.tide.direction === 'rising' ? 'subiendo' : 'bajando'}${next ? `, ${next.type === 'high' ? 'alta' : 'baja'} ${clock(next.at)}` : ''}`,
+    '¿Quién se tira? 🏄 Escribí cómo la ves',
+  ]);
 }

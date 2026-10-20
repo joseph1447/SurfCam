@@ -41,8 +41,8 @@ export function ffmpegPath(): string {
 const MUSIC_FILTER = 'loudnorm=I=-14:TP=-1.5:LRA=11,aresample=48000';
 const MUSIC_DIR = join(process.cwd(), 'assets', 'music');
 
-// Tracks from the YouTube Audio Library, named "Artist - Title.mp3" so the description can
-// carry the credit some of them require.
+// Named "Artist - Title.mp3" so the description can carry the credit (copy.ts). The first
+// four are Kevin MacLeod tracks (CC BY 4.0), cut to 60 s since no Short runs longer.
 export function musicTracks(): string[] {
   if (!existsSync(MUSIC_DIR)) return [];
   return readdirSync(MUSIC_DIR)
@@ -123,9 +123,9 @@ function encode(job: {
 
     if (music) {
       inputs.push('-stream_loop', '-1', '-i', music);
-      const bed = `[${next}:a]${MUSIC_FILTER},afade=t=in:d=1`;
-      const mixed = camAudio ? `${bed}[m];[0:a][m]amix=inputs=2:duration=first:normalize=0` : bed;
-      filter += `;${mixed},afade=t=out:st=${Math.max(0, durationS - 1.5).toFixed(2)}:d=1.5[a]`;
+      // Music replaces the cam track instead of mixing with it: the cam's audio is 8 kHz mono
+      // silence, and amix takes the first input's format, so the mix came out phone-quality.
+      filter += `;[${next}:a]${MUSIC_FILTER},afade=t=in:d=1,afade=t=out:st=${Math.max(0, durationS - 1.5).toFixed(2)}:d=1.5[a]`;
       audio = ['-map', '[a]', '-c:a', 'aac', '-b:a', '160k'];
     }
 
@@ -194,7 +194,10 @@ export function composeMontage(parts: MontagePart[], music: string | null, cards
       const start = Math.min(Math.max(0, p.focusS - length / 2), durationS - length - 0.05);
       lengths.push(length);
       inputs.push('-ss', Math.max(0, start).toFixed(2), '-t', length.toFixed(2), '-i', clipPath, '-i', overlayPath);
-      chains.push(`[${2 * i}:v]${VERTICAL},fps=30,settb=AVTB,setpts=PTS-STARTPTS[s${i}];[s${i}][${2 * i + 1}:v]overlay=0:0,format=yuv420p[p${i}]`);
+      // fps again after the overlay: ffmpeg 7 (the Linux ffmpeg-static on Vercel) leaves an
+      // overlay with a still PNG at frame rate 1/0, and xfade refuses non-constant rates.
+      // ffmpeg 6.1 on Windows doesn't, which is why the local preview passed.
+      chains.push(`[${2 * i}:v]${VERTICAL},fps=30,settb=AVTB,setpts=PTS-STARTPTS[s${i}];[s${i}][${2 * i + 1}:v]overlay=0:0,fps=30,format=yuv420p[p${i}]`);
     });
 
     let filter = chains.join(';');
