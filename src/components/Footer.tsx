@@ -1,9 +1,9 @@
 "use client";
 
 import { Link } from '@/i18n/routing';
-import { ArrowUpRight, Gamepad2, Mail } from 'lucide-react';
+import { ArrowUpRight, Gamepad2, Mail, MessageCircle } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
-import { GAME_URL, sisterUrl } from '@/lib/links';
+import { GAME_URL, PHONE_DISPLAY, sisterUrl, whatsappUrl } from '@/lib/links';
 
 export default function Footer() {
   const t = useTranslations('footer');
@@ -77,6 +77,17 @@ export default function Footer() {
           <div>
             <h4 className="font-semibold mb-4 text-white">{t('contactSection')}</h4>
             <ul className="space-y-2 text-sm">
+              <li>
+                <a
+                  href={whatsappUrl()}
+                  target="_blank"
+                  rel="noopener"
+                  className="text-white/60 hover:text-white transition-colors flex items-center gap-2"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  WhatsApp {PHONE_DISPLAY}
+                </a>
+              </li>
               <li>
                 <a
                   href="mailto:josephquesada92@gmail.com"

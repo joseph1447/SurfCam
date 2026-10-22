@@ -12,12 +12,13 @@ export const INSTAGRAM_URL = process.env.INSTAGRAM_URL || 'https://www.instagram
 // read ?utm_* into a cookie and store it with the booking/lead, so utm_content says which
 // spot on this site sent the visitor (header, footer, home).
 export type SisterSite = 'book' | 'homecare';
-export type SisterPlacement = 'header' | 'footer' | 'home';
+export type SisterPlacement = 'header' | 'footer' | 'home' | 'surf-lessons' | 'contact';
 
-export function sisterUrl(site: SisterSite, placement: SisterPlacement, locale: string): string {
+// `path` deep-links into santateresabook (e.g. '/tours/private-surf-lesson').
+export function sisterUrl(site: SisterSite, placement: SisterPlacement, locale: string, path = '/tours'): string {
   // santateresabook is English-only; santateresahomecare serves Spanish under /es.
   const base =
-    site === 'book' ? 'https://santateresabook.com/tours' : `https://santateresahomecare.com/${locale === 'es' ? 'es' : ''}`;
+    site === 'book' ? `https://santateresabook.com${path}` : `https://santateresahomecare.com/${locale === 'es' ? 'es' : ''}`;
   const utm = new URLSearchParams({
     utm_source: 'santateresasurfcam',
     utm_medium: 'referral',
@@ -26,3 +27,12 @@ export function sisterUrl(site: SisterSite, placement: SisterPlacement, locale: 
   });
   return `${base}?${utm}`;
 }
+
+// Joseph's number: WhatsApp and SINPE Móvil. The cam used to list Totty's (now on
+// santateresariders.com); since 2026-10-22 every contact on this site comes here.
+export const WHATSAPP_NUMBER = '50683161976';
+export const PHONE_DISPLAY = '+506 8316 1976';
+export const SINPE_DISPLAY = '8316 1976';
+export const CONTACT_EMAIL = 'josephquesada92@gmail.com';
+export const whatsappUrl = (text?: string) =>
+  `https://wa.me/${WHATSAPP_NUMBER}${text ? `?text=${encodeURIComponent(text)}` : ''}`;

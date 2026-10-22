@@ -2,6 +2,10 @@
 // built only from the live forecast, so the words always match the water.
 import { crTime, surfaceWord, type DayOutlook, type SurfReport, type WindKind } from '@/lib/conditions';
 import { GAME_URL, INSTAGRAM_URL, YOUTUBE_CHANNEL_URL, YOUTUBE_CHANNEL_ID_URL } from '@/lib/links';
+
+// Lessons and tours are santateresabook's; its UTM cookie records which video sent the booking.
+const bookUrl = (kind: CopyKind) =>
+  `https://santateresabook.com/surf-lessons?utm_source=youtube&utm_medium=video&utm_campaign=surfcam&utm_content=${kind}`;
 import { LIVE_URL_SHORT } from '@/lib/short-overlay';
 
 export type CopyKind = 'short' | 'live' | 'best' | 'day';
@@ -106,6 +110,7 @@ export function surfDescription(opts: {
           : `👉 Suscríbete: reporte de olas de Santa Teresa todos los días, mañana y tarde: ${YOUTUBE_CHANNEL_URL}`,
     `🔴 Míralo EN VIVO 24/7 con marea, swell y viento: https://${LIVE_URL_SHORT}`,
     ...(INSTAGRAM_URL ? [`📸 Instagram: ${INSTAGRAM_URL}`] : []),
+    `🏄 Clases de surf y tours en Santa Teresa: ${bookUrl(kind)}`,
     `🎮 Surfea estas olas en 3D, juega Ripping gratis: ${GAME_URL}`,
     // Deliberately not "Original clip:" - that phrase is what promote-to-shorts keys on to
     // pick candidates, and these uploads must never re-enter that pipeline.
@@ -137,6 +142,7 @@ export function reelCaption(opts: { kind: CopyKind; report: SurfReport | null; a
       : `👉 Suscríbete al canal de YouTube para el reporte diario: ${YOUTUBE_CHANNEL_ID_URL}`,
     ...(youtubeUrl ? [`▶️ Este video: ${youtubeUrl}`] : []),
     `🔴 Cámara EN VIVO 24/7 con marea, swell y viento: ${LIVE_URL_SHORT}`,
+    '🏄 Clases de surf y tours: santateresabook.com',
     '🔗 Link directo en la bio',
     '',
     '#SantaTeresa #CostaRica #Surf #SurfReport #PuraVida #MalPais #Nicoya #SurfCam #OlasHoy',

@@ -14,7 +14,6 @@ import { useTranslations } from "next-intl";
 
 // Lazy load components with different priorities
 // const RadioWidget = lazy(() => import("./RadioWidget")); // Hidden: causes more problems than benefits
-const SurfLessonQuote = lazy(() => import("./SurfLessonQuote"));
 const RecentSurfReports = lazy(() => import("./RecentSurfReports"));
 
 // Progressive loading hook
@@ -31,21 +30,6 @@ function useProgressiveLoading() {
 
   return { loadWidgets };
 }
-
-// Skeleton components for loading states
-const SurfLessonQuoteSkeleton = () => (
-  <div className="surface-panel w-full rounded-2xl p-4 animate-pulse">
-    <div className="space-y-3">
-      <div className="h-5 bg-white/10 rounded w-48"></div>
-      <div className="flex gap-2">
-        <div className="h-8 bg-white/10 rounded flex-1"></div>
-        <div className="h-8 bg-white/10 rounded flex-1"></div>
-      </div>
-      <div className="h-20 bg-white/10 rounded"></div>
-      <div className="h-10 bg-white/10 rounded"></div>
-    </div>
-  </div>
-);
 
 export default function SurfCamTwitch() {
   const t = useTranslations("home");
@@ -224,14 +208,6 @@ export default function SurfCamTwitch() {
             )}
             */}
 
-            {/* Surf Lesson Quote - Compact version */}
-            {loadWidgets ? (
-              <Suspense fallback={<SurfLessonQuoteSkeleton />}>
-                <SurfLessonQuote compact className="mt-4" />
-              </Suspense>
-            ) : (
-              <SurfLessonQuoteSkeleton />
-            )}
           </div>
 
         </div>

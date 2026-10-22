@@ -34,7 +34,7 @@ export default function CondicionesServicio() {
               <strong>SurfCam</strong> es una aplicación web que proporciona:
             </p>
             <ul className="list-disc pl-6 mb-4 space-y-2">
-              <li>Transmisión en vivo de la cámara de surf de La Lora</li>
+              <li>Transmisión en vivo de la cámara de surf de Santa Teresa</li>
               <li>Chat público para comunicación entre usuarios</li>
               <li>Información sobre mareas y condiciones del surf</li>
               <li>Enlaces a servicios relacionados (clases de surf, hospedaje, restaurantes)</li>
@@ -177,14 +177,14 @@ export default function CondicionesServicio() {
             <div className="bg-gray-50 p-4 rounded-lg">
               <p className="mb-2">
                 <strong>Email:</strong>{' '}
-                <a href="mailto:info@surf-cam-one.vercel.app" className="text-primary hover:underline">
-                  info@surf-cam-one.vercel.app
+                <a href="mailto:josephquesada92@gmail.com" className="text-primary hover:underline">
+                  josephquesada92@gmail.com
                 </a>
               </p>
               <p className="mb-2">
                 <strong>Sitio web:</strong>{' '}
-                <a href="https://surf-cam-one.vercel.app" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
-                  https://surf-cam-one.vercel.app
+                <a href="https://santateresasurfcam.com" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
+                  https://santateresasurfcam.com
                 </a>
               </p>
             </div>
