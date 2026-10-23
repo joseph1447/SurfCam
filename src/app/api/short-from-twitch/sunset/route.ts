@@ -6,6 +6,7 @@ import { getAppToken, recentArchives, vodSegments, segmentHead, downloadSegments
 import { frameColor } from '@/lib/frames';
 import { getSurfReport, sunsetAt, crDate, crTime } from '@/lib/conditions';
 import { tsToMp4, trackName, type Privacy } from '@/lib/shorts';
+import { mapLimit } from '@/lib/vod-pick';
 import { slotPlan, finishShort } from '@/lib/short-publish';
 
 export const maxDuration = 300;
@@ -26,20 +27,6 @@ const NIGHT_SAT_PCT = 3.5; // same cut as the thumbnail scorer's IR check
 type Color = { warmPct: number; satPct: number };
 const colorScore = (c: Color) => c.warmPct + c.satPct;
 const isNight = (c: Color) => c.satPct < NIGHT_SAT_PCT;
-
-async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
-  const out: R[] = new Array(items.length);
-  let next = 0;
-  await Promise.all(
-    Array.from({ length: Math.min(limit, items.length) }, async () => {
-      while (next < items.length) {
-        const i = next++;
-        out[i] = await fn(items[i]);
-      }
-    }),
-  );
-  return out;
-}
 
 async function findSunsetClip(start: number, end: number) {
   const appToken = await getAppToken();

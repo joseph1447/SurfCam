@@ -6,7 +6,7 @@ import ClipScore from '@/models/ClipScore';
 import { downloadClip } from '@/lib/twitch';
 import { crTime, getSurfReport, type SurfReport } from '@/lib/conditions';
 import { composeMontage } from '@/lib/shorts';
-import { renderOverlay, renderEndCard, renderSponsorCard, type TimelineStop } from '@/lib/short-overlay';
+import { renderOverlay, renderEndCard, type TimelineStop } from '@/lib/short-overlay';
 import type { DayMoment } from '@/lib/copy';
 
 // Title case so it holds one line: in caps it wraps and pushes the stops row under the
@@ -54,15 +54,14 @@ export async function buildDaySummary(picks: Omit<PickedMoment, 'report'>[], mus
   ]);
   const moments: PickedMoment[] = picks.map((p, i) => ({ ...p, report: reports[i] }));
   const stops: TimelineStop[] = moments.map((m) => ({ label: m.label, at: m.at }));
-  const [overlays, sponsorCard, subscribeCard] = await Promise.all([
+  const [overlays, subscribeCard] = await Promise.all([
     Promise.all(moments.map((m, i) => renderOverlay({ hook: DAY_HOOK, at: m.at, report: m.report, timeline: { stops, current: i } }))),
-    renderSponsorCard(),
     renderEndCard('day'),
   ]);
   const video = composeMontage(
     moments.map((m, i) => ({ clip: sources[i], overlay: overlays[i], focusS: m.focusS })),
     music,
-    { intro: sponsorCard, outro: subscribeCard },
+    { outro: subscribeCard },
   );
   // The thumbnail comes from the moment with the most action.
   const top = moments.reduce((a, m, i) => (m.score > moments[a].score ? i : a), 0);

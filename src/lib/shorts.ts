@@ -4,7 +4,7 @@ import { execFileSync } from 'child_process';
 import { writeFileSync, readFileSync, unlinkSync, existsSync, readdirSync } from 'fs';
 import { join, basename, extname } from 'path';
 import { tmpdir } from 'os';
-import { OVERLAY_W, OVERLAY_H, CARD_SECONDS, INTRO_SECONDS } from '@/lib/short-overlay';
+import { OVERLAY_W, OVERLAY_H, CARD_SECONDS } from '@/lib/short-overlay';
 import type { SurfReport } from '@/lib/conditions';
 import { surfDescription, surfTitle } from '@/lib/copy';
 
@@ -74,7 +74,13 @@ function probe(path: string) {
 // gap between them so neither gets sliced mid-word.
 const VERTICAL = `crop=ih*9/16:ih:(iw-ih*9/16)/2+ih*0.143:0,scale=${OVERLAY_W}:${OVERLAY_H},setsar=1`;
 
-export type Cards = { intro?: Buffer; outro?: Buffer };
+export type Cards = { outro?: Buffer };
+
+// One full-frame overlay PNG, shown from `from` seconds until the next layer takes over.
+export interface OverlayLayer {
+  png: Buffer;
+  from: number;
+}
 
 const tempPath = (name: string) => join(tmpdir(), `${name}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`);
 
@@ -92,29 +98,17 @@ function encode(job: {
   const { inputs, durationS, cards, music, camAudio } = job;
   let { filter, video } = job;
   let next = inputs.filter((x) => x === '-i').length;
-  const introPath = tempPath('short-intro') + '.png';
   const outroPath = tempPath('short-outro') + '.png';
   const outPath = tempPath('short-out') + '.mp4';
   try {
-    // Cards are looped stills so their alpha fades have a timeline to run on; -t on the
-    // output caps everything to the clip. The intro is up from frame one and fades out;
-    // the outro fades in over the last CARD_SECONDS.
-    if (cards.intro) {
-      writeFileSync(introPath, cards.intro);
-      const out = (INTRO_SECONDS - 0.4).toFixed(2);
-      inputs.push('-loop', '1', '-framerate', '30', '-i', introPath);
-      filter +=
-        `;[${next}:v]format=rgba,fade=t=out:st=${out}:d=0.4:alpha=1[intro];` +
-        `${video}[intro]overlay=0:0:enable='lt(t,${INTRO_SECONDS})':shortest=1[vi]`;
-      video = '[vi]';
-      next++;
-    }
+    // The outro is a looped still so its alpha fade has a timeline to run on; -t on the
+    // output caps everything to the clip.
     if (cards.outro) {
       writeFileSync(outroPath, cards.outro);
-      const start = Math.max(INTRO_SECONDS, durationS - CARD_SECONDS).toFixed(2);
+      const start = Math.max(0, durationS - CARD_SECONDS).toFixed(2);
       inputs.push('-loop', '1', '-framerate', '30', '-i', outroPath);
       filter +=
-        `;[${next}:v]format=rgba,fade=t=in:st=${start}:d=0.6:alpha=1[outro];` +
+        `;[${next}:v]format=rgba,fade=t=in:st=${start}:d=0.3:alpha=1[outro];` +
         `${video}[outro]overlay=0:0:enable='gte(t,${start})':shortest=1[vo]`;
       video = '[vo]';
       next++;
@@ -141,28 +135,39 @@ function encode(job: {
     ], { timeout: 180_000, stdio: 'pipe' });
     return readFileSync(outPath);
   } finally {
-    for (const p of [introPath, outroPath, outPath]) if (existsSync(p)) unlinkSync(p);
+    for (const p of [outroPath, outPath]) if (existsSync(p)) unlinkSync(p);
   }
 }
 
-export function composeShort(input: Buffer, overlay: Buffer, music: string | null, cards: Cards = {}): Buffer {
+// `layers` swap in over time (the staged conditions reveal); `startS` drops the head of the
+// clip so the Short opens just before its best break, and `maxS` caps the length.
+export function composeShort(
+  input: Buffer,
+  layers: OverlayLayer[],
+  music: string | null,
+  cards: Cards = {},
+  cut: { startS?: number; maxS?: number } = {},
+): Buffer {
   const inPath = tempPath('short-in') + '.mp4';
-  const overlayPath = tempPath('short-overlay') + '.png';
+  const layerPaths = layers.map((_, i) => tempPath(`short-layer-${i}`) + '.png');
   try {
     writeFileSync(inPath, input);
-    writeFileSync(overlayPath, overlay);
-    const { durationS, hasAudio } = probe(inPath);
-    return encode({
-      inputs: ['-i', inPath, '-i', overlayPath],
-      filter: `[0:v]${VERTICAL}[bg];[bg][1:v]overlay=0:0[v0]`,
-      video: '[v0]',
-      durationS,
-      cards,
-      music,
-      camAudio: hasAudio,
+    layers.forEach((l, i) => writeFileSync(layerPaths[i], l.png));
+    const { durationS: full, hasAudio } = probe(inPath);
+    const startS = Math.max(0, Math.min(cut.startS ?? 0, full - 1));
+    const durationS = Math.min(full - startS, cut.maxS ?? Infinity);
+
+    const inputs = ['-ss', startS.toFixed(2), '-t', durationS.toFixed(2), '-i', inPath];
+    let filter = `[0:v]${VERTICAL},setpts=PTS-STARTPTS[v0]`;
+    layers.forEach((l, i) => {
+      inputs.push('-i', layerPaths[i]);
+      const until = layers[i + 1]?.from;
+      const enable = until === undefined ? `gte(t,${l.from})` : `between(t,${l.from},${until - 0.001})`;
+      filter += `;[v${i}][${i + 1}:v]overlay=0:0:enable='${enable}'[v${i + 1}]`;
     });
+    return encode({ inputs, filter, video: `[v${layers.length}]`, durationS, cards, music, camAudio: hasAudio });
   } finally {
-    for (const p of [inPath, overlayPath]) if (existsSync(p)) unlinkSync(p);
+    for (const p of [inPath, ...layerPaths]) if (existsSync(p)) unlinkSync(p);
   }
 }
 

@@ -1,10 +1,11 @@
 // Everything a Short run does once its 16:9 source clip is in hand: overlay, vertical
 // compose, YouTube upload, thumbnail, and the Instagram Reel + Story. Shared by the live-clip
 // run (short-from-twitch) and the sunset run, which cuts its clip from the VOD instead.
-import { composeShort, uploadShort, surfCheckMeta, musicTracks, type Privacy } from '@/lib/shorts';
+import { composeShort, uploadShort, surfCheckMeta, musicTracks, type OverlayLayer, type Privacy } from '@/lib/shorts';
 import type { SurfReport } from '@/lib/conditions';
-import { renderOverlay, renderEndCard, renderSponsorCard, HOOKS, REEL_COVER_MS } from '@/lib/short-overlay';
+import { renderOverlay, renderEndCard, HOOKS, REEL_COVER_MS, REVEAL_AT } from '@/lib/short-overlay';
 import { analyzeBuffer, recordClipScore, thumbnailVideo } from '@/lib/thumb-pipeline';
+import type { ClipAnalysis } from '@/lib/frames';
 import { publishReel, publishStory } from '@/lib/instagram';
 import { reelCaption } from '@/lib/copy';
 import type { TwitchShort } from '@/models/TwitchShort';
@@ -22,6 +23,22 @@ export function slotPlan(at: number, musicParam: string | null) {
   };
 }
 
+// The conditions card fills in row by row (swell, wind, tide at REVEAL_AT) instead of
+// answering the hook on the first frame. Without a forecast there's nothing to stage.
+export async function stagedLayers(opts: { hook: string; at: number; report: SurfReport | null }): Promise<OverlayLayer[]> {
+  if (!opts.report) return [{ png: await renderOverlay(opts), from: 0 }];
+  const pngs = await Promise.all([0, 1, 2, 3].map((rows) => renderOverlay({ ...opts, rows })));
+  return pngs.map((png, i) => ({ png, from: i === 0 ? 0 : REVEAL_AT[i - 1] }));
+}
+
+// Where the Short should start: ~3 s before the clip's best break, so it opens on the wave,
+// leaving at least `minS` seconds after the cut.
+export function openOnWave(analysis: ClipAnalysis, minS = 20, leadS = 3): number {
+  const lengthS = analysis.frames.length / 2; // frames are sampled at 2 fps
+  const peak = analysis.best?.t ?? 0;
+  return Math.max(0, Math.min(peak - leadS, lengthS - minS));
+}
+
 export async function finishShort(opts: {
   record: TwitchShort;
   source: Buffer;
@@ -33,13 +50,16 @@ export async function finishShort(opts: {
   music: string | null;
   privacy: Privacy;
   instagram: boolean;
+  analysis?: ClipAnalysis; // already computed by the caller (it picks the cut from it)
+  startS?: number;
+  maxS?: number;
 }) {
   const { record, source, clipId, clipUrl, at, report, hook, music, privacy } = opts;
   record.clipUrl = clipUrl;
   record.report = report as TwitchShort['report'];
 
-  const [overlay, subscribeCard, sponsorCard] = await Promise.all([renderOverlay({ hook, at, report }), renderEndCard(), renderSponsorCard()]);
-  const vertical = composeShort(source, overlay, music, { intro: sponsorCard, outro: subscribeCard });
+  const [layers, subscribeCard] = await Promise.all([stagedLayers({ hook, at, report }), renderEndCard()]);
+  const vertical = composeShort(source, layers, music, { outro: subscribeCard }, { startS: opts.startS, maxS: opts.maxS });
   const meta = surfCheckMeta(clipUrl, privacy, report, music, 'short', at);
   const shortVideoId = await uploadShort(vertical, meta);
 
@@ -52,7 +72,7 @@ export async function finishShort(opts: {
   // It's a bonus on top of a Short that's already live, so a failure here is only logged.
   let thumbnail: unknown = null;
   try {
-    const analysis = analyzeBuffer(source);
+    const analysis = opts.analysis ?? analyzeBuffer(source);
     await recordClipScore({ clipId, clipUrl, source: 'short', analysis, at });
     thumbnail = await thumbnailVideo({
       videoId: shortVideoId, kind: 'short', clipId, clip: source, analysis, report, at, title: meta.title, reason: 'upload',

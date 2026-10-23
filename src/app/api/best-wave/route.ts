@@ -7,7 +7,8 @@ import { cronAuthorized } from '@/lib/cron';
 import { downloadClip } from '@/lib/twitch';
 import { composeShort, uploadShort, surfCheckMeta, musicTracks, trackName, type Privacy } from '@/lib/shorts';
 import { crDate, getSurfReport } from '@/lib/conditions';
-import { renderOverlay, renderEndCard, renderSponsorCard, REEL_COVER_MS } from '@/lib/short-overlay';
+import { renderEndCard, REEL_COVER_MS } from '@/lib/short-overlay';
+import { stagedLayers, openOnWave } from '@/lib/short-publish';
 import { analyzeBuffer, thumbnailVideo } from '@/lib/thumb-pipeline';
 import { publishReel, publishStory } from '@/lib/instagram';
 import { reelCaption } from '@/lib/copy';
@@ -37,13 +38,16 @@ export async function GET(request: NextRequest) {
     const [source, report] = await Promise.all([downloadClip(pick.clipId), getSurfReport(at).catch(() => null)]);
     const tracks = musicTracks();
     const music = tracks.length ? tracks[Math.floor(Math.random() * tracks.length)] : null;
-    const [overlay, subscribeCard, sponsorCard] = await Promise.all([
-      renderOverlay({ hook: 'MEJOR OLA DEL DÍA', at, report }),
+    // Open ~3 s before the clip's best break: the clip is a fixed 30 s Twitch clip, so the
+    // Short gets shorter instead (never under 20 s).
+    const analysis = analyzeBuffer(source);
+    const startS = openOnWave(analysis);
+    const [layers, subscribeCard] = await Promise.all([
+      stagedLayers({ hook: 'MEJOR OLA DEL DÍA', at, report }),
       renderEndCard('best'),
-      renderSponsorCard(),
     ]);
     const meta = surfCheckMeta(pick.clipUrl ?? '', privacy, report, music, 'best', at);
-    const vertical = composeShort(source, overlay, music, { intro: sponsorCard, outro: subscribeCard });
+    const vertical = composeShort(source, layers, music, { outro: subscribeCard }, { startS });
     const videoId = await uploadShort(vertical, meta);
     const url = `https://youtube.com/shorts/${videoId}`;
 
@@ -54,7 +58,7 @@ export async function GET(request: NextRequest) {
       hook: 'MEJOR OLA DEL DÍA', music: music && trackName(music), report,
     });
     const thumbnail = await thumbnailVideo({
-      videoId, kind: 'best', clipId: pick.clipId, clip: source, analysis: analyzeBuffer(source), report, at, title: meta.title, style: 'BEST', reason: 'best of day',
+      videoId, kind: 'best', clipId: pick.clipId, clip: source, analysis, report, at, title: meta.title, style: 'BEST', reason: 'best of day',
     }).catch((err) => ({ error: err instanceof Error ? err.message : String(err) }));
 
     let instagram: unknown = null;

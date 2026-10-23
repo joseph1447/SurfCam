@@ -239,12 +239,10 @@ export function analyzeClip(path: string): ClipAnalysis {
   return { frames: scored.map(strip), best: best ? strip(best) : null, zoomCrop: zoom.crop, mediumCrop: medium.crop, portraitCrop: portrait, foamX: zoom.foamX };
 }
 
-// How much sunset colour one frame holds, for picking the evening Short's moment. warmPct is
-// the share of pixels with a red/orange/pink hue: the pink glow of 2026-10-03 read 90%, grey
-// dusks 0-8%. satPct is plain saturation; it falls to ~0 once the cam switches to IR.
-// Reads from a temp file, not stdin: ffmpeg quits after the first frame, and the unread rest
-// of a piped input fails the spawn (EOF on Windows, EPIPE on Linux).
-export function frameColor(image: Buffer): { warmPct: number; satPct: number } {
+// The first frame of a clip or a VOD segment head, at the analysis size. Reads from a temp
+// file, not stdin: ffmpeg quits after the first frame, and the unread rest of a piped input
+// fails the spawn (EOF on Windows, EPIPE on Linux).
+function firstFrame(image: Buffer): Buffer {
   const path = join(tmpdir(), `frame-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2)}.ts`);
   let raw: Buffer;
   try {
@@ -257,6 +255,22 @@ export function frameColor(image: Buffer): { warmPct: number; satPct: number } {
     if (existsSync(path)) unlinkSync(path);
   }
   if (raw.length < W * H * 3) throw new Error('No frame decoded');
+  return raw;
+}
+
+// How much is breaking in one frame, for scanning the VOD for the morning Short. Same foam
+// measure and the same dark/IR/fog cuts as analyzeClip; there's no blur check because a
+// single frame has no clip median to compare against.
+export function frameAction(image: Buffer): { foamPct: number; usable: boolean } {
+  const m = measure(firstFrame(image));
+  return { foamPct: Math.round(m.foamPct * 100) / 100, usable: m.bright >= 60 && m.sat >= 0.035 && m.contrast >= 14 };
+}
+
+// How much sunset colour one frame holds, for picking the evening Short's moment. warmPct is
+// the share of pixels with a red/orange/pink hue: the pink glow of 2026-10-03 read 90%, grey
+// dusks 0-8%. satPct is plain saturation; it falls to ~0 once the cam switches to IR.
+export function frameColor(image: Buffer): { warmPct: number; satPct: number } {
+  const raw = firstFrame(image);
 
   let warm = 0, sat = 0;
   for (let i = 0; i < W * H; i++) {

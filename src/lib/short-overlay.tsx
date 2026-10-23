@@ -2,7 +2,7 @@ import { ImageResponse } from 'next/og';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { crTime, type SurfReport } from '@/lib/conditions';
-import { SPONSORS, SPONSOR_CONTACT } from '@/lib/sponsors';
+import { SPONSORS } from '@/lib/sponsors';
 
 // Same size as the vertical crop in shorts.ts, so the PNG lays over the video 1:1.
 export const OVERLAY_W = 608;
@@ -44,9 +44,9 @@ export interface TimelineStop {
   at: number;
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({ label, value, hidden = false }: { label: string; value: string; hidden?: boolean }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'baseline', marginTop: 4 }}>
+    <div style={{ display: 'flex', alignItems: 'baseline', marginTop: 4, opacity: hidden ? 0 : 1 }}>
       <div style={{ width: 76, fontFamily: 'JetBrains Mono', fontSize: 14, letterSpacing: 2, color: TEAL }}>{label}</div>
       <div style={{ fontFamily: 'IBM Plex Sans', fontWeight: 600, fontSize: 21, color: FOAM }}>{value}</div>
     </div>
@@ -64,8 +64,9 @@ export async function renderOverlay(opts: {
   at: number;
   report: SurfReport | null;
   timeline?: { stops: TimelineStop[]; current: number };
+  rows?: number; // conditions rows shown so far (staged reveal); hidden ones keep their space
 }): Promise<Buffer> {
-  const { hook, at, report, timeline } = opts;
+  const { hook, at, report, timeline, rows = 3 } = opts;
   const next = report?.tide.next;
 
   const image = new ImageResponse(
@@ -78,17 +79,34 @@ export async function renderOverlay(opts: {
           <div style={{ marginTop: 8, width: 470, display: 'flex', flexDirection: 'column', background: `linear-gradient(160deg, ${OCEAN}, rgba(4, 52, 78, 0.72))`, border: '1px solid rgba(255, 255, 255, 0.18)', borderRadius: 16, padding: '4px 16px 10px' }}>
             {report && (
               <div style={{ display: 'flex', flexDirection: 'column', paddingBottom: 8, marginBottom: 8, borderBottom: '1px solid rgba(255, 255, 255, 0.14)' }}>
-                <Row label="SWELL" value={`${report.swellFt} ft · ${report.swellPeriodS}s · ${report.swellFrom}`} />
+                <Row label="SWELL" value={`${report.swellFt} ft · ${report.swellPeriodS}s · ${report.swellFrom}`} hidden={rows < 1} />
+                <Row label="WIND" value={`${report.windKmh} km/h ${report.windFrom} · ${report.windKind}`} hidden={rows < 2} />
                 <Row
                   label="TIDE"
                   value={`${report.tide.direction === 'rising' ? 'Rising' : 'Falling'}${next ? ` · ${next.type === 'high' ? 'High' : 'Low'} ${crTime(next.at, '12h')}` : ''}`}
+                  hidden={rows < 3}
                 />
-                <Row label="WIND" value={`${report.windKmh} km/h ${report.windFrom} · ${report.windKind}`} />
               </div>
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: report ? 0 : 6, fontFamily: 'JetBrains Mono', fontSize: 16, letterSpacing: 1, color: SAND }}>
               <span style={{ color: 'rgba(248, 250, 251, 0.6)' }}>{captureStamp(at)}</span>
               <span>santateresasurfcam.com</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', marginTop: 8, paddingTop: 6, borderTop: '1px solid rgba(255, 255, 255, 0.14)' }}>
+              <span style={{ fontFamily: 'JetBrains Mono', fontSize: 10, letterSpacing: 2, color: SAND }}>APOYAN EL SURF CAM</span>
+              <div style={{ display: 'flex', alignItems: 'center', marginTop: 5 }}>
+              {SPONSORS.map((sp, i) => (
+                <div key={sp.domain} style={{ display: 'flex', alignItems: 'center', marginLeft: i ? 14 : 0 }}>
+                  <img
+                    src={dataUrl(sp.logo)}
+                    width={22}
+                    height={22}
+                    style={{ borderRadius: sp.shape === 'circle' ? 11 : 5, background: '#FFFFFF', objectFit: 'cover', marginRight: 5 }}
+                  />
+                  <span style={{ fontFamily: 'IBM Plex Sans', fontWeight: 600, fontSize: 12, color: 'rgba(248, 250, 251, 0.85)' }}>{sp.name}</span>
+                </div>
+              ))}
+              </div>
             </div>
           </div>
           {timeline && (
@@ -135,126 +153,56 @@ export async function renderOverlay(opts: {
   return Buffer.from(await image.arrayBuffer());
 }
 
-// The closing subscribe card holds this long at the end of the clip.
-export const CARD_SECONDS = 4.5;
-// Sponsors open the clip (Joseph's call: more eyes than at the end). Short enough not to
-// cost the first-second swipe; the hook and conditions stay visible above it.
-export const INTRO_SECONDS = 3.5;
-// Instagram uses the first frame as the Reel cover unless told otherwise: take it after
-// the intro so the cover shows the wave, not the sponsors card.
-export const REEL_COVER_MS = 5000;
+// The closing subscribe band: short, so the end runs back into the start without a wall
+// of text (it held 4.5 s until 2026-10-23 and retention dropped across it).
+export const CARD_SECONDS = 1.5;
+// Conditions appear one row at a time instead of all on the first frame, which answered
+// the hook at once: swell, then wind, then tide (seconds into the Short).
+export const REVEAL_AT = [3, 8, 13];
+// Every Short now opens ~3 s before its best break, so the Reel cover is the wave itself.
+export const REEL_COVER_MS = 3000;
 // Shown as a URL, not a bare handle: on Instagram a bare "@..." reads as an IG account.
 export const YOUTUBE_URL_SHORT = 'youtube.com/@QuesadaJoseph';
 export const LIVE_URL_SHORT = 'santateresasurfcam.com/live';
 
-// Closing card (last CARD_SECONDS) on every Short/Reel: subscribe (the ask that
-// compounds), then the live. Sits mid-frame, under the conditions block and above the
-// player's bottom strip; the rest of the video stays untouched.
 const dataUrl = (file: string) => {
   const mime = file.endsWith('.png') ? 'image/png' : 'image/jpeg';
   return `data:${mime};base64,${readFileSync(join(process.cwd(), 'assets', 'brand', 'sponsors', file)).toString('base64')}`;
 };
 
-// Opening card of every Short/Reel: who supports the cam, and an open invitation to join.
-// Mid-frame, under the hook + conditions block, same box as the closing subscribe card.
-export async function renderSponsorCard(): Promise<Buffer> {
+// Closing band (last CARD_SECONDS): one compact strip over open water, under the conditions
+// card and well above the break, so the loop back to the first frame stays clean. The
+// "best wave" Short leads with its own promise: that's the format people rewatch (936
+// views at 113% on 2026-10-01), so it carries the most concrete reason to subscribe.
+export async function renderEndCard(kind: 'short' | 'best' | 'day' = 'short'): Promise<Buffer> {
+  const eyebrow = kind === 'best' ? 'La mejor ola de Santa Teresa, cada día' : kind === 'day' ? '¿Te gustó el resumen?' : '¿Te gustó el reporte?';
   const image = new ImageResponse(
     (
       <div style={{ width: OVERLAY_W, height: OVERLAY_H, display: 'flex', position: 'relative' }}>
         <div
           style={{
             position: 'absolute',
-            top: 380,
+            top: 480,
             left: 28,
             width: OVERLAY_W - 56,
             display: 'flex',
-            flexDirection: 'column',
             alignItems: 'center',
             background: 'rgba(6, 17, 28, 0.88)',
             border: '1px solid rgba(255, 255, 255, 0.2)',
-            borderRadius: 22,
-            padding: '22px 16px 22px',
+            borderRadius: 18,
+            padding: '12px 14px',
           }}
         >
-          <div style={{ fontFamily: 'JetBrains Mono', fontSize: 17, letterSpacing: 3, color: SAND }}>PATROCINADORES</div>
-          <div style={{ marginTop: 18, display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-            {SPONSORS.map((s) => (
-              <div key={s.domain} style={{ width: 168, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <img
-                  src={dataUrl(s.logo)}
-                  width={112}
-                  height={112}
-                  style={{
-                    borderRadius: s.shape === 'circle' ? 56 : 18,
-                    border: '3px solid rgba(255, 255, 255, 0.9)',
-                    background: '#FFFFFF',
-                    objectFit: 'cover',
-                  }}
-                />
-                <div style={{ marginTop: 10, fontFamily: 'IBM Plex Sans', fontWeight: 600, fontSize: 17, color: FOAM, textAlign: 'center' }}>{s.name}</div>
-                <div style={{ marginTop: 2, fontFamily: 'JetBrains Mono', fontSize: 12, color: TEAL, textAlign: 'center' }}>{s.domain}</div>
-              </div>
-            ))}
-          </div>
-          <div style={{ marginTop: 20, width: '100%', borderTop: '1px solid rgba(255, 255, 255, 0.14)' }} />
-          <div style={{ marginTop: 16, fontFamily: 'Playfair Display', fontSize: 30, lineHeight: 1.15, color: FOAM, textAlign: 'center', maxWidth: 470 }}>
-            ¿Quieres apoyar el surf cam o crear algo juntos?
-          </div>
-          <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', fontFamily: 'IBM Plex Sans', fontWeight: 600, fontSize: 20, color: '#0A0C10', background: SUNSET, borderRadius: 999, padding: '8px 18px' }}>
-            {`Contáctanos en ${SPONSOR_CONTACT}`}
-          </div>
-        </div>
-      </div>
-    ),
-    {
-      width: OVERLAY_W,
-      height: OVERLAY_H,
-      fonts: [
-        { name: 'Playfair Display', data: font('PlayfairDisplay-Black.ttf'), weight: 900, style: 'normal' },
-        { name: 'IBM Plex Sans', data: font('IBMPlexSans-SemiBold.ttf'), weight: 600, style: 'normal' },
-        { name: 'JetBrains Mono', data: font('JetBrainsMono-Bold.ttf'), weight: 700, style: 'normal' },
-      ],
-    },
-  );
-  return Buffer.from(await image.arrayBuffer());
-}
-
-// The "best wave" Short leads with its own promise: that's the format people rewatch
-// (936 views at 113% on 2026-10-01), so it carries the most concrete reason to subscribe.
-export async function renderEndCard(kind: 'short' | 'best' | 'day' = 'short'): Promise<Buffer> {
-  const eyebrow = kind === 'best' ? 'LA MEJOR OLA DE SANTA TERESA, CADA DÍA' : kind === 'day' ? '¿TE GUSTÓ EL RESUMEN?' : '¿TE GUSTÓ EL REPORTE?';
-  const image = new ImageResponse(
-    (
-      <div style={{ width: OVERLAY_W, height: OVERLAY_H, display: 'flex', position: 'relative' }}>
-        <div
-          style={{
-            position: 'absolute',
-            top: 400,
-            left: 28,
-            width: OVERLAY_W - 56,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            background: 'rgba(6, 17, 28, 0.86)',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-            borderRadius: 22,
-            padding: '26px 22px 24px',
-          }}
-        >
-          <div style={{ fontFamily: 'JetBrains Mono', fontSize: kind === 'best' ? 15 : 17, letterSpacing: kind === 'best' ? 1.5 : 3, color: SAND }}>{eyebrow}</div>
-          <div style={{ marginTop: 12, fontFamily: 'Playfair Display', fontSize: 72, lineHeight: 1, color: FOAM, background: SUNSET, padding: '4px 22px 14px' }}>
+          <div style={{ fontFamily: 'Playfair Display', fontSize: 30, lineHeight: 1, color: FOAM, background: SUNSET, padding: '4px 12px 8px', borderRadius: 8 }}>
             SUSCRÍBETE
           </div>
-          <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', fontFamily: 'IBM Plex Sans', fontWeight: 600, fontSize: 27, color: FOAM }}>
-            <div style={{ width: 0, height: 0, borderTop: '11px solid transparent', borderBottom: '11px solid transparent', borderLeft: '18px solid #FF2D2D', marginRight: 12 }} />
-            {YOUTUBE_URL_SHORT}
+          <div style={{ marginLeft: 14, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ fontFamily: 'IBM Plex Sans', fontWeight: 600, fontSize: 15, color: SAND }}>{eyebrow}</div>
+            <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', fontFamily: 'IBM Plex Sans', fontWeight: 600, fontSize: 18, color: FOAM }}>
+              <div style={{ width: 0, height: 0, borderTop: '7px solid transparent', borderBottom: '7px solid transparent', borderLeft: '11px solid #FF2D2D', marginRight: 8 }} />
+              {YOUTUBE_URL_SHORT}
+            </div>
           </div>
-          <div style={{ marginTop: 22, width: '100%', borderTop: '1px solid rgba(255, 255, 255, 0.14)' }} />
-          <div style={{ marginTop: 18, display: 'flex', alignItems: 'center', fontFamily: 'JetBrains Mono', fontSize: 18, letterSpacing: 2, color: FOAM }}>
-            <div style={{ width: 11, height: 11, borderRadius: 6, background: SUNSET, marginRight: 10 }} />
-            EN VIVO 24/7
-          </div>
-          <div style={{ marginTop: 8, fontFamily: 'IBM Plex Sans', fontWeight: 600, fontSize: 30, color: TEAL }}>{LIVE_URL_SHORT}</div>
         </div>
       </div>
     ),
