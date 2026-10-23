@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { join } from 'path';
 
 const YOUTUBE_CLIENT_ID = process.env.YOUTUBE_CLIENT_ID!;
 const YOUTUBE_CLIENT_SECRET = process.env.YOUTUBE_CLIENT_SECRET!;
@@ -11,7 +13,24 @@ const SCOPES = [
   'https://www.googleapis.com/auth/youtube',
   // Reporting API reach report: thumbnail impressions + CTR (the Analytics API lacks them)
   'https://www.googleapis.com/auth/yt-analytics.readonly',
+  // Search Console for the cam, santateresabook and santateresahomecare: sitemaps,
+  // queries, URL inspection. Full scope because sitemaps.submit needs it.
+  'https://www.googleapis.com/auth/webmasters',
+  // Site Verification: verify a new domain (TXT record on Vercel DNS) without the GSC UI.
+  'https://www.googleapis.com/auth/siteverification',
 ].join(' ');
+
+// On a local run the new token goes straight into .env. Google keeps the previous refresh
+// token valid, so production's copy in Vercel keeps working until it's swapped.
+function saveLocally(refreshToken: string): boolean {
+  const path = join(process.cwd(), '.env');
+  if (!existsSync(path)) return false;
+  const env = readFileSync(path, 'utf8');
+  const line = `YOUTUBE_REFRESH_TOKEN='${refreshToken}'`;
+  const current = /^YOUTUBE_REFRESH_TOKEN=.*$/m;
+  writeFileSync(path, current.test(env) ? env.replace(current, line) : `${env.trimEnd()}\n${line}\n`);
+  return true;
+}
 
 // GET: Generate OAuth URL or handle callback
 export async function GET(request: NextRequest) {
@@ -52,6 +71,9 @@ export async function GET(request: NextRequest) {
         }, { status: 400 });
       }
 
+      const local = /localhost|127\.0\.0\.1/.test(request.headers.get('host') ?? '');
+      const saved = local && tokens.refresh_token ? saveLocally(tokens.refresh_token) : false;
+
       // Return the refresh token in a user-friendly HTML page
       const html = `
         <!DOCTYPE html>
@@ -77,7 +99,8 @@ export async function GET(request: NextRequest) {
         <body>
           <div class="container">
             <h1>✅ YouTube OAuth Successful!</h1>
-            <p>Add this refresh token to your <code>.env</code> file:</p>
+            <p>${saved ? 'Saved to <code>.env</code> as YOUTUBE_REFRESH_TOKEN. You can close this tab.' : 'Add this refresh token to your <code>.env</code> file:'}</p>
+            <p>Scopes: ${tokens.scope}</p>
 
             <div class="token-box">
               <div class="label">YOUTUBE_REFRESH_TOKEN=</div>
