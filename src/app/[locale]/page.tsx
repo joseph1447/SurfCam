@@ -19,8 +19,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const metadataMap: Record<string, Metadata> = {
     es: {
-      title: 'Santa Teresa Surf Cam | Transmisión en Vivo 24/7 | Costa Rica',
-      description: 'Mira las mejores olas de Santa Teresa, Costa Rica en tiempo real. Surf cam en vivo 24/7 con chat interactivo, datos de mareas y reportes de surfistas. Calidad HD en Twitch y YouTube.',
+      title: 'Santa Teresa Surf Cam | Webcam en Vivo 24/7, Costa Rica',
+      description: 'Webcam en vivo 24/7 de la playa de Santa Teresa, Costa Rica. Mira las olas, el swell, el viento y la marea ahora mismo antes de entrar al agua. Gratis y sin registro.',
       keywords: [
         'Santa Teresa surf cam',
         'Costa Rica surf',
@@ -45,21 +45,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         siteName: 'Santa Teresa Surf Cam',
         locale: 'es_CR',
         type: 'website',
-        images: [{ url: '/wave-128.png', width: 128, height: 128, alt: 'Santa Teresa Surf Cam - Transmisión en Vivo' }],
+        images: [{ url: '/og-surfcam.jpg', width: 1200, height: 630, alt: 'Santa Teresa Surf Cam - Transmisión en Vivo' }],
       },
       twitter: {
         card: 'summary_large_image',
         title: 'Santa Teresa Surf Cam | Transmisión en Vivo 24/7',
         description: 'Mira las mejores olas de Santa Teresa, Costa Rica en tiempo real.',
-        images: ['/wave-128.png'],
+        images: ['/og-surfcam.jpg'],
       },
       alternates: {
         canonical: baseUrl,
       },
     },
     en: {
-      title: 'Santa Teresa Surf Cam | 24/7 Live Stream | Costa Rica',
-      description: 'Watch the best waves of Santa Teresa, Costa Rica in real time. 24/7 live surf cam with interactive chat, tide data and surfer reports. HD quality on Twitch and YouTube.',
+      title: 'Santa Teresa Surf Cam: Costa Rica Live Beach Cam 24/7',
+      description: 'Live surf and beach cam from Santa Teresa, Costa Rica, 24/7. See the waves, swell, wind and tide right now before you paddle out. Free, no sign-up.',
       keywords: [
         'Santa Teresa surf cam',
         'Costa Rica surf',
@@ -83,13 +83,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         siteName: 'Santa Teresa Surf Cam',
         locale: 'en_US',
         type: 'website',
-        images: [{ url: '/wave-128.png', width: 128, height: 128, alt: 'Santa Teresa Surf Cam - Live Stream' }],
+        images: [{ url: '/og-surfcam.jpg', width: 1200, height: 630, alt: 'Santa Teresa Surf Cam - Live Stream' }],
       },
       twitter: {
         card: 'summary_large_image',
         title: 'Santa Teresa Surf Cam | 24/7 Live Stream',
         description: 'Watch the best waves of Santa Teresa, Costa Rica in real time.',
-        images: ['/wave-128.png'],
+        images: ['/og-surfcam.jpg'],
       },
       alternates: {
         canonical: `${baseUrl}/en`,

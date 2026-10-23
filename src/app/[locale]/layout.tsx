@@ -48,13 +48,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         siteName: 'Santa Teresa Surf Cam',
         locale: 'es_CR',
         type: 'website',
-        images: [{ url: '/wave-128.png', width: 128, height: 128, alt: 'Santa Teresa Surf Cam Logo' }],
+        images: [{ url: '/og-surfcam.jpg', width: 1200, height: 630, alt: 'Santa Teresa Surf Cam' }],
       },
       twitter: {
         card: 'summary_large_image',
         title: 'Santa Teresa Surf Cam | Transmisión en Vivo 24/7',
         description: 'Mira las mejores olas de Santa Teresa, Costa Rica en tiempo real.',
-        images: ['/wave-128.png'],
+        images: ['/og-surfcam.jpg'],
       },
     },
     en: {
@@ -83,13 +83,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         siteName: 'Santa Teresa Surf Cam',
         locale: 'en_US',
         type: 'website',
-        images: [{ url: '/wave-128.png', width: 128, height: 128, alt: 'Santa Teresa Surf Cam Logo' }],
+        images: [{ url: '/og-surfcam.jpg', width: 1200, height: 630, alt: 'Santa Teresa Surf Cam' }],
       },
       twitter: {
         card: 'summary_large_image',
         title: 'Santa Teresa Surf Cam | 24/7 Live Stream',
         description: 'Watch the best waves of Santa Teresa, Costa Rica in real time.',
-        images: ['/wave-128.png'],
+        images: ['/og-surfcam.jpg'],
       },
     },
   };
